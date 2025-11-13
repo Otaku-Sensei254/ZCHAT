@@ -145,54 +145,50 @@ defmodule ZchatWeb.UserAuth do
         live "/profile", ProfileLive, :index
       end
   """
- def on_mount(:default, _params, session, socket) do
-  {:cont, mount_current_user(socket, session)}
-end
-
-def on_mount(:mount_current_user, _params, session, socket) do
-  {:cont, mount_current_user(socket, session)}
-end
-
-def on_mount(:ensure_authenticated, _params, session, socket) do
-  socket = mount_current_user(socket, session)
-
-  if socket.assigns.current_user do
-    {:cont, socket}
-  else
-    socket =
-      socket
-      |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
-      |> Phoenix.LiveView.redirect(to: ~p"/users/log_in")
-
-    {:halt, socket}
+  def on_mount(:default, _params, session, socket) do
+    {:cont, mount_current_user(socket, session)}
   end
-end
 
-def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
-  socket = mount_current_user(socket, session)
-
-  if socket.assigns.current_user do
-    {:halt, Phoenix.LiveView.redirect(socket, to: signed_in_path(socket))}
-  else
-    {:cont, socket}
+  def on_mount(:mount_current_user, _params, session, socket) do
+    {:cont, mount_current_user(socket, session)}
   end
-end
 
-defp mount_current_user(socket, session) do
-  Phoenix.Component.assign_new(socket, :current_user, fn ->
-    if user_token = session["user_token"] do
-      Zchat.Accounts.get_user_by_session_token(user_token)
+  def on_mount(:ensure_authenticated, _params, session, socket) do
+    socket = mount_current_user(socket, session)
+
+    if socket.assigns.current_user do
+      {:cont, socket}
+    else
+      socket =
+        socket
+        |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
+        |> Phoenix.LiveView.redirect(to: ~p"/users/log_in")
+
+      {:halt, socket}
     end
-  end)
-end
+  end
+
+  def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
+    socket = mount_current_user(socket, session)
+
+    if socket.assigns.current_user do
+      {:halt, Phoenix.LiveView.redirect(socket, to: signed_in_path(socket))}
+    else
+      {:cont, socket}
+    end
+  end
 
   defp mount_current_user(socket, session) do
     Phoenix.Component.assign_new(socket, :current_user, fn ->
       if user_token = session["user_token"] do
-        Accounts.get_user_by_session_token(user_token)
+        Zchat.Accounts.get_user_by_session_token(user_token)
       end
     end)
   end
+
+  #
+  # ⬇️ I HAVE REMOVED THE DUPLICATE FUNCTION FROM HERE ⬇️
+  #
 
   @doc """
   Used for routes that require the user to not be authenticated.

@@ -26,23 +26,8 @@
             >
               Settings
             </.link>
-            <.form 
-              for={%{}}
-              action={~p"/users/log_out"} 
-              method="post"
-              class="inline"
-              as={:user}
-            >
-              <input type="hidden" name="_method" value="delete" />
-              <button 
-                type="submit"
-                class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              >
-                Log out
-              </button>
-            </.form>
             <p class="ml-4 text-gray-600 text-sm">
-               <strong><%= @current_user.email %></strong>
+              <strong><%= @current_user.email %></strong>
             </p>
             <button class="create-post bg-transparent x-10 py-2 border-2 border-red-500 text-red-500 hover:bg-orange-50 font-bold transition duration-300 transform hover:scale-105 rounded-xl w-fit"> 
               <.link
@@ -52,36 +37,51 @@
             </.link>
           </button>
           <p class="ml-4 text-gray-600 text-sm">
-           <strong><%= @current_user.username %></strong>
-        </p>
+            <strong><%= @current_user.username %></strong>
+          </p>
+          <.form 
+            for={%{}}
+            action={~p"/users/log_out"} 
+            method="post"
+            class="inline"
+            as={:user}
+          >
+            <input type="hidden" name="_method" value="delete" />
+            <button 
+              type="submit"
+              class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Log out
+            </button>
+          </.form>
           <% else %>
-            <!-- Links for guests -->
-            <.link 
-              navigate={~p"/users/log_in"} 
-              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
-            >
-              Log in
-            </.link>
-            <.link 
-              navigate={~p"/users/register"}
-              class="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Sign up
-            </.link>
-          <% end %>
-        </div>
-      </div>
-      
-      <!-- Mobile menu button -->
-      <div class="md:hidden">
-        <button type="button" class="text-gray-500 hover:text-orange-500 focus:outline-none">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-    </nav>
+          <!-- Links for guests -->
+          <.link 
+          navigate={~p"/users/log_in"} 
+          class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          >
+          Log in
+        </.link>
+        <.link 
+        navigate={~p"/users/register"}
+        class="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+        >
+        Sign up
+      </.link>
+      <% end %>
+    </div>
   </div>
+  
+  <!-- Mobile menu button -->
+  <div class="md:hidden">
+    <button type="button" class="text-gray-500 hover:text-orange-500 focus:outline-none">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  </div>
+</nav>
+</div>
 </header>
 
 <main class="pt-16">

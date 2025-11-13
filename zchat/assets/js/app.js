@@ -1,3 +1,7 @@
+
+
+
+
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
 // import "./user_socket.js"
@@ -24,6 +28,40 @@ import topbar from "../vendor/topbar"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}})
+let Hooks = {};
+
+Hooks.VideoAutoplay = {
+  mounted() {
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        let entry = entries[0];
+        if (entry.isIntersecting) {
+          // Video is on screen
+          this.el.play().catch((error) => {
+            // Autoplay was prevented.
+            console.log("Autoplay prevented: ", error);
+          });
+        } else {
+          // Video is off screen
+          this.el.pause();
+        }
+      },
+      { threshold: 0.5 } // 50% of the video must be visible
+    );
+
+    this.observer.observe(this.el);
+  },
+  destroyed() {
+    // Stop observing when the element is removed
+    this.observer.disconnect();
+  },
+};
+
+// Make sure your LiveSocket uses the hooks:
+let liveSocket = new LiveSocket("/live", Socket, {
+  params: { _csrf_token: csrfToken },
+  hooks: Hooks, // <-- MAKE SURE THIS LINE IS HERE
+});
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

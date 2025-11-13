@@ -1,7 +1,6 @@
 defmodule Zchat.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Zchat.Accounts.User
   alias Zchat.Posts.Post
 
   schema "users" do
@@ -12,6 +11,8 @@ defmodule Zchat.Accounts.User do
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :naive_datetime
     has_many :posts, Post
+    has_many :reposts, Zchat.Posts.Repost
+    has_many :likes, Zchat.Posts.Like
 
     timestamps()
   end

@@ -29,7 +29,7 @@ defmodule ZchatWeb.CreatePost do
   def handle_event("validate", %{"post" => post_params}, socket) do
     changeset =
       socket.assigns.changeset
-      |> cast(post_params, [:title, :content])
+      |> cast(post_params, [:title, :content, :category,])
       |> Map.put(:action, :validate)
 
     {:noreply,
@@ -105,7 +105,7 @@ defmodule ZchatWeb.CreatePost do
         {:noreply,
          socket
          |> put_flash(:info, "Post created successfully!")
-         |> push_navigate(to: ~p"/posts/#{post.id}")}
+         |> push_navigate(to: ~p"/feed")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :post))}

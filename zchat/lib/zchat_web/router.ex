@@ -23,7 +23,6 @@ defmodule ZchatWeb.Router do
     on_mount: [{ZchatWeb.UserAuth, :mount_current_user}] do
       live "/", HomeLive, :home
       live "/posts/new", CreatePost, :new
-      live "/posts/:id", UI.SinglePostLive, :show
     end
   end
 
@@ -72,9 +71,11 @@ defmodule ZchatWeb.Router do
 
       live_session :require_authenticated_user,
       on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}] do
+        live "/feed", UI.FeedLive, :index
         live "/users/settings", UserSettingsLive, :edit
         live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    end
+        live "/posts/:id", UI.SinglePostLive, :show
+      end
   end
 
   scope "/", ZchatWeb do

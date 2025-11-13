@@ -12,7 +12,7 @@ defmodule ZchatWeb.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import ZchatWeb.Gettext
+
 
   @doc """
   Renders a modal.
@@ -77,7 +77,7 @@ defmodule ZchatWeb.CoreComponents do
                   phx-click={hide_modal(@on_cancel, @id)}
                   type="button"
                   class="-m-3 flex-none p-3 opacity-20 hover:opacity-40"
-                  aria-label={gettext("close")}
+                  aria-label={Gettext.dgettext(ZchatWeb.Gettext, "default", "close")}
                 >
                   <Heroicons.x_mark solid class="h-5 w-5 stroke-current" />
                 </button>
@@ -166,7 +166,7 @@ defmodule ZchatWeb.CoreComponents do
         :if={@close}
         type="button"
         class="group absolute top-2 right-1 p-2"
-        aria-label={gettext("close")}
+        aria-label={Gettext.dgettext(ZchatWeb.Gettext, "default", "close")}
       >
         <Heroicons.x_mark solid class="h-5 w-5 stroke-current opacity-40 group-hover:opacity-70" />
       </button>
@@ -487,7 +487,7 @@ defmodule ZchatWeb.CoreComponents do
         <thead class="text-left text-[0.8125rem] leading-6 text-zinc-500">
           <tr>
             <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal"><%= col[:label] %></th>
-            <th class="relative p-0 pb-4"><span class="sr-only"><%= gettext("Actions") %></span></th>
+            <th class="relative p-0 pb-4"><span class="sr-only"><%= ZchatWeb.Gettext.gettext("Actions") %></span></th>
           </tr>
         </thead>
         <tbody

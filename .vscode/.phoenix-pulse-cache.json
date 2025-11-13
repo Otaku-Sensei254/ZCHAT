@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "timestamp": 1762930764926,
+  "timestamp": 1763012597476,
   "workspaceRoot": "/home/dtech/VCF/Blog",
   "registries": {
     "components": {
@@ -254,6 +254,14 @@
               ]
             }
           ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/priv/repo/migrations/20251112135747_add_view_count_to_posts.exs",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
+          []
         ],
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
@@ -732,6 +740,8 @@
         ]
       ],
       "fileHashes": {
+        "/home/dtech/VCF/Blog/zchat/priv/repo/migrations/20251112135747_add_view_count_to_posts.exs": "92d0629d5f93a93771d9a2711e00f4cc1b3460f5",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "a63d7bff7e20c8d5933314558ed167618c2dc776",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex": "6de356a5e904bc7934ba7f0f1f4fc23d8e9dc8aa",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/layouts.ex": "631a68c7fa633ca3d7435235968e04ce729f3aa3",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/error_html.ex": "89476411f6169a71df4a964330e48f15ac62e9d9",
@@ -781,6 +791,11 @@
                 "elixirType": "Zchat.Posts.Post"
               },
               {
+                "name": "reposts",
+                "type": "list",
+                "elixirType": "Zchat.Accounts.Repost"
+              },
+              {
                 "name": "inserted_at",
                 "type": "naive_datetime"
               },
@@ -793,7 +808,7 @@
             "associationsDetailed": [],
             "aliases": {},
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex",
-            "line": 7
+            "line": 6
           }
         ],
         [
@@ -840,6 +855,82 @@
           }
         ],
         [
+          "Zchat.Posts.Comment",
+          {
+            "moduleName": "Zchat.Posts.Comment",
+            "tableName": "comments",
+            "fields": [
+              {
+                "name": "id",
+                "type": "id"
+              },
+              {
+                "name": "content",
+                "type": "string"
+              },
+              {
+                "name": "user",
+                "type": "assoc",
+                "elixirType": "Zchat.Accounts.User"
+              },
+              {
+                "name": "post",
+                "type": "assoc",
+                "elixirType": "Zchat.Posts.Post"
+              },
+              {
+                "name": "inserted_at",
+                "type": "naive_datetime"
+              },
+              {
+                "name": "updated_at",
+                "type": "naive_datetime"
+              }
+            ],
+            "associations": {},
+            "associationsDetailed": [],
+            "aliases": {},
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/comment.ex",
+            "line": 8
+          }
+        ],
+        [
+          "Zchat.Posts.Like",
+          {
+            "moduleName": "Zchat.Posts.Like",
+            "tableName": "likes",
+            "fields": [
+              {
+                "name": "id",
+                "type": "id"
+              },
+              {
+                "name": "user",
+                "type": "assoc",
+                "elixirType": "Zchat.Accounts.User"
+              },
+              {
+                "name": "post",
+                "type": "assoc",
+                "elixirType": "Zchat.Posts.Post"
+              },
+              {
+                "name": "inserted_at",
+                "type": "naive_datetime"
+              },
+              {
+                "name": "updated_at",
+                "type": "naive_datetime"
+              }
+            ],
+            "associations": {},
+            "associationsDetailed": [],
+            "aliases": {},
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/like.ex",
+            "line": 5
+          }
+        ],
+        [
           "Zchat.Posts.Post",
           {
             "moduleName": "Zchat.Posts.Post",
@@ -866,9 +957,32 @@
                 "type": "string"
               },
               {
+                "name": "view_count",
+                "type": "integer"
+              },
+              {
+                "name": "category",
+                "type": "string"
+              },
+              {
                 "name": "user",
                 "type": "assoc",
                 "elixirType": "Zchat.Accounts.User"
+              },
+              {
+                "name": "reposts",
+                "type": "list",
+                "elixirType": "Zchat.Posts.Repost"
+              },
+              {
+                "name": "comments",
+                "type": "list",
+                "elixirType": "Zchat.Posts.Comment"
+              },
+              {
+                "name": "likes",
+                "type": "list",
+                "elixirType": "Zchat.Posts.Like"
               },
               {
                 "name": "inserted_at",
@@ -883,6 +997,42 @@
             "associationsDetailed": [],
             "aliases": {},
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex",
+            "line": 9
+          }
+        ],
+        [
+          "Zchat.Posts.Repost",
+          {
+            "moduleName": "Zchat.Posts.Repost",
+            "tableName": "reposts",
+            "fields": [
+              {
+                "name": "id",
+                "type": "id"
+              },
+              {
+                "name": "user",
+                "type": "assoc",
+                "elixirType": "Zchat.Accounts.User"
+              },
+              {
+                "name": "post",
+                "type": "assoc",
+                "elixirType": "Zchat.Posts.Post"
+              },
+              {
+                "name": "inserted_at",
+                "type": "naive_datetime"
+              },
+              {
+                "name": "updated_at",
+                "type": "naive_datetime"
+              }
+            ],
+            "associations": {},
+            "associationsDetailed": [],
+            "aliases": {},
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/repost.ex",
             "line": 5
           }
         ]
@@ -929,6 +1079,11 @@
                   "elixirType": "Zchat.Posts.Post"
                 },
                 {
+                  "name": "reposts",
+                  "type": "list",
+                  "elixirType": "Zchat.Accounts.Repost"
+                },
+                {
                   "name": "inserted_at",
                   "type": "naive_datetime"
                 },
@@ -941,7 +1096,7 @@
               "associationsDetailed": [],
               "aliases": {},
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex",
-              "line": 7
+              "line": 6
             }
           ]
         ],
@@ -991,6 +1146,86 @@
           ]
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/comment.ex",
+          [
+            {
+              "moduleName": "Zchat.Posts.Comment",
+              "tableName": "comments",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "id"
+                },
+                {
+                  "name": "content",
+                  "type": "string"
+                },
+                {
+                  "name": "user",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Accounts.User"
+                },
+                {
+                  "name": "post",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Posts.Post"
+                },
+                {
+                  "name": "inserted_at",
+                  "type": "naive_datetime"
+                },
+                {
+                  "name": "updated_at",
+                  "type": "naive_datetime"
+                }
+              ],
+              "associations": {},
+              "associationsDetailed": [],
+              "aliases": {},
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/comment.ex",
+              "line": 8
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/like.ex",
+          [
+            {
+              "moduleName": "Zchat.Posts.Like",
+              "tableName": "likes",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "id"
+                },
+                {
+                  "name": "user",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Accounts.User"
+                },
+                {
+                  "name": "post",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Posts.Post"
+                },
+                {
+                  "name": "inserted_at",
+                  "type": "naive_datetime"
+                },
+                {
+                  "name": "updated_at",
+                  "type": "naive_datetime"
+                }
+              ],
+              "associations": {},
+              "associationsDetailed": [],
+              "aliases": {},
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/like.ex",
+              "line": 5
+            }
+          ]
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex",
           [
             {
@@ -1018,9 +1253,32 @@
                   "type": "string"
                 },
                 {
+                  "name": "view_count",
+                  "type": "integer"
+                },
+                {
+                  "name": "category",
+                  "type": "string"
+                },
+                {
                   "name": "user",
                   "type": "assoc",
                   "elixirType": "Zchat.Accounts.User"
+                },
+                {
+                  "name": "reposts",
+                  "type": "list",
+                  "elixirType": "Zchat.Posts.Repost"
+                },
+                {
+                  "name": "comments",
+                  "type": "list",
+                  "elixirType": "Zchat.Posts.Comment"
+                },
+                {
+                  "name": "likes",
+                  "type": "list",
+                  "elixirType": "Zchat.Posts.Like"
                 },
                 {
                   "name": "inserted_at",
@@ -1035,103 +1293,111 @@
               "associationsDetailed": [],
               "aliases": {},
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex",
+              "line": 9
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/repost.ex",
+          [
+            {
+              "moduleName": "Zchat.Posts.Repost",
+              "tableName": "reposts",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "id"
+                },
+                {
+                  "name": "user",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Accounts.User"
+                },
+                {
+                  "name": "post",
+                  "type": "assoc",
+                  "elixirType": "Zchat.Posts.Post"
+                },
+                {
+                  "name": "inserted_at",
+                  "type": "naive_datetime"
+                },
+                {
+                  "name": "updated_at",
+                  "type": "naive_datetime"
+                }
+              ],
+              "associations": {},
+              "associationsDetailed": [],
+              "aliases": {},
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/repost.ex",
               "line": 5
             }
           ]
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex": "0b1576445668918642bc81bdf15e03b3c64bd47c",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex": "7997f3168e91a685714699616570fb407c77106c",
         "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user_token.ex": "4286fea45b894747cbb0ea452accc67605179413",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex": "f8e39122a1124d93339e3a4b5e313f730477106f"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/comment.ex": "fa48435894daadfbe8bd7137212aa0decee35c5a",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/like.ex": "8e28e82e0bedac16e141792c9ca4cd904e80d1ee",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex": "cd05a084c512d7dd59235e14b85139254acf65b3",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/repost.ex": "3ad77af0072eac763d6ee07359ba549ccae500ae"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
     "events": {
       "events": [
         [
+          "/home/dtech/VCF/Blog/zchat/priv/repo/migrations/20251112135747_add_view_count_to_posts.exs",
+          []
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
           [
             {
-              "name": "validate",
+              "name": "cancel-upload",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
-              "line": 24,
-              "params": "%{\"post\" => post_params}",
+              "line": 115,
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate\", %{\"post\" => post_params}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "add_tag",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
-              "moduleName": "ZchatWeb.CreatePost",
-              "line": 38,
-              "params": "%{\"tag\" => tag}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"add_tag\", %{\"tag\" => tag}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "remove_tag",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
-              "moduleName": "ZchatWeb.CreatePost",
-              "line": 57,
-              "params": "%{\"tag\" => tag}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"remove_tag\", %{\"tag\" => tag}, socket) do",
               "nameKind": "string"
             },
             {
               "name": "save",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
-              "line": 71,
-              "params": "%{\"post\" => post_params}",
+              "line": 70,
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"save\", %{\"post\" => post_params}, socket) do",
               "nameKind": "string"
-            }
-          ]
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/feed_live.ex",
-          []
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex",
-          []
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
-          []
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
-          [
+            },
             {
-              "name": "send_instructions",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
-              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
-              "line": 35,
-              "params": "%{\"user\" => %{\"email\" => email}}",
+              "name": "remove_tag",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
+              "moduleName": "ZchatWeb.CreatePost",
+              "line": 60,
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"send_instructions\", %{\"user\" => %{\"email\" => email}}, socket) do",
               "nameKind": "string"
-            }
-          ]
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
-          [
+            },
             {
-              "name": "confirm_account",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
-              "moduleName": "ZchatWeb.UserConfirmationLive",
-              "line": 33,
-              "params": "%{\"user\" => %{\"token\" => token}}",
+              "name": "add_tag",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
+              "moduleName": "ZchatWeb.CreatePost",
+              "line": 44,
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"confirm_account\", %{\"user\" => %{\"token\" => token}}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "validate",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
+              "moduleName": "ZchatWeb.CreatePost",
+              "line": 29,
+              "params": "%{}",
+              "kind": "handle_event",
               "nameKind": "string"
             }
           ]
@@ -1144,9 +1410,76 @@
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex",
               "moduleName": "ZchatWeb.UserForgotPasswordLive",
               "line": 34,
-              "params": "%{\"user\" => %{\"email\" => email}}",
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"send_email\", %{\"user\" => %{\"email\" => email}}, socket) do",
+              "nameKind": "string"
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+          [
+            {
+              "name": "send_instructions",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+              "line": 35,
+              "params": "%{}",
+              "kind": "handle_event",
+              "nameKind": "string"
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
+          [
+            {
+              "name": "new_post",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
+              "moduleName": "ZchatWeb.FeedLive",
+              "line": 65,
+              "params": "{new_post, post}",
+              "kind": "handle_info",
+              "nameKind": "atom"
+            },
+            {
+              "name": "load_more",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
+              "moduleName": "ZchatWeb.FeedLive",
+              "line": 60,
+              "params": ":atom",
+              "kind": "handle_info",
+              "nameKind": "atom"
+            },
+            {
+              "name": "load-more",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
+              "moduleName": "ZchatWeb.FeedLive",
+              "line": 51,
+              "params": "_",
+              "kind": "handle_event",
+              "nameKind": "string"
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
+          [
+            {
+              "name": "confirm_account",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
+              "moduleName": "ZchatWeb.UserConfirmationLive",
+              "line": 33,
+              "params": "%{}",
+              "kind": "handle_event",
               "nameKind": "string"
             }
           ]
@@ -1156,26 +1489,28 @@
           []
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
+          []
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
           [
-            {
-              "name": "save",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-              "moduleName": "ZchatWeb.UserRegistrationLive",
-              "line": 57,
-              "params": "%{\"user\" => user_params}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"save\", %{\"user\" => user_params}, socket) do",
-              "nameKind": "string"
-            },
             {
               "name": "validate",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
               "moduleName": "ZchatWeb.UserRegistrationLive",
               "line": 74,
-              "params": "%{\"user\" => user_params}",
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate\", %{\"user\" => user_params}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "save",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
+              "moduleName": "ZchatWeb.UserRegistrationLive",
+              "line": 57,
+              "params": "%{}",
+              "kind": "handle_event",
               "nameKind": "string"
             }
           ]
@@ -1184,23 +1519,21 @@
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
           [
             {
-              "name": "reset_password",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
-              "moduleName": "ZchatWeb.UserResetPasswordLive",
-              "line": 58,
-              "params": "%{\"user\" => user_params}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"reset_password\", %{\"user\" => user_params}, socket) do",
-              "nameKind": "string"
-            },
-            {
               "name": "validate",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
               "moduleName": "ZchatWeb.UserResetPasswordLive",
               "line": 71,
-              "params": "%{\"user\" => user_params}",
+              "params": "%{}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate\", %{\"user\" => user_params}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "reset_password",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
+              "moduleName": "ZchatWeb.UserResetPasswordLive",
+              "line": 58,
+              "params": "%{}",
+              "kind": "handle_event",
               "nameKind": "string"
             }
           ]
@@ -1209,23 +1542,12 @@
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
           [
             {
-              "name": "validate_email",
+              "name": "update_password",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
               "moduleName": "ZchatWeb.UserSettingsLive",
-              "line": 106,
+              "line": 150,
               "params": "params",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate_email\", params, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "update_email",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
-              "moduleName": "ZchatWeb.UserSettingsLive",
-              "line": 118,
-              "params": "params",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"update_email\", params, socket) do",
               "nameKind": "string"
             },
             {
@@ -1235,31 +1557,40 @@
               "line": 138,
               "params": "params",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate_password\", params, socket) do",
               "nameKind": "string"
             },
             {
-              "name": "update_password",
+              "name": "update_email",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
               "moduleName": "ZchatWeb.UserSettingsLive",
-              "line": 150,
+              "line": 118,
               "params": "params",
               "kind": "handle_event",
-              "clause": "def handle_event(\"update_password\", params, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "validate_email",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
+              "moduleName": "ZchatWeb.UserSettingsLive",
+              "line": 106,
+              "params": "params",
+              "kind": "handle_event",
               "nameKind": "string"
             }
           ]
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "63c7c071344f8da39094ad7d34b78cd6d1fa4034",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/feed_live.ex": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "e998c01bf2af25665e26c1e570f13cf61afcfa70",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
+        "/home/dtech/VCF/Blog/zchat/priv/repo/migrations/20251112135747_add_view_count_to_posts.exs": "92d0629d5f93a93771d9a2711e00f4cc1b3460f5",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "a63d7bff7e20c8d5933314558ed167618c2dc776",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "47dd73855e76ddd791459767e2a74a5d3d4f4a3d",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "3d887356d7034e979d6d03224ff19187f30211d5",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868"
@@ -1357,9 +1688,20 @@
         },
         {
           "verb": "LIVE",
-          "path": "/users/settings",
+          "path": "/feed",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
           "line": 74,
+          "liveModule": "UI.FeedLive",
+          "liveAction": "FeedLive",
+          "helperBase": "feed",
+          "params": [],
+          "isResource": false
+        },
+        {
+          "verb": "LIVE",
+          "path": "/users/settings",
+          "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
+          "line": 75,
           "liveModule": "UserSettingsLive",
           "helperBase": "user_setting",
           "params": [],
@@ -1369,7 +1711,7 @@
           "verb": "LIVE",
           "path": "/users/settings/confirm_email/:token",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 75,
+          "line": 76,
           "liveModule": "UserSettingsLive",
           "helperBase": "user_setting_confirm_email",
           "params": [
@@ -1381,9 +1723,9 @@
           "verb": "LIVE",
           "path": "/posts/:id",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 76,
-          "liveModule": "ZchatWeb.PostShowLive",
-          "liveAction": "PostShowLive",
+          "line": 77,
+          "liveModule": "UI.SinglePostLive",
+          "liveAction": "SinglePostLive",
           "helperBase": "post",
           "params": [
             "id"
@@ -1394,7 +1736,7 @@
           "verb": "DELETE",
           "path": "/users/log_out",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 83,
+          "line": 84,
           "controller": "UserSessionController",
           "action": "delete",
           "helperBase": "user_log_out",
@@ -1405,7 +1747,7 @@
           "verb": "LIVE",
           "path": "/users/confirm/:token",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 87,
+          "line": 88,
           "liveModule": "UserConfirmationLive",
           "helperBase": "user_confirm",
           "params": [
@@ -1417,7 +1759,7 @@
           "verb": "LIVE",
           "path": "/users/confirm",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 88,
+          "line": 89,
           "liveModule": "UserConfirmationInstructionsLive",
           "helperBase": "user_confirm",
           "params": [],
@@ -1425,7 +1767,7 @@
         }
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex": "585edf1c8565b6ead778b7bfe0764fcbf9517def"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex": "a589dd52f9f8d4c1b9721a39bafe1dced32980b6"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
@@ -1503,6 +1845,34 @@
     "templates": {
       "templatesByModule": [
         [
+          "ZchatWeb.UI.PostComponent",
+          [
+            {
+              "moduleName": "ZchatWeb.UI.PostComponent",
+              "name": "update",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#update"
+            },
+            {
+              "moduleName": "ZchatWeb.UI.PostComponent",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.PostShowLive",
+          [
+            {
+              "moduleName": "ZchatWeb.PostShowLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render"
+            }
+          ]
+        ],
+        [
           "ZchatWeb.PageHTML",
           [
             {
@@ -1512,9 +1882,102 @@
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html/home.html.heex"
             }
           ]
+        ],
+        [
+          "ZchatWeb.UserConfirmationInstructionsLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserRegistrationLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserRegistrationLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserLoginLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserLoginLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserSettingsLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserSettingsLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserForgotPasswordLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserForgotPasswordLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserResetPasswordLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserResetPasswordLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
+            }
+          ]
         ]
       ],
       "templatesByPath": [
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#update",
+          {
+            "moduleName": "ZchatWeb.UI.PostComponent",
+            "name": "update",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#update"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#render",
+          {
+            "moduleName": "ZchatWeb.UI.PostComponent",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.PostShowLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render"
+          }
+        ],
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html/home.html.heex",
           {
@@ -1523,26 +1986,121 @@
             "format": "html",
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html/home.html.heex"
           }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserRegistrationLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserLoginLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserSettingsLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserForgotPasswordLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserResetPasswordLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
+          }
         ]
       ],
       "moduleByFile": [
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex",
+          "ZchatWeb.UI.PostComponent"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
+          "ZchatWeb.PostShowLive"
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex",
           "ZchatWeb.PageHTML"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+          "ZchatWeb.UserConfirmationInstructionsLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
+          "ZchatWeb.UserRegistrationLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
+          "ZchatWeb.UserLoginLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
+          "ZchatWeb.UserSettingsLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex",
+          "ZchatWeb.UserForgotPasswordLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
+          "ZchatWeb.UserResetPasswordLive"
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex": "d47c6af311aadcccb43e2c040aae74edc23bf1e0"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex": "580855ca0fcfa7e69f7619040ed6fcfc7d2d4f3c",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex": "d47c6af311aadcccb43e2c040aae74edc23bf1e0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
     "liveview": {
       "liveViews": [],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "63c7c071344f8da39094ad7d34b78cd6d1fa4034",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/feed_live.ex": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "a63d7bff7e20c8d5933314558ed167618c2dc776",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "47dd73855e76ddd791459767e2a74a5d3d4f4a3d",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "3d887356d7034e979d6d03224ff19187f30211d5",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "e998c01bf2af25665e26c1e570f13cf61afcfa70",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",

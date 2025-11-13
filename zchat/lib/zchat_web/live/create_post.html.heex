@@ -4,148 +4,149 @@
     <p class="mt-2 text-gray-600">Share your thoughts, images, or videos with the community</p>
   </div>
 
-  <.form
-    for={@form}
-    phx-change="validate"
-    phx-submit="save"
-    class="space-y-6 bg-white shadow-md rounded-lg p-6"
-  >
+  <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6 bg-white shadow-md rounded-lg p-6">
     <div>
       <label for={@form[:title].id} class="block text-sm font-medium text-gray-700">
         Title <span class="text-red-500">*</span>
       </label>
-      <.input
-        field={@form[:title]}
-        type="text"
-        placeholder="Enter a catchy title..."
-        class="mt-1"
-        required
-      />
+      <.input field={@form[:title]} type="text" placeholder="Enter a catchy title..." class="mt-1" required />
       <%= for err <- List.wrap(@form.errors[:title]) do %>
-        <.error><%= translate_error(err) %></.error>
-      <% end %>
+        <.error>
+          <%= translate_error(err) %>
+        </.error>
+        <% end %>
     </div>
-
+    <!-- Add this after the title field and before the content field -->
+<div class="mt-4">
+  <label for="post_category" class="block text-sm font-medium text-gray-700">
+    Category
+  </label>
+  <select 
+    id="post_category" 
+    name="post[category]" 
+    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md"
+  >
+    <option value="">Select a category</option>
+    <%= for category <- Zchat.Posts.Post.categories() do %>
+      <option 
+        value={category} 
+        selected={get_field(@form.source, :category) == category}
+      >
+        <%= category %>
+      </option>
+    <% end %>
+  </select>
+  <%= for err <- List.wrap(@form.errors[:category]) do %>
+    <p class="mt-2 text-sm text-red-600"><%= translate_error(err) %></p>
+  <% end %>
+</div>
     <div>
       <label for={@form[:content].id} class="block text-sm font-medium text-gray-700">
         Content
       </label>
-      <.input
-        field={@form[:content]}
-        type="textarea"
-        rows="6"
-        placeholder="What's on your mind? (Optional)"
-        class="mt-1"
-      />
+      <.input field={@form[:content]} type="textarea" rows="6" placeholder="What's on your mind? (Optional)"
+        class="mt-1" />
       <%= for err <- List.wrap(@form.errors[:content]) do %>
-        <.error><%= translate_error(err) %></.error>
-      <% end %>
+        <.error>
+          <%= translate_error(err) %>
+        </.error>
+        <% end %>
     </div>
 
-<div >
+    <div>
 
-                            <label for="supporting-document"
-                              class="block text-sm font-medium text-gray-700 mb-2 mt-4">
-                              Supporting Document e.g. Perdivance Report
-                            </label>
-                            <div phx-drop-target={@uploads.media.ref}
-                              class="flex justify-center px-6 py-4 mt-1 border border-dashed rounded-lg border-gray-900/25">
-                              <div class="flex flex-col items-center justify-center text-center">
-                                <svg width="46" height="46" viewBox="0 0 46 46" fill="none"
-                                  xmlns="http://www.w3.org/2000/svg">
-                                  <rect x="3" y="3" width="40" height="40" rx="20" fill="#F2F4F7" />
-                                  <rect x="3" y="3" width="40" height="40" rx="20" stroke="#F9FAFB"
-                                    stroke-width="6" />
-                                  <path
-                                    d="M19.6667 26.3333L23.0001 23M23.0001 23L26.3334 26.3333M23.0001 23V30.5M29.6667 26.9524C30.6847 26.1117 31.3334 24.8399 31.3334 23.4167C31.3334 20.8854 29.2814 18.8333 26.7501 18.8333C26.568 18.8333 26.3976 18.7383 26.3052 18.5814C25.2185 16.7374 23.2121 15.5 20.9167 15.5C17.465 15.5 14.6667 18.2982 14.6667 21.75C14.6667 23.4718 15.363 25.0309 16.4892 26.1613"
-                                    stroke="#475467" stroke-width="1.66667" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                </svg>
-                                <!-- <<Upload>> -->
-                                <div class="mt-2 text-sm leading-6 text-gray-600 flex flex-col">
-                                  <label
-                                    for="file-upload"
-                                    class="relative flex items-center gap-2 font-semibold  rounded-md hover:cursor-pointer text-hr-maroon"
-                                  >
-                                    <span class="hidden sm:block hover:underline transition ease-in-out duration-200">Click to upload</span>
-                                    <.live_file_input upload={@uploads.media} class="!max-w-[210px] truncate"/>
-                                  </label>
-                                  <p class="pl-1">or drag and drop</p>
-                                </div>
-                                <p class="text-xs leading-5 text-gray-600">
-                                  PDF (max. 800x400px)
-                                </p>
-                              </div>
-                            </div>
+      <label for="supporting-document" class="block text-sm font-medium text-gray-700 mb-2 mt-4">
+        Supporting Document e.g. Perdivance Report
+      </label>
+      <div phx-drop-target={@uploads.media.ref}
+        class="flex justify-center px-6 py-4 mt-1 border border-dashed rounded-lg border-gray-900/25">
+        <div class="flex flex-col items-center justify-center text-center">
+          <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="40" height="40" rx="20" fill="#F2F4F7" />
+            <rect x="3" y="3" width="40" height="40" rx="20" stroke="#F9FAFB" stroke-width="6" />
+            <path
+              d="M19.6667 26.3333L23.0001 23M23.0001 23L26.3334 26.3333M23.0001 23V30.5M29.6667 26.9524C30.6847 26.1117 31.3334 24.8399 31.3334 23.4167C31.3334 20.8854 29.2814 18.8333 26.7501 18.8333C26.568 18.8333 26.3976 18.7383 26.3052 18.5814C25.2185 16.7374 23.2121 15.5 20.9167 15.5C17.465 15.5 14.6667 18.2982 14.6667 21.75C14.6667 23.4718 15.363 25.0309 16.4892 26.1613"
+              stroke="#475467" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <!-- <<Upload>> -->
+          <div class="mt-2 text-sm leading-6 text-gray-600 flex flex-col">
+            <label for="file-upload"
+              class="relative flex items-center gap-2 font-semibold  rounded-md hover:cursor-pointer text-hr-maroon">
+              <span class="hidden sm:block hover:underline transition ease-in-out duration-200">Click to upload</span>
+              <.live_file_input upload={@uploads.media} class="!max-w-[210px] truncate" />
+            </label>
+            <p class="pl-1">or drag and drop</p>
+          </div>
+          <p class="text-xs leading-5 text-gray-600">
+            PDF (max. 800x400px)
+          </p>
+        </div>
+      </div>
 
-                            <!-- <<Uploaded Document Official>> -->
-                            <div :if={Enum.count(@uploads.media.entries)> 0}
-                              class="rounded-md border border-hr-maroon mt-1.5"
-                              >
-                              <div class="flex justify-between p-3 pb-4 border-b border-gray-200">
-                                <div class="flex gap-3.5">
-                                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="2" y="2" width="32" height="32" rx="16" fill="#EFEFFB" />
-                                    <rect x="2" y="2" width="32" height="32" rx="16" stroke="#F7F7FD"
-                                      stroke-width="4" />
-                                    <path
-                                      d="M19.3332 11.5117V14.2654C19.3332 14.6387 19.3332 14.8254 19.4058 14.968C19.4697 15.0935 19.5717 15.1955 19.6972 15.2594C19.8398 15.332 20.0265 15.332 20.3998 15.332H23.1535M23.3332 16.6575V21.4654C23.3332 22.5855 23.3332 23.1455 23.1152 23.5733C22.9234 23.9497 22.6175 24.2556 22.2412 24.4474C21.8133 24.6654 21.2533 24.6654 20.1332 24.6654H15.8665C14.7464 24.6654 14.1863 24.6654 13.7585 24.4474C13.3822 24.2556 13.0762 23.9497 12.8845 23.5733C12.6665 23.1455 12.6665 22.5855 12.6665 21.4654V14.532C12.6665 13.4119 12.6665 12.8519 12.8845 12.4241C13.0762 12.0477 13.3822 11.7418 13.7585 11.55C14.1863 11.332 14.7464 11.332 15.8665 11.332H18.0077C18.4969 11.332 18.7415 11.332 18.9716 11.3873C19.1757 11.4363 19.3708 11.5171 19.5497 11.6268C19.7516 11.7504 19.9245 11.9234 20.2704 12.2693L22.3959 14.3948C22.7418 14.7407 22.9148 14.9136 23.0385 15.1155C23.1481 15.2944 23.2289 15.4895 23.2779 15.6936C23.3332 15.9237 23.3332 16.1683 23.3332 16.6575Z"
-                                      stroke="#780070" stroke-width="1.33333" stroke-linecap="round"
-                                      stroke-linejoin="round" />
-                                  </svg>
-                                  <div>
-                                    <%= for entry <- @uploads.media.entries do %>
-                                      <figure class="w-full">
-                                        <.live_img_preview entry={entry} class="w-full p-4 min-h-32 max-h-32" />
-                                        <figcaption class="text-sm font-medium text-gray-700">
-                                          <%= entry.client_name %>
-                                        </figcaption>
-                                        <p class="text-sm font-normal text-gray-600">
-                                          <%= Decimal.round(Decimal.from_float(entry.client_size / 1024)) %>KB
-                                        </p>
-                                      </figure>
-                                      <progress value={entry.progress} max="100"
-                                        class="text-gray-700 bg-success rounded-md">
-                                        <%= entry.progress %>
-                                      </progress>
-                                      <%= inspect(entry.progress) %>
-                                      <span class="text-gray-700">
-                                        <%= entry.progress %>%
-                                      </span>
-                                      <%= for err <- upload_errors(@uploads.media, entry) do %>
-                                        <p class="text-red-500">
-                                          <%= error_to_string(err) %>
-                                        </p>
-                                        <% end %>
-                                          <% end %>
-                                            <%= for err <- upload_errors(@uploads.media) do %>
-                                              <p class="text-red-500">
-                                                <%= error_to_string(err) %>
-                                              </p>
-                                              <% end %>
-                                  </div>
-                                </div>
-                                <div>
-                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="0.5" y="0.5" width="15" height="15" rx="7.5" fill="#780070" />
-                                    <rect x="0.5" y="0.5" width="15" height="15" rx="7.5" stroke="#780070" />
-                                    <path d="M11.3332 5.5L6.74984 10.0833L4.6665 8" stroke="white"
-                                      stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-                                  </svg>
-                                </div>
-                              </div>
-                              <div class="p-3">
-                                <%= for entry <- @uploads.media.entries do %>
-                                  <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref}
-                                    phx-value-inputname="document" class="text-sm font-medium text-error hover:text-[hsl(0,100%,60%)] hover:underline" style="text-underline-offset: 2px;">
-                                    Remove
-                                  </button>
-                                  <% end %>
-                              </div>
-                            </div>
-                          </div>
+      <!-- <<Uploaded Document Official>> -->
+      <div :if={Enum.count(@uploads.media.entries)> 0}
+        class="rounded-md border border-hr-maroon mt-1.5"
+        >
+        <div class="flex justify-between p-3 pb-4 border-b border-gray-200">
+          <div class="flex gap-3.5">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="32" height="32" rx="16" fill="#EFEFFB" />
+              <rect x="2" y="2" width="32" height="32" rx="16" stroke="#F7F7FD" stroke-width="4" />
+              <path
+                d="M19.3332 11.5117V14.2654C19.3332 14.6387 19.3332 14.8254 19.4058 14.968C19.4697 15.0935 19.5717 15.1955 19.6972 15.2594C19.8398 15.332 20.0265 15.332 20.3998 15.332H23.1535M23.3332 16.6575V21.4654C23.3332 22.5855 23.3332 23.1455 23.1152 23.5733C22.9234 23.9497 22.6175 24.2556 22.2412 24.4474C21.8133 24.6654 21.2533 24.6654 20.1332 24.6654H15.8665C14.7464 24.6654 14.1863 24.6654 13.7585 24.4474C13.3822 24.2556 13.0762 23.9497 12.8845 23.5733C12.6665 23.1455 12.6665 22.5855 12.6665 21.4654V14.532C12.6665 13.4119 12.6665 12.8519 12.8845 12.4241C13.0762 12.0477 13.3822 11.7418 13.7585 11.55C14.1863 11.332 14.7464 11.332 15.8665 11.332H18.0077C18.4969 11.332 18.7415 11.332 18.9716 11.3873C19.1757 11.4363 19.3708 11.5171 19.5497 11.6268C19.7516 11.7504 19.9245 11.9234 20.2704 12.2693L22.3959 14.3948C22.7418 14.7407 22.9148 14.9136 23.0385 15.1155C23.1481 15.2944 23.2289 15.4895 23.2779 15.6936C23.3332 15.9237 23.3332 16.1683 23.3332 16.6575Z"
+                stroke="#780070" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div>
+              <%= for entry <- @uploads.media.entries do %>
+                <figure class="w-full">
+                  <.live_img_preview entry={entry} class="w-full p-4 min-h-32 max-h-32" />
+                  <figcaption class="text-sm font-medium text-gray-700">
+                    <%= entry.client_name %>
+                  </figcaption>
+                  <p class="text-sm font-normal text-gray-600">
+                    <%= Decimal.round(Decimal.from_float(entry.client_size / 1024)) %>KB
+                  </p>
+                </figure>
+                <progress value={entry.progress} max="100" class="text-gray-700 bg-success rounded-md">
+                  <%= entry.progress %>
+                </progress>
+                <%= inspect(entry.progress) %>
+                  <span class="text-gray-700">
+                    <%= entry.progress %>%
+                  </span>
+                  <%= for err <- upload_errors(@uploads.media, entry) do %>
+                    <p class="text-red-500">
+                      <%= error_to_string(err) %>
+                    </p>
+                    <% end %>
+                      <% end %>
+                        <%= for err <- upload_errors(@uploads.media) do %>
+                          <p class="text-red-500">
+                            <%= error_to_string(err) %>
+                          </p>
+                          <% end %>
+            </div>
+          </div>
+          <div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="15" height="15" rx="7.5" fill="#780070" />
+              <rect x="0.5" y="0.5" width="15" height="15" rx="7.5" stroke="#780070" />
+              <path d="M11.3332 5.5L6.74984 10.0833L4.6665 8" stroke="white" stroke-width="1.66667"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+        </div>
+        <div class="p-3">
+          <%= for entry <- @uploads.media.entries do %>
+            <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} phx-value-inputname="document"
+              class="text-sm font-medium text-error hover:text-[hsl(0,100%,60%)] hover:underline"
+              style="text-underline-offset: 2px;">
+              Remove
+            </button>
+            <% end %>
+        </div>
+      </div>
+    </div>
 
 
 
@@ -153,16 +154,16 @@
       <label class="block text-sm font-medium text-gray-700 mb-2">
         Tags
       </label>
-      
+
       <div class="flex gap-2">
-        <input type="text" id="tag-input" placeholder="Add a tag..." class="flex-1 rounded-md border-gray-300 shadow-sm" />
+        <input type="text" id="tag-input" placeholder="Add a tag..."
+          class="flex-1 rounded-md border-gray-300 shadow-sm" />
         <button type="button" phx-click="add_tag" phx-value-tag="" class="px-4 py-2 bg-orange-500 text-white rounded-md"
           onclick="
             const input = document.getElementById('tag-input');
             this.setAttribute('phx-value-tag', input.value);
             input.value = '';
-          "
-        >
+          ">
           Add
         </button>
       </div>
@@ -171,25 +172,20 @@
         <%= for tag <- Ecto.Changeset.get_field(@form.source, :tags, []) do %>
           <span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
             #<%= tag %>
-            <button type="button" phx-click="remove_tag" phx-value-tag={tag} class="ml-1 text-orange-600 hover:text-orange-800">
-              ×
-            </button>
+              <button type="button" phx-click="remove_tag" phx-value-tag={tag}
+                class="ml-1 text-orange-600 hover:text-orange-800">
+                ×
+              </button>
           </span>
-        <% end %>
+          <% end %>
       </div>
     </div>
 
     <div class="flex items-center justify-end gap-4 pt-4">
-      <.link
-        navigate={~p"/"}
-        class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-      >
+      <.link navigate={~p"/feed"} class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
         Cancel
       </.link>
-      <.button
-        type="submit"
-        class="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
-      >
+      <.button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600">
         Create Post
       </.button>
     </div>

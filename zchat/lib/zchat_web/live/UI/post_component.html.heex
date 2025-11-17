@@ -1,158 +1,137 @@
 <div
   class="bg-white/90 backdrop-blur-md border border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden mb-10"
-  id={"post-#{@post.id}"} phx-hook="PostComponent" data-post-id={@post.id}>
+  id={"post-#{@post.id}"}
+  phx-hook="PostComponent"
+  data-post-id={@post.id}
+>
   <%!-- HEADER --%>
-    <div class="p-5 sm:p-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div>
-            <span class="font-semibold text-gray-900 text-base">
-              <.link navigate={"/users/#{@post.user.username}"} class="hover:underline">
-                <%= @post.user.username %>
-              </.link>
-            </span>
-            <span class="text-sm text-gray-500 ml-2">
-              · <%= Timex.from_now(@post.inserted_at) %>
-            </span>
-          </div>
-        </div>
-
-        <%= if @post.category do %>
-          <span
-            class="text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-50 text-blue-600 px-3 py-1 rounded-full shadow-sm">
-            <%= @post.category %>
+  <div class="p-5 sm:p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div>
+          <span class="font-semibold text-gray-900 text-base">
+            <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
+              <%= @post.user.username %>
+            </.link>
           </span>
-          <% end %>
+          <span class="text-sm text-gray-500 ml-2">
+            · <%= Timex.from_now(@post.inserted_at) %>
+          </span>
+        </div>
       </div>
 
-      <% if length(@post.tags || [])> 0 do %>
-        <div class="flex flex-wrap gap-2 mt-3">
-          <% for tag <- @post.tags do %>
-            <.link href={~p"/tags/#{tag}"}
-              class="text-xs bg-gray-50 text-gray-600 font-medium px-2.5 py-1 rounded-full hover:bg-gray-100 transition">
-              #<%= tag %>
-            </.link>
-            <% end %>
-        </div>
-        <% end %>
-
-          <%!-- TITLE & CONTENT --%>
-            <.link navigate={~p"/posts/#{@post.id}"} class="block">
-              <div class="mt-5">
-
-                <% if @post.title do %>
-
-                  <h3 class="text-3xl font-extrabold text-gray-900 leading-snug mb-3">
-                    <%= @post.title %>
-                  </h3>
-                  <% end %>
-                    <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
-                      <%= @post.content %>
-                    </div>
-              </div>
-            </.link>
-            <%!-- MEDIA --%>
-              <%= if @post.media_url do %>
-              <.link navigate={~p"/posts/#{@post.id}"} class="block">
-                <div class="my-6 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                  <%= cond do %>
-                    <% @post.media_type=="image" -> %>
-                      <img src={@post.media_url} alt="Post media" class="w-full object-cover max-h-[500px]" />
-                      <% @post.media_type=="video" -> %>
-                        <video id={"post-video-#{@post.id}"} phx-hook="VideoAutoplay" muted loop playsinline controls
-                          src={@post.media_url} class="w-full max-h-[500px] object-cover">
-                          Your browser does not support the video tag.
-                        </video>
-                        <% true -> %>
-                          <a href={@post.media_url} class="text-blue-600 hover:underline" target="_blank">
-                            View attached media
-                          </a>
-                          <% end %>
-                </div>
-              </.link>
-                <% end %>
+      <%= if @post.category do %>
+        <span class="text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-50 text-blue-600 px-3 py-1 rounded-full shadow-sm">
+          <%= @post.category %>
+        </span>
+      <% end %>
     </div>
 
-    <%!-- INTERACTIONS --%>
+    <%= if length(@post.tags || []) > 0 do %>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <%= for tag <- @post.tags do %>
+          <.link
+            href={~p"/tags/#{tag}"}
+            class="text-xs bg-gray-50 text-gray-600 font-medium px-2.5 py-1 rounded-full hover:bg-gray-100 transition"
+          >
+            #<%= tag %>
+          </.link>
+        <% end %>
+      </div>
+    <% end %>
 
-      
-
-        <div class="px-5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-          <div class="flex space-x-3">
-            <%!-- LIKE --%>
-              <button phx-click="toggle_like" phx-value-post-id={@post.id} phx-target={@myself} class={"flex
-                items-center gap-2 rounded-full py-1.5 px-3 transition-all duration-150 #{if @current_like,
-                do: "text-red-500 bg-red-50" , else: "text-gray-500 hover:bg-gray-100" }"}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill={if @current_like, do: "currentColor" ,
-                  else: "none" } viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span class="text-sm font-medium">
-                  <%= @like_count %>
-                </span>
-              </button>
-
-              <%!-- COMMENTS --%>
-                <button phx-click="toggle_comments" phx-target={@myself}
-                  class="flex items-center gap-2 rounded-full py-1.5 px-3 transition-colors text-gray-500 hover:bg-gray-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <span class="text-sm font-medium">
-                    <%= @comment_count %>
-                  </span>
-                </button>
-
-                <%!-- REPOST --%>
-                  <button
-                    class="flex items-center gap-2 rounded-full py-1.5 px-3 text-gray-500 hover:bg-gray-100 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                      stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                    <span class="text-sm font-medium">
-                      <%= @post.reposts_count || 0 %>
-                    </span>
-                  </button>
-          </div>
-
-          <div class="text-xs text-gray-400">
-            <%= @post.view_count %> views
-          </div>
+    <%!-- TITLE & CONTENT (Clickable to Detail) --%>
+    <.link navigate={~p"/posts/#{@post.id}"} class="block group">
+      <div class="mt-5">
+        <%= if @post.title do %>
+          <h3 class="text-3xl font-extrabold text-gray-900 leading-snug mb-3 group-hover:text-blue-600 transition-colors">
+            <%= @post.title %>
+          </h3>
+        <% end %>
+        <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+          <%= @post.content %>
         </div>
+      </div>
+    </.link>
+
+    <%!-- MEDIA --%>
+    <%= if @post.media_url do %>
+      <div class="my-6 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+        <%= cond do %>
+          <% @post.media_type == "image" -> %>
+            <.link navigate={~p"/posts/#{@post.id}"}>
+              <img src={@post.media_url} alt="Post media" class="w-full object-cover max-h-[500px]" />
+            </.link>
+          <% @post.media_type == "video" -> %>
+            <video
+              id={"post-video-#{@post.id}"}
+              phx-hook="VideoAutoplay"
+              muted
+              loop
+              playsinline
+              controls
+              src={@post.media_url}
+              class="w-full max-h-[500px] object-cover bg-black"
+            >
+              Your browser does not support the video tag.
+            </video>
+          <% true -> %>
+            <div class="p-4 bg-gray-50">
+              <a href={@post.media_url} class="text-blue-600 hover:underline" target="_blank">
+                View attached media
+              </a>
+            </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%!-- INTERACTIONS --%>
+  <div class="px-5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+    <div class="flex space-x-3">
       
-      <%!-- COMMENTS SECTION --%>
+      <%!-- LIKE BUTTON (Works Locally) --%>
+      <button
+        phx-click="toggle_like"
+        phx-throttle="1000"
+        phx-value-post-id={@post.id}
+        phx-target={@myself}
+        class={"flex items-center gap-2 rounded-full py-1.5 px-3 transition-all duration-150 #{if @current_like, do: "text-red-500 bg-red-50", else: "text-gray-500 hover:bg-gray-100"}"}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill={if @current_like, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <span class="text-sm font-medium">
+          <%= @like_count %>
+        </span>
+      </button>
 
-        <%= if @show_comments do %>
-          <div class="border-t border-gray-100 p-5 bg-gray-50">
-            <.form for={@comment_form} phx-submit="add_comment" phx-target={@myself} class="space-y-2">
-              <input type="hidden" name="post_id" value={@post.id} />
-              <input type="hidden" name="parent_id" value={@replying_to} />
+      <%!-- COMMENT BUTTON (Navigates to Single Page) --%>
+      <.link
+        navigate={~p"/posts/#{@post.id}"}
+        class="flex items-center gap-2 rounded-full py-1.5 px-3 transition-colors text-gray-500 hover:bg-gray-100 hover:text-blue-600"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span class="text-sm font-medium">
+          <%= @comment_count %>
+        </span>
+      </.link>
 
-              <div class="flex space-x-3">
-                <div class="flex-1 relative">
-                  <.input field={@comment_form[:content]} placeholder={if(@replying_to, do: "Reply..." ,
-                    else: "Add a comment..." )}
-                    class="w-full border-gray-300 rounded-lg p-2.5 pr-12 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    autocomplete="off" />
-                  <button type="submit"
-                    class="absolute right-2.5 bottom-2.5 p-1 rounded-full text-blue-500 hover:text-blue-700 disabled:text-gray-300"
-                    disabled={@comment_form[:content].value=="" }>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
-                        clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </.form>
-          </div>
+      <%!-- REPOST BUTTON (Placeholder) --%>
+      <button class="flex items-center gap-2 rounded-full py-1.5 px-3 text-gray-500 hover:bg-gray-100 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        <span class="text-sm font-medium">
+          <%= @post.reposts_count || 0 %>
+        </span>
+      </button>
+    </div>
 
-
-          <% end %>
+    <div class="text-xs text-gray-400">
+      <%= @post.view_count %> views
+    </div>
+  </div>
 </div>

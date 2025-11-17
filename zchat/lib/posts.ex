@@ -183,6 +183,8 @@ defmodule Zchat.Posts do
   @doc """
   Creates a new comment and broadcasts the event.
   """
+ # ... inside lib/posts.ex
+
   def create_comment(attrs \\ %{}) do
     %Comment{}
     |> Comment.changeset(attrs)
@@ -190,12 +192,12 @@ defmodule Zchat.Posts do
     |> case do
       {:ok, comment} ->
         comment = Repo.preload(comment, :user)
+        # This broadcast is what triggers handle_info in SinglePostLive
         Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
         {:ok, comment}
       error -> error
     end
   end
-
   @doc """
   Updates a comment.
   """
@@ -219,10 +221,13 @@ defmodule Zchat.Posts do
     Comment.changeset(comment, attrs)
   end
 
+  #helper function for comments form
+  
+
   # Likes
 
   @doc """
-  Creates a like for a post or comment.
+  Creates a like for a post or comment and broadcasts the event.
   """
   def create_like(attrs \\ %{}) do
     %Like{}
@@ -232,6 +237,22 @@ defmodule Zchat.Posts do
       {:ok, like} ->
         # Update the like count on the liked item
         update_like_count(like)
+
+        # Broadcast the like event
+        like = Repo.preload(like, :user)
+
+        cond do
+          like.likeable_type == "Post" ->
+            Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_liked, like})
+            Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_liked, like})
+          like.likeable_type == "Comment" ->
+            # Get the comment to find its post_id
+            comment = Repo.get(Comment, like.likeable_id)
+            if comment do
+              Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_liked, like})
+            end
+        end
+
         {:ok, like}
       error -> error
     end
@@ -246,6 +267,22 @@ defmodule Zchat.Posts do
       {:ok, like} ->
         # Update the like count on the unliked item
         update_like_count(like)
+
+        # Broadcast the unlike event
+        like = Repo.preload(like, :user)
+
+        cond do
+          like.likeable_type == "Post" ->
+            Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
+            Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
+          like.likeable_type == "Comment" ->
+            # Get the comment to find its post_id
+            comment = Repo.get(Comment, like.likeable_id)
+            if comment do
+              Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}})
+            end
+        end
+
         {:ok, like}
       error -> error
     end

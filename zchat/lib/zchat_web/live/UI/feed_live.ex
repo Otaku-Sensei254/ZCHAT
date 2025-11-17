@@ -79,6 +79,25 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
+  def handle_event("toggle_like", %{"post-id" => post_id}, socket) do
+    if socket.assigns.current_user do
+      case Zchat.Posts.toggle_like(socket.assigns.current_user.id, "Post", String.to_integer(post_id)) do
+        {:ok, _} ->
+          {:noreply, socket}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to toggle like")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "You must be logged in to like posts")}
+    end
+  end
+
+  def handle_event("toggle_like", _params, socket) do
+    # Handle case where post-id is not provided
+    {:noreply, put_flash(socket, :error, "Invalid request")}
+  end
+
+  @impl true
   def handle_info(:load_more, socket) do
     {:noreply, load_posts(socket)}
   end
@@ -88,5 +107,32 @@ defmodule ZchatWeb.UI.FeedLive do
   def handle_info({:new_post, post}, socket) do
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
     {:noreply, stream_insert(socket, :posts, post, at: 0)}
+  end
+
+  # Handle like updates for posts in the feed
+  def handle_info({:post_liked, like}, socket) do
+    # Update the post in the stream if it exists
+    if like.likeable_id do
+      case Enum.find(socket.assigns.posts.entries, fn p -> p.id == like.likeable_id end) do
+        nil ->
+          {:noreply, socket}
+        post ->
+          updated_post = %{post | likes_count: post.likes_count + 1}
+          {:noreply, stream_insert(socket, :posts, updated_post, at: -1)}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
+    # Update the post in the stream if it exists
+    case Enum.find(socket.assigns.posts.entries, fn p -> p.id == post_id end) do
+      nil ->
+        {:noreply, socket}
+      post ->
+        updated_post = %{post | likes_count: post.likes_count - 1}
+        {:noreply, stream_insert(socket, :posts, updated_post, at: -1)}
+    end
   end
 end

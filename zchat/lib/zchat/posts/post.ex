@@ -94,7 +94,7 @@ defmodule Zchat.Posts.Post do
     ])
     |> validate_required([:title, :content, :user_id])
     |> validate_length(:title, min: 3, max: 200)
-    |> validate_length(:content, min: 1, max: 500)
+    |> validate_length(:content, min: 1, max: 10000)
     |> validate_inclusion(:media_type, ["image", "video", nil])
     |> validate_inclusion(:category, @categories, message: "is not a valid category")
     |> validate_tags()

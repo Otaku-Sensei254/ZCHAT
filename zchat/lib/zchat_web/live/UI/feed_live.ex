@@ -144,4 +144,12 @@ defmodule ZchatWeb.UI.FeedLive do
         {:noreply, stream_insert(socket, :posts, updated_post, at: -1)}
     end
   end
+
+
+  #post deleting
+  @impl true
+  def handle_info({:post_deleted, post}, socket) do
+    # Remove the post from the stream
+    {:noreply, stream_delete(socket, :posts, post)}
+  end
 end

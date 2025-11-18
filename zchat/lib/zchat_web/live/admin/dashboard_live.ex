@@ -2,7 +2,12 @@ defmodule ZchatWeb.Admin.DashboardLive do
   use ZchatWeb, :live_view
   alias Zchat.Posts
 
-  def mount(_params, _session, socket) do
+def mount(_params, _session, socket) do
+    # 👇 1. Subscribe to the topic if connected
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Zchat.PubSub, "admin:stats")
+    end
+
     {:ok,
      socket
      |> assign(:page_title, "Admin Dashboard")
@@ -15,7 +20,9 @@ defmodule ZchatWeb.Admin.DashboardLive do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">System Overview</h1>
-
+        <%= if @current_user do %>
+        <strong> Welcome <%= @current_user.username%></strong>
+        <% end %>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div class="text-sm font-medium text-gray-500">Total Users</div>
@@ -88,5 +95,33 @@ defmodule ZchatWeb.Admin.DashboardLive do
       </div>
     </div>
     """
+  end
+  # --- Handle POST updates ---
+  @impl true
+  def handle_info({:post_created, _post}, socket) do
+    # Increment post count by 1
+    new_stats = Map.update!(socket.assigns.stats, :total_posts, &(&1 + 1))
+    {:noreply, assign(socket, :stats, new_stats)}
+  end
+
+  @impl true
+  def handle_info({:post_deleted, _post}, socket) do
+    # Decrement post count by 1
+    new_stats = Map.update!(socket.assigns.stats, :total_posts, &(&1 - 1))
+    {:noreply, assign(socket, :stats, new_stats)}
+  end
+
+  # --- Handle COMMENT updates ---
+  @impl true
+  def handle_info({:comment_created, _comment}, socket) do
+    new_stats = Map.update!(socket.assigns.stats, :total_comments, &(&1 + 1))
+    {:noreply, assign(socket, :stats, new_stats)}
+  end
+
+  # --- Handle USER updates ---
+  @impl true
+  def handle_info({:user_created, _user}, socket) do
+    new_stats = Map.update!(socket.assigns.stats, :total_users, &(&1 + 1))
+    {:noreply, assign(socket, :stats, new_stats)}
   end
 end

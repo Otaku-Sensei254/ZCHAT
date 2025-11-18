@@ -48,6 +48,14 @@ defmodule Zchat.Accounts.User do
     |> unique_constraint(:username, message: "Username already taken") # Combined the constraints
     |> validate_length(:username, min: 2, max: 50) # Optional, but good practice
     |> validate_password(opts)
+
+  |> prepare_changes(fn changeset ->
+    if changeset.valid? do
+    Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:user_created, changeset.data})
+    end
+
+    changeset
+  end)
   end
 
   defp validate_email(changeset, opts) do

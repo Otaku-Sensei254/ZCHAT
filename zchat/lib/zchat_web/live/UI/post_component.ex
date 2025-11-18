@@ -72,6 +72,27 @@ defmodule ZchatWeb.UI.PostComponent do
     {:noreply, assign(socket, :current_media_index, String.to_integer(index))}
   end
 
+  # --- DELETE EVENT ---
+  @impl true
+  def handle_event("delete_post", _, socket) do
+    post = socket.assigns.post
+    user = socket.assigns.current_user
+
+    if can_manage?(user, post) do
+      case Posts.delete_post(post) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Post deleted successfully")
+           |> push_navigate(to: ~p"/feed")} # Refresh or redirect
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not delete post")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Unauthorized")}
+    end
+  end
+
   # --- LIKE EVENTS ---
 
   @impl true
@@ -102,6 +123,16 @@ defmodule ZchatWeb.UI.PostComponent do
       {:noreply, put_flash(socket, :error, "You must be logged in to like posts")}
     end
   end
+
+  # --- AUTHORIZATION HELPER ---
+  # Returns true if user is the owner OR an admin
+  defp can_manage?(%Zchat.Accounts.User{} = user, %Zchat.Posts.Post{} = post) do
+    user.id == post.user_id or user.role == "admin"
+  end
+
+  # Handle nil user (not logged in)
+  defp can_manage?(_, _), do: false
+
 
   # --- REAL-TIME UPDATES ---
   # These handle updates broadcasted by other users

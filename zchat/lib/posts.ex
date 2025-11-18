@@ -121,6 +121,7 @@ defmodule Zchat.Posts do
       {:ok, post} ->
         post = Repo.preload(post, :user)
         Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:new_post, post})
+        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_created, post})
         {:ok, post}
       error -> error
     end
@@ -138,8 +139,17 @@ defmodule Zchat.Posts do
   @doc """
   Deletes a post.
   """
-  def delete_post(%Post{} = post) do
+def delete_post(%Post{} = post) do
     Repo.delete(post)
+    |> case do
+      {:ok, post} ->
+        # This triggers the update in FeedLive
+        Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_deleted, post})
+        # This triggers the update in Admin Dashboard
+        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_deleted, post})
+        {:ok, post}
+      error -> error
+    end
   end
 
   @doc """
@@ -198,6 +208,7 @@ defmodule Zchat.Posts do
         comment = Repo.preload(comment, :user)
         # This broadcast is what triggers handle_info in SinglePostLive
         Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
+        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:comment_created, comment})
         {:ok, comment}
       error -> error
     end
@@ -341,11 +352,14 @@ defmodule Zchat.Posts do
   """
   def count_top_tags(limit \\ 10) do
     from(p in Post,
-      # This fragment is specific to Postgres arrays
-      cross_join: t in fragment("unnest(?)", p.tags),
-      group_by: t,
-      select: {t, count(t)},
-      order_by: [desc: count(t)],
+      # 1. Select the unnested tag and the count of posts
+      select: {fragment("unnest(?)", p.tags), count(p.id)},
+
+      # 2. Group by that same unnested value
+      group_by: fragment("unnest(?)", p.tags),
+
+      # 3. Order by popularity
+      order_by: [desc: count(p.id)],
       limit: ^limit
     )
     |> Repo.all()

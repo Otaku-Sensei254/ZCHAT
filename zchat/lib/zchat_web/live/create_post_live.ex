@@ -29,7 +29,7 @@ defmodule ZchatWeb.CreatePost do
   def handle_event("validate", %{"post" => post_params}, socket) do
     changeset =
       socket.assigns.changeset
-      |> cast(post_params, [:title, :content, :category,])
+      |> cast(post_params, [:title, :content, :category, :tags])
       |> Map.put(:action, :validate)
 
     {:noreply,
@@ -40,16 +40,23 @@ defmodule ZchatWeb.CreatePost do
   end
 
   # ✅ Add tags dynamically
-  @impl true
-  def handle_event("add_tag", %{"tag" => tag}, socket) do
+ @impl true
+  def handle_event("add_tag", params, socket) do
+    # Get tag from button click OR enter key input
+    tag = params["tag"] || params["value"] || ""
+    tag = String.trim(tag)
+
     if tag != "" do
       changeset = socket.assigns.changeset
-      current_tags = get_field(changeset, :tags, [])
+      current_tags = Ecto.Changeset.get_field(changeset, :tags, [])
 
-      new_changeset =
-        put_change(changeset, :tags, current_tags ++ [tag])
-
-      {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
+      # Avoid duplicates
+      if tag in current_tags do
+        {:noreply, socket}
+      else
+        new_changeset = Ecto.Changeset.put_change(changeset, :tags, current_tags ++ [tag])
+        {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
+      end
     else
       {:noreply, socket}
     end
@@ -64,6 +71,8 @@ defmodule ZchatWeb.CreatePost do
 
     {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
   end
+
+
 
   # Save the post (handles upload)
   @impl true

@@ -153,35 +153,64 @@
 
 
 
-    <div class="flex flex-wrap w-8 ">
+  <div>
       <label class="block text-sm font-medium text-gray-700 mb-2">
-        Tags
+        Tags (Optional)
       </label>
 
       <div class="flex gap-2">
-        <input type="text" id="tag-input" placeholder="Add a tag..."
-          class="flex-1 rounded-md border-gray-300 shadow-sm" />
-        <button type="button" phx-click="add_tag" phx-value-tag="" class="px-4 py-2 bg-orange-500 text-white rounded-md"
+        <input 
+          type="text" 
+          id="tag-input" 
+          name="tag_input" 
+          value="" 
+          placeholder="Add a tag (e.g. tech)"
+          class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm" 
+          phx-keydown="add_tag" 
+          phx-key="Enter"
+        />
+        <button 
+          type="button" 
+          phx-click="add_tag" 
+          class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
           onclick="
             const input = document.getElementById('tag-input');
-            this.setAttribute('phx-value-tag', input.value);
-            input.value = '';
-          ">
+            if(input.value.trim() !== '') {
+              // Send event to server with value
+              this.setAttribute('phx-value-tag', input.value); 
+              // Clear input after a tiny delay to let event fire
+              setTimeout(() => input.value = '', 10); 
+            } else {
+              // Prevent empty tags
+              this.removeAttribute('phx-value-tag');
+            }
+          "
+        >
           Add
         </button>
       </div>
 
-      <div class="mt-3 flex flex-wrap gap-2 ">
+      <div class="mt-3 flex flex-wrap gap-2">
         <%= for tag <- Ecto.Changeset.get_field(@form.source, :tags, []) do %>
-          <span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium border border-orange-200">
             #<%= tag %>
-              <button type="button" phx-click="remove_tag" phx-value-tag={tag}
-                class="ml-1 text-orange-600 hover:text-orange-800">
-                ×
-              </button>
+            <button 
+              type="button" 
+              phx-click="remove_tag" 
+              phx-value-tag={tag}
+              class="text-orange-600 hover:text-orange-900 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+              aria-label="Remove tag"
+            >
+              &times;
+            </button>
           </span>
-          <% end %>
+        <% end %>
       </div>
+
+      <%= for tag <- Ecto.Changeset.get_field(@form.source, :tags, []) do %>
+        <input type="hidden" name="post[tags][]" value={tag} />
+      <% end %>
+      
     </div>
 
     <div class="flex items-center justify-end gap-4 pt-4">

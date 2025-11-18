@@ -10,6 +10,7 @@ defmodule Zchat.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :naive_datetime
+    field :role, :string, default: "user"
     has_many :posts, Post
     has_many :reposts, Zchat.Posts.Repost
     has_many :likes, Zchat.Posts.Like
@@ -165,4 +166,22 @@ defmodule Zchat.Accounts.User do
       add_error(changeset, :current_password, "is not valid")
     end
   end
+
+  #helper function to check if user is admin
+  # ... existing code ...
+
+@doc """
+Checks if the user is an admin.
+"""
+def is_admin?(%Zchat.Accounts.User{role: "admin"}), do: true
+def is_admin?(_), do: false
+
+@doc """
+A changeset for upgrading users to admins (only accessible by system)
+"""
+def admin_changeset(user, attrs) do
+  user
+  |> cast(attrs, [:role])
+  |> validate_inclusion(:role, ["user", "admin", "moderator"])
+end
 end

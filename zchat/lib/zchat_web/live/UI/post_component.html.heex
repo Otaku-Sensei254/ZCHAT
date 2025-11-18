@@ -4,7 +4,7 @@
   phx-hook="PostComponent"
   data-post-id={@post.id}
 >
-  <%!-- HEADER --%>
+  <%!-- HEADER (User Info - Navigates to User Profile) --%>
   <div class="p-5 sm:p-6">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -27,6 +27,7 @@
       <% end %>
     </div>
 
+    <%!-- TAGS (Navigate to Tag Search) --%>
     <%= if length(@post.tags || []) > 0 do %>
       <div class="flex flex-wrap gap-2 mt-3">
         <%= for tag <- @post.tags do %>
@@ -40,9 +41,12 @@
       </div>
     <% end %>
 
-    <%!-- TITLE & CONTENT (Clickable to Detail) --%>
+    <%!-- 
+      ✨ CLICKABLE CONTENT AREA ✨
+      Clicking title or text goes to /posts/:id 
+    --%>
     <.link navigate={~p"/posts/#{@post.id}"} class="block group">
-      <div class="mt-5">
+      <div class="mt-5 cursor-pointer">
         <%= if @post.title do %>
           <h3 class="text-3xl font-extrabold text-gray-900 leading-snug mb-3 group-hover:text-blue-600 transition-colors">
             <%= @post.title %>
@@ -54,34 +58,92 @@
       </div>
     </.link>
 
-    <%!-- MEDIA --%>
-    <%= if @post.media_url do %>
-      <div class="my-6 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-        <%= cond do %>
-          <% @post.media_type == "image" -> %>
-            <.link navigate={~p"/posts/#{@post.id}"}>
-              <img src={@post.media_url} alt="Post media" class="w-full object-cover max-h-[500px]" />
-            </.link>
-          <% @post.media_type == "video" -> %>
-            <video
-              id={"post-video-#{@post.id}"}
-              phx-hook="VideoAutoplay"
-              muted
-              loop
-              playsinline
-              controls
-              src={@post.media_url}
-              class="w-full max-h-[500px] object-cover bg-black"
+    <%!-- MEDIA SLIDER --%>
+    <%= if @post.media_files && @post.media_files != [] do %>
+      <div class="my-6 relative group/slider">
+        <div class="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-black/5">
+          <div class="relative">
+            <%= for {media, index} <- Enum.with_index(@post.media_files) do %>
+              <div class={if index == @current_media_index, do: "block", else: "hidden"}>
+                <%= cond do %>
+                  
+                  <%!-- ✨ CLICKABLE IMAGE ✨ --%>
+                  <% media["type"] == "image" -> %>
+                    <.link navigate={~p"/posts/#{@post.id}"} class="block cursor-pointer">
+                      <img 
+                        src={media["url"]} 
+                        alt="Post media" 
+                        class="w-full object-cover max-h-[500px]" 
+                      />
+                    </.link>
+
+                  <%!-- VIDEO (Not clickable for nav, clickable for play) --%>
+                  <% media["type"] == "video" -> %>
+                    <%= if index == @current_media_index do %>
+                      <video
+                        id={"post-video-#{@post.id}-#{index}"}
+                        phx-hook="VideoAutoplay"
+                        muted
+                        loop
+                        playsinline
+                        controls
+                        src={media["url"]}
+                        class="w-full max-h-[500px] object-cover bg-black"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    <% end %>
+
+                  <% true -> %>
+                    <div class="p-12 text-center text-gray-500 bg-gray-50">
+                      <a href={media["url"]} target="_blank" class="text-blue-600 hover:underline">
+                        View attached file
+                      </a>
+                    </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          
+          <%!-- SLIDER CONTROLS (Prevent navigation click bubbling) --%>
+          <%= if length(@post.media_files) > 1 do %>
+            <button 
+              type="button"
+              phx-click="prev_media"
+              phx-target={@myself}
+              class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-all z-10 backdrop-blur-sm opacity-0 group-hover/slider:opacity-100"
             >
-              Your browser does not support the video tag.
-            </video>
-          <% true -> %>
-            <div class="p-4 bg-gray-50">
-              <a href={@post.media_url} class="text-blue-600 hover:underline" target="_blank">
-                View attached media
-              </a>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button 
+              type="button"
+              phx-click="next_media"
+              phx-target={@myself}
+              class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-all z-10 backdrop-blur-sm opacity-0 group-hover/slider:opacity-100"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
+              <%= for {_media, index} <- Enum.with_index(@post.media_files) do %>
+                <button 
+                  type="button"
+                  phx-click="go_to_media"
+                  phx-value-index={index}
+                  phx-target={@myself}
+                  class={"w-2 h-2 rounded-full transition-all duration-300 #{
+                    if index == @current_media_index, do: "bg-white scale-125", else: "bg-white/50 hover:bg-white/80"
+                  }"}
+                />
+              <% end %>
             </div>
-        <% end %>
+          <% end %>
+        </div>
       </div>
     <% end %>
   </div>
@@ -90,11 +152,9 @@
   <div class="px-5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
     <div class="flex space-x-3">
       
-      <%!-- LIKE BUTTON (Works Locally) --%>
       <button
         phx-click="toggle_like"
-        phx-throttle="1000"
-        phx-value-post-id={@post.id}
+        phx-throttle="500"
         phx-target={@myself}
         class={"flex items-center gap-2 rounded-full py-1.5 px-3 transition-all duration-150 #{if @current_like, do: "text-red-500 bg-red-50", else: "text-gray-500 hover:bg-gray-100"}"}
       >
@@ -106,7 +166,7 @@
         </span>
       </button>
 
-      <%!-- COMMENT BUTTON (Navigates to Single Page) --%>
+      <%!-- ✨ CLICKABLE COMMENT ICON ✨ --%>
       <.link
         navigate={~p"/posts/#{@post.id}"}
         class="flex items-center gap-2 rounded-full py-1.5 px-3 transition-colors text-gray-500 hover:bg-gray-100 hover:text-blue-600"
@@ -119,7 +179,6 @@
         </span>
       </.link>
 
-      <%!-- REPOST BUTTON (Placeholder) --%>
       <button class="flex items-center gap-2 rounded-full py-1.5 px-3 text-gray-500 hover:bg-gray-100 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />

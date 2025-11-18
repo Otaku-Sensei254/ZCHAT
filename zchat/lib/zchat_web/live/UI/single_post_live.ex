@@ -13,9 +13,11 @@ defmodule ZchatWeb.UI.SinglePostLive do
      socket
      |> assign(:replying_to, nil)
      |> assign(:comment_form, Posts.change_comment(%Comment{}))
-     |> stream(:comments, []) # Start with empty stream
+     |> stream(:comments, [])
      |> assign(:current_like, nil)
-     |> assign(:like_count, 0)}
+     |> assign(:like_count, 0)
+     # Initialize slider index
+     |> assign(:current_media_index, 0)}
   end
 
   @impl true
@@ -37,11 +39,37 @@ defmodule ZchatWeb.UI.SinglePostLive do
     {:noreply,
      socket
      |> assign(:post, post)
-     # Reset stream with fetched comments
+     # Reset slider when loading a new post
+     |> assign(:current_media_index, 0)
      |> stream(:comments, comments, reset: true)
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:current_like, current_like)}
   end
+
+  # --- CAROUSEL LOGIC ---
+
+  @impl true
+  def handle_event("next_media", _, socket) do
+    total_media = length(socket.assigns.post.media_files)
+    current = socket.assigns.current_media_index
+    new_index = rem(current + 1, total_media)
+    {:noreply, assign(socket, :current_media_index, new_index)}
+  end
+
+  @impl true
+  def handle_event("prev_media", _, socket) do
+    total_media = length(socket.assigns.post.media_files)
+    current = socket.assigns.current_media_index
+    new_index = if current - 1 < 0, do: total_media - 1, else: current - 1
+    {:noreply, assign(socket, :current_media_index, new_index)}
+  end
+
+  @impl true
+  def handle_event("go_to_media", %{"index" => index}, socket) do
+    {:noreply, assign(socket, :current_media_index, String.to_integer(index))}
+  end
+
+  # --- EXISTING HANDLERS ---
 
   @impl true
   def handle_event("validate", %{"comment" => params}, socket) do
@@ -59,7 +87,7 @@ defmodule ZchatWeb.UI.SinglePostLive do
       attrs = Map.merge(comment_params, %{
         "user_id" => socket.assigns.current_user.id,
         "post_id" => socket.assigns.post.id,
-        "parent_id" => socket.assigns.replying_to # Include parent_id if replying
+        "parent_id" => socket.assigns.replying_to
       })
 
       case Posts.create_comment(attrs) do
@@ -67,7 +95,7 @@ defmodule ZchatWeb.UI.SinglePostLive do
           {:noreply,
            socket
            |> assign(:comment_form, Posts.change_comment(%Comment{}))
-           |> assign(:replying_to, nil)} # Reset reply state
+           |> assign(:replying_to, nil)}
 
         {:error, changeset} ->
           {:noreply, assign(socket, :comment_form, to_form(changeset))}
@@ -82,30 +110,28 @@ defmodule ZchatWeb.UI.SinglePostLive do
     {:noreply, assign(socket, :replying_to, parent_id)}
   end
 
-  # NEW: Handle cancelling a reply
   @impl true
   def handle_event("cancel_reply", _, socket) do
     {:noreply, assign(socket, :replying_to, nil)}
   end
 
-  # NEW: Placeholder for liking comments to prevent crashes
   @impl true
   def handle_event("like_comment", %{"comment_id" => _id}, socket) do
-    # TODO: Implement comment liking logic here
+    # Placeholder
     {:noreply, socket}
   end
 
   @impl true
-  def handle_event("toggle_like", _params, socket) do
+  def handle_event("toggle_like", _, socket) do
     if socket.assigns.current_user do
       post_id = socket.assigns.post.id
       current_user = socket.assigns.current_user
 
       case Posts.toggle_like(current_user.id, "Post", post_id) do
         {:ok, %Like{} = like} ->
-          {:noreply, assign(socket, current_like: like)}
+          {:noreply, assign(socket, current_like: like, like_count: socket.assigns.like_count + 1)}
         {:ok, nil} ->
-          {:noreply, assign(socket, current_like: nil)}
+          {:noreply, assign(socket, current_like: nil, like_count: max(0, socket.assigns.like_count - 1))}
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Error liking post")}
       end

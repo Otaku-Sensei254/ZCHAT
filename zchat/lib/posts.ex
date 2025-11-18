@@ -69,6 +69,7 @@ defmodule Zchat.Posts do
       Post
       |> Repo.get!(id)
       |> Repo.preload([:user, :likes, comments: :user])
+      |> Post.ensure_media_files()
 
     # Increment view count
     from(p in Post, where: p.id == ^id)
@@ -88,13 +89,14 @@ defmodule Zchat.Posts do
     Post
     |> Repo.get!(id)
     |> Repo.preload(preload)
+    |> Post.ensure_media_files()
   end
 
   @doc """
   Gets all categories.
   """
   def categories do
-    ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
+    ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
   end
 
   @doc """
@@ -160,6 +162,8 @@ defmodule Zchat.Posts do
     |> Repo.preload(preload)
   end
 
+
+
   @doc """
   Lists comments with optional filtering.
   """
@@ -222,7 +226,7 @@ defmodule Zchat.Posts do
   end
 
   #helper function for comments form
-  
+
 
   # Likes
 
@@ -313,6 +317,49 @@ defmodule Zchat.Posts do
         # Like exists, remove it
         delete_like(like)
     end
+  end
+
+
+
+  #posts analystics for admin dashboard
+  @doc """
+  Returns a list of tuples: {category_name, count}
+  """
+  def count_posts_by_category do
+    from(p in Post,
+      where: not is_nil(p.category),
+      group_by: p.category,
+      select: {p.category, count(p.id)},
+      order_by: [desc: count(p.id)]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of tuples: {tag_name, count}
+  Unnests the tags array to count individual tag usage.
+  """
+  def count_top_tags(limit \\ 10) do
+    from(p in Post,
+      # This fragment is specific to Postgres arrays
+      cross_join: t in fragment("unnest(?)", p.tags),
+      group_by: t,
+      select: {t, count(t)},
+      order_by: [desc: count(t)],
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Get high-level counts for the top of the dashboard.
+  """
+  def get_system_stats do
+    %{
+      total_posts: Repo.aggregate(Post, :count),
+      total_comments: Repo.aggregate(Comment, :count),
+      total_users: Repo.aggregate(Zchat.Accounts.User, :count)
+    }
   end
 
   # Private functions

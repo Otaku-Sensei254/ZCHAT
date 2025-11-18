@@ -13,7 +13,7 @@ defmodule Zchat.Posts.Post do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @categories ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
+  @categories ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
 
   @type t :: %__MODULE__{
           id: integer() | nil,
@@ -32,28 +32,31 @@ defmodule Zchat.Posts.Post do
           likes: [any()],
           reposts: [any()],
           inserted_at: DateTime.t() | nil,
-          updated_at: DateTime.t() | nil
+          updated_at: DateTime.t() | nil,
+          media_files: [map()]
         }
 
   schema "posts" do
     field :title, :string
     field :content, :string
-    field :media_url, :string
-    field :media_type, :string
     field :tags, {:array, :string}, default: []
     field :view_count, :integer, default: 0
     field :category, :string
     field :reposts_count, :integer, default: 0
     field :likes_count, :integer, default: 0
     field :is_featured, :boolean, virtual: true, default: false
+    field :media_files, {:array, :map}, default: []  # JSON array of media files
+    # Keep old fields for backward compatibility
+    field :media_url, :string, virtual: true
+    field :media_type, :string, virtual: true
 
     belongs_to :user, Zchat.Accounts.User
     has_many :reposts, Zchat.Posts.Repost, on_delete: :delete_all
     has_many :comments, Zchat.Posts.Comment, on_delete: :delete_all
     has_many :likes, Zchat.Posts.Like,
-  foreign_key: :likeable_id,
-  on_replace: :delete,
-  where: [likeable_type: "Post"]
+      foreign_key: :likeable_id,
+      on_replace: :delete,
+      where: [likeable_type: "Post"]
 
     timestamps(type: :utc_datetime)
   end
@@ -84,8 +87,7 @@ defmodule Zchat.Posts.Post do
     |> cast(attrs, [
       :title,
       :content,
-      :media_url,
-      :media_type,
+      :media_files,
       :tags,
       :category,
       :user_id,
@@ -95,20 +97,18 @@ defmodule Zchat.Posts.Post do
     |> validate_required([:title, :content, :user_id])
     |> validate_length(:title, min: 3, max: 200)
     |> validate_length(:content, min: 1, max: 10000)
-    |> validate_inclusion(:media_type, ["image", "video", nil])
     |> validate_inclusion(:category, @categories, message: "is not a valid category")
     |> validate_tags()
+    |> validate_media_files()
     |> unique_constraint(:user_id, name: :posts_user_id_fkey)
   end
 
-  @doc """
-  Validates the tags field.
-
-  - Must be a list
-  - Each tag must be a string
-  - Each tag must be 20 characters or less
-  - Maximum of 5 tags allowed
-  """
+  # Validates the tags field.
+  #
+  # - Must be a list
+  # - Each tag must be a string
+  # - Each tag must be 20 characters or less
+  # - Maximum of 5 tags allowed
   @spec validate_tags(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_tags(changeset) do
     changeset
@@ -135,6 +135,67 @@ defmodule Zchat.Posts.Post do
 
       _ ->
         add_error(changeset, :tags, "must be a list of strings")
+    end
+  end
+
+  # Validates the media_files field.
+  #
+  # - Must be a list
+  # - Each media file must be a map with url and type
+  # - Maximum of 20 media files allowed
+  @spec validate_media_files(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_media_files(changeset) do
+    changeset
+    |> get_field(:media_files, [])
+    |> case do
+      nil ->
+        put_change(changeset, :media_files, [])
+
+      media_files when is_list(media_files) ->
+        cond do
+          length(media_files) > 20 ->
+            add_error(changeset, :media_files, "cannot have more than 20 media files")
+
+          Enum.all?(media_files, fn media ->
+            is_map(media) and
+            is_binary(Map.get(media, "url")) and
+            is_binary(Map.get(media, "type")) and
+            Map.get(media, "type") in ["image", "video"]
+          end) ->
+            changeset
+
+          true ->
+            add_error(
+              changeset,
+              :media_files,
+              "each media file must have a url and type (image or video)"
+            )
+        end
+
+      _ ->
+        add_error(changeset, :media_files, "must be a list of media objects")
+    end
+  end
+
+  @doc """
+  Ensures backward compatibility by converting old media fields to media_files format.
+  This is called after loading a post from the database.
+  """
+  @spec ensure_media_files(t()) :: t()
+  def ensure_media_files(%__MODULE__{} = post) do
+    # If media_files is already populated, use it
+    if post.media_files && post.media_files != [] do
+      %{post | media_url: nil, media_type: nil}
+    else
+      # Convert old format to new format if present
+      case {post.media_url, post.media_type} do
+        {nil, _} ->
+          %{post | media_files: []}
+        {url, type} when is_binary(url) and is_binary(type) ->
+          %{post | media_files: [%{"url" => url, "type" => type}], media_url: nil, media_type: nil}
+        _ ->
+          %{post | media_files: []}
+      end
     end
   end
 

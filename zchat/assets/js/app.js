@@ -1,7 +1,3 @@
-
-
-
-
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
 // import "./user_socket.js"
@@ -27,9 +23,11 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}})
+
+// Define Hooks object
 let Hooks = {};
 
+// Hook for Autoplaying Videos when they scroll into view
 Hooks.VideoAutoplay = {
   mounted() {
     this.observer = new IntersectionObserver(
@@ -38,7 +36,7 @@ Hooks.VideoAutoplay = {
         if (entry.isIntersecting) {
           // Video is on screen
           this.el.play().catch((error) => {
-            // Autoplay was prevented.
+            // Autoplay was prevented (browser restrictions)
             console.log("Autoplay prevented: ", error);
           });
         } else {
@@ -57,10 +55,10 @@ Hooks.VideoAutoplay = {
   },
 };
 
-// Make sure your LiveSocket uses the hooks:
+// Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
-  hooks: Hooks, // <-- MAKE SURE THIS LINE IS HERE
+  hooks: Hooks, 
 });
 
 // Show progress bar on live navigation and form submits
@@ -76,4 +74,3 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
-

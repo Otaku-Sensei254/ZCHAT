@@ -48,6 +48,21 @@ defmodule ZchatWeb.Router do
       end
     end
 
+# ADMIN ZONE
+  scope "/admin", ZchatWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    # We chain two hooks:
+    # 1. mount_current_user (gets the user from session)
+    # 2. ensure_admin (checks if that user is an admin)
+    live_session :admin, on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, {ZchatWeb.AdminAuthLive, :ensure_admin}] do
+
+      # We will build this page next!
+      live "/admindashboard", Admin.DashboardLive
+
+    end
+  end
+
     ## Authentication routes
 
     scope "/", ZchatWeb do

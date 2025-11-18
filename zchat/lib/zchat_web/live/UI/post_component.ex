@@ -5,8 +5,6 @@ defmodule ZchatWeb.UI.PostComponent do
   alias Zchat.Repo
   import Ecto.Query
 
-  @default_avatar "/images/default-avatar.png"
-
   @impl true
   def mount(socket) do
     {:ok, socket}
@@ -14,7 +12,7 @@ defmodule ZchatWeb.UI.PostComponent do
 
   @impl true
   def update(assigns, socket) do
-    # Determine if the current user liked this post
+    # 1. Check if the current user has liked this post
     current_like =
       if assigns[:current_user] do
         Repo.one(
@@ -27,10 +25,8 @@ defmodule ZchatWeb.UI.PostComponent do
         nil
       end
 
-    # Get counts (Handle nil cases safely)
+    # 2. Get Counts
     like_count = assigns.post.likes_count || 0
-
-    # We fetch comment count manually or use preloaded assoc if available
     comment_count =
       Repo.aggregate(
         from(c in Comment, where: c.post_id == ^assigns.post.id),
@@ -42,10 +38,41 @@ defmodule ZchatWeb.UI.PostComponent do
      |> assign(assigns)
      |> assign(:current_like, current_like)
      |> assign(:like_count, like_count)
-     |> assign(:comment_count, comment_count)}
+     |> assign(:comment_count, comment_count)
+     # 3. Initialize Media Slider Index (Start at the first image: 0)
+     |> assign(:current_media_index, 0)}
   end
 
-  # --- HANDLE EVENTS ---
+  # --- MEDIA SLIDER EVENTS ---
+
+  @impl true
+  def handle_event("next_media", _, socket) do
+    total_media = length(socket.assigns.post.media_files)
+    current = socket.assigns.current_media_index
+
+    # Calculate next index, looping back to 0 if at the end
+    new_index = rem(current + 1, total_media)
+
+    {:noreply, assign(socket, :current_media_index, new_index)}
+  end
+
+  @impl true
+  def handle_event("prev_media", _, socket) do
+    total_media = length(socket.assigns.post.media_files)
+    current = socket.assigns.current_media_index
+
+    # Calculate prev index, looping to the last item if at 0
+    new_index = if current - 1 < 0, do: total_media - 1, else: current - 1
+
+    {:noreply, assign(socket, :current_media_index, new_index)}
+  end
+
+  @impl true
+  def handle_event("go_to_media", %{"index" => index}, socket) do
+    {:noreply, assign(socket, :current_media_index, String.to_integer(index))}
+  end
+
+  # --- LIKE EVENTS ---
 
   @impl true
   def handle_event("toggle_like", _, socket) do
@@ -53,26 +80,23 @@ defmodule ZchatWeb.UI.PostComponent do
     post = socket.assigns.post
 
     if user do
-      # Optimistic UI update: Update the UI immediately before the DB result comes back
-      # (Optional, but makes it feel faster. For now, we wait for the result to be safe).
-
       case Posts.toggle_like(user.id, "Post", post.id) do
         {:ok, %Like{} = like} ->
-          # User Liked
+          # Successfully Liked
           {:noreply,
            socket
            |> assign(:current_like, like)
            |> assign(:like_count, socket.assigns.like_count + 1)}
 
         {:ok, nil} ->
-          # User Unliked
+          # Successfully Unliked
           {:noreply,
            socket
            |> assign(:current_like, nil)
            |> assign(:like_count, max(0, socket.assigns.like_count - 1))}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Something went wrong")}
+          {:noreply, put_flash(socket, :error, "Error toggling like")}
       end
     else
       {:noreply, put_flash(socket, :error, "You must be logged in to like posts")}
@@ -80,12 +104,11 @@ defmodule ZchatWeb.UI.PostComponent do
   end
 
   # --- REAL-TIME UPDATES ---
+  # These handle updates broadcasted by other users
 
-  # If someone else likes this post, update the number
   @impl true
   def handle_info({:post_liked, like}, socket) do
-    # Only update if it wasn't the current user (prevent double count)
-    # and the like belongs to this post
+    # If someone else liked this post, increment count
     if like.likeable_id == socket.assigns.post.id and like.user_id != socket.assigns.current_user.id do
       {:noreply, assign(socket, :like_count, socket.assigns.like_count + 1)}
     else
@@ -93,9 +116,9 @@ defmodule ZchatWeb.UI.PostComponent do
     end
   end
 
-  # If someone else unlikes this post
   @impl true
   def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
+    # If someone else unliked this post, decrement count
     if post_id == socket.assigns.post.id and user_id != socket.assigns.current_user.id do
       {:noreply, assign(socket, :like_count, max(0, socket.assigns.like_count - 1))}
     else
@@ -103,9 +126,9 @@ defmodule ZchatWeb.UI.PostComponent do
     end
   end
 
-  # If someone comments, update the number (even though we don't show the comment itself)
   @impl true
   def handle_info({:new_comment, comment}, socket) do
+    # If someone commented, increment count
     if comment.post_id == socket.assigns.post.id do
       {:noreply, assign(socket, :comment_count, socket.assigns.comment_count + 1)}
     else
@@ -113,6 +136,6 @@ defmodule ZchatWeb.UI.PostComponent do
     end
   end
 
-  # Catch-all
+  # Ignore other messages
   def handle_info(_, socket), do: {:noreply, socket}
 end

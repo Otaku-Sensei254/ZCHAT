@@ -17,7 +17,7 @@ defmodule ZchatWeb.UI.FeedLive do
       |> assign(page: 1, per_page: 10, loading: false)
       |> load_initial_data()
 
-    {:ok, socket, temporary_assigns: [posts: []]}
+    {:ok, socket}
   end
 
   defp load_initial_data(socket) do
@@ -40,19 +40,21 @@ defmodule ZchatWeb.UI.FeedLive do
     %{page: page, per_page: per_page} = socket.assigns
     category = socket.assigns[:category]
 
-    posts = Posts.list_posts(
-      page: page,
-      per_page: per_page,
-      category: category,
-      preload: [:user, :likes, comments: :user]
-    )
+    posts =
+      Posts.list_posts(
+        page: page,
+        per_page: per_page,
+        category: category,
+        preload: [:user, :likes, comments: :user]
+      )
+    |> Enum.map(&Post.ensure_media_files/1)
 
     socket =
       if page == 1 do
-        stream(socket, :posts, posts, reset: true)
+        stream(socket, :posts, posts, reset: true, dom_id: &"post-#{&1.id}")
       else
         Enum.reduce(posts, socket, fn post, socket ->
-          stream_insert(socket, :posts, post, at: -1)
+          stream_insert(socket, :posts, post, at: -1, dom_id: &"post-#{&1.id}")
         end)
       end
 
@@ -106,19 +108,23 @@ defmodule ZchatWeb.UI.FeedLive do
   # Handle new posts from PubSub
   def handle_info({:new_post, post}, socket) do
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
-    {:noreply, stream_insert(socket, :posts, post, at: 0)}
+    {:noreply, stream_insert(socket, :posts, post, at: 0, dom_id: &"post-#{&1.id}")}
   end
 
   # Handle like updates for posts in the feed
   def handle_info({:post_liked, like}, socket) do
     # Update the post in the stream if it exists
     if like.likeable_id do
-      case Enum.find(socket.assigns.posts.entries, fn p -> p.id == like.likeable_id end) do
+      # Try to find the post in the stream
+      case Zchat.Posts.get_post(like.likeable_id) do
         nil ->
           {:noreply, socket}
         post ->
+          # Preload necessary associations
+          post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
+          # Update the likes count
           updated_post = %{post | likes_count: post.likes_count + 1}
-          {:noreply, stream_insert(socket, :posts, updated_post, at: -1)}
+          {:noreply, stream_insert(socket, :posts, updated_post, at: -1, dom_id: &"post-#{&1.id}")}
       end
     else
       {:noreply, socket}
@@ -127,10 +133,13 @@ defmodule ZchatWeb.UI.FeedLive do
 
   def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
     # Update the post in the stream if it exists
-    case Enum.find(socket.assigns.posts.entries, fn p -> p.id == post_id end) do
+    case Zchat.Posts.get_post(post_id) do
       nil ->
         {:noreply, socket}
       post ->
+        # Preload necessary associations
+        post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
+        # Update the likes count
         updated_post = %{post | likes_count: post.likes_count - 1}
         {:noreply, stream_insert(socket, :posts, updated_post, at: -1)}
     end

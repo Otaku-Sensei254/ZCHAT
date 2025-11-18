@@ -18,13 +18,13 @@ defmodule ZchatWeb.CreatePost do
      |> assign(:changeset, changeset)
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov),
-       max_entries: 1,
+       max_entries: 20,
        max_file_size: 10_000_000,
        auto_upload: true
      )}
   end
 
-  # ✅ Validate form inputs
+  # Validate form inputs
   @impl true
   def handle_event("validate", %{"post" => post_params}, socket) do
     changeset =
@@ -65,17 +65,30 @@ defmodule ZchatWeb.CreatePost do
     {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
   end
 
-  # ✅ Save the post (handles upload)
+  # Save the post (handles upload)
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
     current_user = socket.assigns.current_user
 
-    # Process uploaded file (if any)
-    uploaded_file =
-      consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-        # Save file permanently to /priv/static/uploads/
-        dest = Path.join(["priv/static/uploads", Path.basename(path)])
-        File.cp!(path, dest)
+    # Debug: Check if there are any entries
+    IO.inspect(socket.assigns.uploads.media.entries, label: "Upload entries")
+
+    # Process uploaded files (if any)
+    IO.inspect("About to consume uploaded entries", label: "Debug")
+    uploaded_files =
+      try do
+        consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
+          IO.inspect(path, label: "Temp file path")
+          IO.inspect(entry.client_name, label: "Original filename")
+
+          # Save file permanently to /priv/static/uploads/
+          dest = Path.join(["priv/static/uploads", Path.basename(path)])
+          IO.inspect(dest, label: "Destination path")
+
+          case File.cp(path, dest) do
+            :ok -> IO.inspect("File copied successfully")
+            {:error, reason} -> IO.inspect(reason, label: "File copy error")
+          end
 
         # Determine type
         type =
@@ -85,29 +98,42 @@ defmodule ZchatWeb.CreatePost do
             true -> nil
           end
 
-        {:ok, %{url: "/uploads/#{Path.basename(dest)}", type: type}}
+        result = %{"url" => "/uploads/#{Path.basename(dest)}", "type" => type}
+        IO.inspect(result, label: "File result")
+        {:ok, result}
       end)
-      |> List.first()
+      rescue
+        e ->
+          IO.inspect(e, label: "Error consuming uploads")
+          []
+      end
+
+    IO.inspect(uploaded_files, label: "Consumed files")
 
     # Add upload details (if present)
     post_params =
-      if uploaded_file do
-        post_params
-        |> Map.put("media_url", uploaded_file.url)
-        |> Map.put("media_type", uploaded_file.type)
+      if uploaded_files != [] do
+        IO.inspect("Adding media_files to post_params", label: "Upload status")
+        Map.put(post_params, "media_files", uploaded_files)
       else
+        IO.inspect("No uploaded files found", label: "Upload status")
         post_params
       end
 
+    IO.inspect(post_params, label: "Final post_params")
+
     # Save the post
+    IO.inspect("About to create post", label: "Debug")
     case Posts.create_post(current_user, post_params) do
       {:ok, post} ->
+        IO.inspect(post, label: "Post created successfully")
         {:noreply,
          socket
          |> put_flash(:info, "Post created successfully!")
          |> push_navigate(to: ~p"/feed")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        IO.inspect(changeset.errors, label: "Post creation errors")
         {:noreply, assign(socket, form: to_form(changeset, as: :post))}
     end
   end

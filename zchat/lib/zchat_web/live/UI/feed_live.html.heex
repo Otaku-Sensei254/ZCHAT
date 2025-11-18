@@ -2,7 +2,7 @@
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <!-- Sidebar -->
-    <div class="md:col-span-fixed ">
+    <div class="md:col-span-relative ">
       <div class="bg-white rounded-lg shadow p-4 mb-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Categories</h3>
         <ul class="space-y-2">
@@ -10,7 +10,7 @@
             <.link patch={~p"/feed"} class="block px-3 py-2 rounded hover:bg-gray-100">
               All Categories
             </.link>
-            jhsdjhwiehd
+            
           </li>
           <%= for category <- ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
             <li>
@@ -63,7 +63,7 @@
         <%= for {id, post} <- @streams.posts do %>
           <.live_component
             module={ZchatWeb.UI.PostComponent}
-            id={id}
+            id={"post-#{post.id}"}
             post={post}
             current_user={@current_user}
           />

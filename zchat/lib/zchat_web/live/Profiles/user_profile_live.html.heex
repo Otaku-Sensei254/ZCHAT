@@ -1,0 +1,104 @@
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <!-- Profile Header -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <!-- Avatar -->
+        <div class="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
+          <span class="text-2xl font-bold text-gray-600">
+            <%= String.first(@user.username) %>
+          </span>
+        </div>
+        
+        <!-- User Info -->
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">@<%= @user.username %></h1>
+          <p class="text-gray-600 mt-1">Member since <%= Timex.format!(@user.inserted_at, "%B %Y", :strftime) %></p>
+        </div>
+      </div>
+      
+      <!-- Follow/Unfollow Button -->
+      <%= if @current_user && @current_user.id != @user.id do %>
+        <div class="flex space-x-2">
+          <%= if @is_following do %>
+            <button
+              phx-click="unfollow"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Following
+            </button>
+          <% else %>
+            <button
+              phx-click="follow"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Follow
+            </button>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Stats -->
+    <div class="flex space-x-6 mt-6">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-gray-900"><%= length(@posts) %></div>
+        <div class="text-sm text-gray-600">Posts</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-gray-900"><%= @follow_stats.followers_count %></div>
+        <div class="text-sm text-gray-600">Followers</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-gray-900"><%= @follow_stats.following_count %></div>
+        <div class="text-sm text-gray-600">Following</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Posts Section -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Posts</h2>
+    
+    <%= if Enum.empty?(@posts) do %>
+      <div class="text-center py-8 text-gray-500">
+        <p>No posts yet</p>
+      </div>
+    <% else %>
+      <div class="space-y-4">
+        <%= for post <- @posts do %>
+          <div class="border-b border-gray-200 pb-4 last:border-b-0">
+            <div class="flex items-center space-x-2 mb-2">
+              <span class="text-sm text-gray-600">
+                <%= Timex.from_now(post.inserted_at) %>
+              </span>
+              <span class="text-sm text-gray-400">·</span>
+              <span class="text-sm text-gray-600">
+                <%= post.likes_count || 0 %> likes
+              </span>
+              <span class="text-sm text-gray-400">·</span>
+              <span class="text-sm text-gray-600">
+                <%= post.view_count || 0 %> views
+              </span>
+            </div>
+            
+            <p class="text-gray-900 mb-2"><%= post.content %></p>
+            
+            <%= if post.category do %>
+              <span class="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                <%= post.category %>
+              </span>
+            <% end %>
+            
+            <.link 
+              navigate={~p"/posts/#{post.id}"}
+              class="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              View post →
+            </.link>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -4,6 +4,7 @@ defmodule Zchat.Posts do
   """
   import Ecto.Query, warn: false
   alias Zchat.Repo
+  alias Zchat.Notifications
   alias Zchat.Posts.{Post, Like, Comment}
   # Removed unused alias Zchat.Accounts.User
 
@@ -120,6 +121,8 @@ defmodule Zchat.Posts do
     |> case do
       {:ok, post} ->
         post = Repo.preload(post, :user)
+        # Notify followers of new post
+        Notifications.notify_followers_of_new_post(post)
         Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:new_post, post})
         Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_created, post})
         {:ok, post}
@@ -192,6 +195,7 @@ def delete_post(%Post{} = post) do
     |> preload(^preload)
     |> order_by(desc: :inserted_at)
     |> Repo.all() # FIX: Replaced Repo.paginate, which was causing a crash.
+
   end
 
   @doc """
@@ -209,6 +213,17 @@ def delete_post(%Post{} = post) do
         # This broadcast is what triggers handle_info in SinglePostLive
         Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
         Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:comment_created, comment})
+
+        unless comment.post_id |> get_post!() |> Map.get(:user_id) == comment.user_id do
+          post = get_post!(comment.post_id)
+          Notifications.create_notification(%{
+            type: "comment",
+            user_id: post.user_id,
+            actor_id: comment.user_id,
+            post_id: post.id
+          })
+        end
+
         {:ok, comment}
       error -> error
     end
@@ -255,6 +270,15 @@ def delete_post(%Post{} = post) do
 
         # Broadcast the like event
         like = Repo.preload(like, :user)
+
+        unless like.likeable_type == "Post" and Repo.get(Post, like.likeable_id) |> Map.get(:user_id) == like.user_id do
+          Notifications.create_notification(%{
+            type: "like",
+            user_id: Repo.get(Post, like.likeable_id) |> Map.get(:user_id),
+            actor_id: like.user_id,
+            post_id: like.likeable_id
+          })
+        end
 
         cond do
           like.likeable_type == "Post" ->
@@ -393,4 +417,11 @@ def delete_post(%Post{} = post) do
   end
 
   defp update_like_count(_), do: :ok # Catches any other case
+
+  # View tracking functions
+  def track_view(post_id, user_id) do
+    %Zchat.Posts.View{}
+    |> Zchat.Posts.View.changeset(%{post_id: post_id, user_id: user_id})
+    |> Repo.insert(on_conflict: :nothing)
+  end
 end

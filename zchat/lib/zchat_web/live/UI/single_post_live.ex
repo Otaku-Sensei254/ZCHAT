@@ -27,6 +27,10 @@ defmodule ZchatWeb.UI.SinglePostLive do
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Zchat.PubSub, "post:#{post.id}")
+      # Track view if user is logged in
+      if socket.assigns.current_user && socket.assigns.current_user.id != post.user_id do
+        Posts.track_view(post.id, socket.assigns.current_user.id)
+      end
     end
 
     current_like =

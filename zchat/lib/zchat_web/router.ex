@@ -74,7 +74,6 @@ defmodule ZchatWeb.Router do
         live "/users/log_in", UserLoginLive, :new
         live "/users/reset_password", UserForgotPasswordLive, :new
         live "/users/reset_password/:token", UserResetPasswordLive, :edit
-
       end
 
       post "/users/log_in", UserSessionController, :create
@@ -90,6 +89,8 @@ defmodule ZchatWeb.Router do
         live "/users/settings", UserSettingsLive, :edit
         live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
         live "/posts/:id", UI.SinglePostLive, :show
+        live "/users/:username", Profiles.UserProfileLive, :show
+        live "/notifications", UI.NotificationsLive
       end
   end
 

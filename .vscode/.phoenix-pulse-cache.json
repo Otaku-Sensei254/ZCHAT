@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "timestamp": 1763442039985,
+  "timestamp": 1763532045226,
   "workspaceRoot": "/home/dtech/VCF/Blog",
   "registries": {
     "components": {
@@ -256,23 +256,226 @@
           ]
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-          []
-        ],
-        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
           [
             {
-              "name": "back",
+              "name": "modal",
               "moduleName": "ZchatWeb.CoreComponents",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 566,
+              "line": 48,
               "attributes": [
                 {
-                  "name": "navigate",
-                  "type": "any",
+                  "name": "id",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": true
+                },
+                {
+                  "name": "show",
+                  "type": "boolean",
+                  "rawType": ":boolean",
+                  "required": false,
+                  "default": "false"
+                },
+                {
+                  "name": "on_cancel",
+                  "type": "JS",
+                  "rawType": "JS",
+                  "required": false,
+                  "default": "%JS{}"
+                },
+                {
+                  "name": "on_confirm",
+                  "type": "JS",
+                  "rawType": "JS",
+                  "required": false,
+                  "default": "%JS{}"
+                }
+              ],
+              "slots": [
+                {
+                  "name": "inner_block",
                   "required": true,
-                  "rawType": "any"
+                  "attributes": []
+                },
+                {
+                  "name": "title",
+                  "required": false,
+                  "attributes": []
+                },
+                {
+                  "name": "subtitle",
+                  "required": false,
+                  "attributes": []
+                },
+                {
+                  "name": "confirm",
+                  "required": false,
+                  "attributes": []
+                },
+                {
+                  "name": "cancel",
+                  "required": false,
+                  "attributes": []
+                }
+              ]
+            },
+            {
+              "name": "flash",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 144,
+              "attributes": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": false,
+                  "default": "\"flash\"",
+                  "doc": "the optional id of flash container"
+                },
+                {
+                  "name": "flash",
+                  "type": "map",
+                  "rawType": ":map",
+                  "required": false,
+                  "default": "%{}",
+                  "doc": "the map of flash messages to display"
+                },
+                {
+                  "name": "title",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": false,
+                  "default": "nil"
+                },
+                {
+                  "name": "kind",
+                  "type": "atom",
+                  "rawType": ":atom",
+                  "required": false,
+                  "values": [
+                    "info",
+                    "error"
+                  ],
+                  "doc": "used for styling and flash lookup"
+                },
+                {
+                  "name": "autoshow",
+                  "type": "boolean",
+                  "rawType": ":boolean",
+                  "required": false,
+                  "default": "true",
+                  "doc": "whether to auto show the flash on mount"
+                },
+                {
+                  "name": "close",
+                  "type": "boolean",
+                  "rawType": ":boolean",
+                  "required": false,
+                  "default": "true",
+                  "doc": "whether the flash can be closed"
+                },
+                {
+                  "name": "rest",
+                  "type": "global",
+                  "rawType": ":global",
+                  "required": false,
+                  "doc": "the arbitrary HTML attributes to add to the flash container"
+                }
+              ],
+              "slots": [
+                {
+                  "name": "inner_block",
+                  "required": false,
+                  "attributes": [],
+                  "doc": "the optional inner block that renders the flash message"
+                }
+              ]
+            },
+            {
+              "name": "flash_group",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 186,
+              "attributes": [
+                {
+                  "name": "flash",
+                  "type": "map",
+                  "rawType": ":map",
+                  "required": true,
+                  "doc": "the map of flash messages"
+                }
+              ],
+              "slots": []
+            },
+            {
+              "name": "simple_form",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 227,
+              "attributes": [
+                {
+                  "name": "for",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": true,
+                  "doc": "the datastructure for the form"
+                },
+                {
+                  "name": "as",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": false,
+                  "default": "nil",
+                  "doc": "the server side parameter to collect all input under"
+                },
+                {
+                  "name": "rest",
+                  "type": "global",
+                  "rawType": ":global",
+                  "required": false
+                }
+              ],
+              "slots": [
+                {
+                  "name": "inner_block",
+                  "required": true,
+                  "attributes": []
+                },
+                {
+                  "name": "actions",
+                  "required": false,
+                  "attributes": [],
+                  "doc": "the slot for form actions, such as a submit button"
+                }
+              ]
+            },
+            {
+              "name": "button",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 254,
+              "attributes": [
+                {
+                  "name": "type",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": false,
+                  "default": "nil"
+                },
+                {
+                  "name": "class",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": false,
+                  "default": "nil"
+                },
+                {
+                  "name": "rest",
+                  "type": "global",
+                  "rawType": ":global",
+                  "required": false
                 }
               ],
               "slots": [
@@ -284,121 +487,78 @@
               ]
             },
             {
-              "name": "list",
+              "name": "input",
               "moduleName": "ZchatWeb.CoreComponents",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 543,
-              "attributes": [],
-              "slots": [
-                {
-                  "name": "item",
-                  "required": true,
-                  "attributes": [
-                    {
-                      "default": null,
-                      "line": 540,
-                      "name": "title",
-                      "type": "string",
-                      "values": null,
-                      "doc": null,
-                      "required": true
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "name": "table",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 478,
+              "line": 313,
               "attributes": [
                 {
-                  "name": "row_item",
-                  "type": "any",
-                  "required": false,
-                  "default": "{:&, [line: 469, column: 14], [{:/, [line: 469, column: 32], [{{:., [line: 469, column: 23], [{:__aliases__, [last: [line: 469, column: 15], line: 469, column: 15], [:Function]}, :identity]}, [no_parens: true, line: 469, column: 24], []}, 1]}]}",
-                  "doc": "the function for mapping each row before calling the :col and :action slots",
-                  "rawType": "any"
-                },
-                {
-                  "name": "row_click",
-                  "type": "any",
-                  "required": false,
-                  "default": "nil",
-                  "doc": "the function for handling phx-click on each row",
-                  "rawType": "any"
-                },
-                {
-                  "name": "row_id",
-                  "type": "any",
-                  "required": false,
-                  "default": "nil",
-                  "doc": "the function for generating the row id",
-                  "rawType": "any"
-                },
-                {
-                  "name": "rows",
+                  "name": "errors",
                   "type": "list",
-                  "required": true,
-                  "rawType": "list"
+                  "rawType": ":list",
+                  "required": false,
+                  "default": "[]"
                 },
                 {
-                  "name": "id",
+                  "name": "checked",
+                  "type": "boolean",
+                  "rawType": ":boolean",
+                  "required": false,
+                  "doc": "the checked flag for checkbox inputs"
+                },
+                {
+                  "name": "prompt",
                   "type": "string",
-                  "required": true,
-                  "rawType": "string"
+                  "rawType": ":string",
+                  "required": false,
+                  "default": "nil",
+                  "doc": "the prompt for select inputs"
+                },
+                {
+                  "name": "options",
+                  "type": "list",
+                  "rawType": ":list",
+                  "required": false,
+                  "doc": "the options to pass to Phoenix.HTML.Form.options_for_select/2"
+                },
+                {
+                  "name": "multiple",
+                  "type": "boolean",
+                  "rawType": ":boolean",
+                  "required": false,
+                  "default": "false",
+                  "doc": "the multiple flag for select inputs"
+                },
+                {
+                  "name": "rest",
+                  "type": "global",
+                  "rawType": ":global",
+                  "required": false
                 }
               ],
               "slots": [
                 {
-                  "name": "action",
+                  "name": "inner_block",
                   "required": false,
-                  "doc": "the slot for showing user actions in the last table column",
                   "attributes": []
-                },
-                {
-                  "name": "col",
-                  "required": true,
-                  "attributes": [
-                    {
-                      "default": null,
-                      "line": 473,
-                      "name": "label",
-                      "type": "string",
-                      "values": null,
-                      "doc": null,
-                      "required": false
-                    }
-                  ]
                 }
               ]
             },
             {
-              "name": "header",
+              "name": "label",
               "moduleName": "ZchatWeb.CoreComponents",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 437,
+              "line": 406,
               "attributes": [
                 {
-                  "name": "class",
+                  "name": "for",
                   "type": "string",
+                  "rawType": ":string",
                   "required": false,
-                  "default": "nil",
-                  "rawType": "string"
+                  "default": "nil"
                 }
               ],
               "slots": [
-                {
-                  "name": "actions",
-                  "required": false,
-                  "attributes": []
-                },
-                {
-                  "name": "subtitle",
-                  "required": false,
-                  "attributes": []
-                },
                 {
                   "name": "inner_block",
                   "required": true,
@@ -421,335 +581,23 @@
               ]
             },
             {
-              "name": "label",
+              "name": "header",
               "moduleName": "ZchatWeb.CoreComponents",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 406,
+              "line": 437,
               "attributes": [
-                {
-                  "name": "for",
-                  "type": "string",
-                  "required": false,
-                  "default": "nil",
-                  "rawType": "string"
-                }
-              ],
-              "slots": [
-                {
-                  "name": "inner_block",
-                  "required": true,
-                  "attributes": []
-                }
-              ]
-            },
-            {
-              "name": "input",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 304,
-              "attributes": [
-                {
-                  "name": "rest",
-                  "type": "global",
-                  "required": false,
-                  "rawType": "global"
-                },
-                {
-                  "name": "multiple",
-                  "type": "boolean",
-                  "required": false,
-                  "default": "false",
-                  "doc": "the multiple flag for select inputs",
-                  "rawType": "boolean"
-                },
-                {
-                  "name": "options",
-                  "type": "list",
-                  "required": false,
-                  "doc": "the options to pass to Phoenix.HTML.Form.options_for_select/2",
-                  "rawType": "list"
-                },
-                {
-                  "name": "prompt",
-                  "type": "string",
-                  "required": false,
-                  "default": "nil",
-                  "doc": "the prompt for select inputs",
-                  "rawType": "string"
-                },
-                {
-                  "name": "checked",
-                  "type": "boolean",
-                  "required": false,
-                  "doc": "the checked flag for checkbox inputs",
-                  "rawType": "boolean"
-                },
-                {
-                  "name": "errors",
-                  "type": "list",
-                  "required": false,
-                  "default": "[]",
-                  "rawType": "list"
-                },
-                {
-                  "name": "field",
-                  "type": "{:__aliases__, [last: [line: 292, column: 29], line: 292, column: 16], [:Phoenix, :HTML, :FormField]}",
-                  "required": false,
-                  "doc": "a form field struct retrieved from the form, for example: @form[:email]",
-                  "rawType": "{:__aliases__, [last: [line: 292, column: 29], line: 292, column: 16], [:Phoenix, :HTML, :FormField]}"
-                },
-                {
-                  "name": "type",
-                  "type": "string",
-                  "required": false,
-                  "default": "\"text\"",
-                  "rawType": "string"
-                },
-                {
-                  "name": "value",
-                  "type": "any",
-                  "required": false,
-                  "rawType": "any"
-                },
-                {
-                  "name": "label",
-                  "type": "string",
-                  "required": false,
-                  "default": "nil",
-                  "rawType": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "any",
-                  "required": false,
-                  "rawType": "any"
-                },
-                {
-                  "name": "id",
-                  "type": "any",
-                  "required": false,
-                  "default": "nil",
-                  "rawType": "any"
-                }
-              ],
-              "slots": [
-                {
-                  "name": "inner_block",
-                  "required": false,
-                  "attributes": []
-                }
-              ]
-            },
-            {
-              "name": "button",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 254,
-              "attributes": [
-                {
-                  "name": "rest",
-                  "type": "global",
-                  "required": false,
-                  "rawType": "global"
-                },
                 {
                   "name": "class",
                   "type": "string",
+                  "rawType": ":string",
                   "required": false,
-                  "default": "nil",
-                  "rawType": "string"
-                },
-                {
-                  "name": "type",
-                  "type": "string",
-                  "required": false,
-                  "default": "nil",
-                  "rawType": "string"
+                  "default": "nil"
                 }
               ],
               "slots": [
                 {
                   "name": "inner_block",
                   "required": true,
-                  "attributes": []
-                }
-              ]
-            },
-            {
-              "name": "simple_form",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 227,
-              "attributes": [
-                {
-                  "name": "rest",
-                  "type": "global",
-                  "required": false,
-                  "doc": "the arbitrary HTML attributes to apply to the form tag",
-                  "rawType": "global"
-                },
-                {
-                  "name": "as",
-                  "type": "any",
-                  "required": false,
-                  "default": "nil",
-                  "doc": "the server side parameter to collect all input under",
-                  "rawType": "any"
-                },
-                {
-                  "name": "for",
-                  "type": "any",
-                  "required": true,
-                  "doc": "the datastructure for the form",
-                  "rawType": "any"
-                }
-              ],
-              "slots": [
-                {
-                  "name": "actions",
-                  "required": false,
-                  "doc": "the slot for form actions, such as a submit button",
-                  "attributes": []
-                },
-                {
-                  "name": "inner_block",
-                  "required": true,
-                  "attributes": []
-                }
-              ]
-            },
-            {
-              "name": "flash_group",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 186,
-              "attributes": [
-                {
-                  "name": "flash",
-                  "type": "map",
-                  "required": true,
-                  "doc": "the map of flash messages",
-                  "rawType": "map"
-                }
-              ],
-              "slots": []
-            },
-            {
-              "name": "flash",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 144,
-              "attributes": [
-                {
-                  "name": "rest",
-                  "type": "global",
-                  "required": false,
-                  "doc": "the arbitrary HTML attributes to add to the flash container",
-                  "rawType": "global"
-                },
-                {
-                  "name": "close",
-                  "type": "boolean",
-                  "required": false,
-                  "default": "true",
-                  "doc": "whether the flash can be closed",
-                  "rawType": "boolean"
-                },
-                {
-                  "name": "autoshow",
-                  "type": "boolean",
-                  "required": false,
-                  "default": "true",
-                  "doc": "whether to auto show the flash on mount",
-                  "rawType": "boolean"
-                },
-                {
-                  "name": "kind",
-                  "type": "atom",
-                  "required": false,
-                  "values": [
-                    "info",
-                    "error"
-                  ],
-                  "doc": "used for styling and flash lookup",
-                  "rawType": "atom"
-                },
-                {
-                  "name": "title",
-                  "type": "string",
-                  "required": false,
-                  "default": "nil",
-                  "rawType": "string"
-                },
-                {
-                  "name": "flash",
-                  "type": "map",
-                  "required": false,
-                  "default": "{:%{}, [closing: [line: 135, column: 33], line: 135, column: 31], []}",
-                  "doc": "the map of flash messages to display",
-                  "rawType": "map"
-                },
-                {
-                  "name": "id",
-                  "type": "string",
-                  "required": false,
-                  "default": "\"flash\"",
-                  "doc": "the optional id of flash container",
-                  "rawType": "string"
-                }
-              ],
-              "slots": [
-                {
-                  "name": "inner_block",
-                  "required": false,
-                  "doc": "the optional inner block that renders the flash message",
-                  "attributes": []
-                }
-              ]
-            },
-            {
-              "name": "modal",
-              "moduleName": "ZchatWeb.CoreComponents",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
-              "line": 48,
-              "attributes": [
-                {
-                  "name": "on_confirm",
-                  "type": "{:__aliases__, [last: [line: 40, column: 21], line: 40, column: 21], [:JS]}",
-                  "required": false,
-                  "default": "{:%, [line: 40, column: 34], [{:__aliases__, [last: [line: 40, column: 35], line: 40, column: 35], [:JS]}, {:%{}, [closing: [line: 40, column: 38], line: 40, column: 37], []}]}",
-                  "rawType": "{:__aliases__, [last: [line: 40, column: 21], line: 40, column: 21], [:JS]}"
-                },
-                {
-                  "name": "on_cancel",
-                  "type": "{:__aliases__, [last: [line: 39, column: 20], line: 39, column: 20], [:JS]}",
-                  "required": false,
-                  "default": "{:%, [line: 39, column: 33], [{:__aliases__, [last: [line: 39, column: 34], line: 39, column: 34], [:JS]}, {:%{}, [closing: [line: 39, column: 37], line: 39, column: 36], []}]}",
-                  "rawType": "{:__aliases__, [last: [line: 39, column: 20], line: 39, column: 20], [:JS]}"
-                },
-                {
-                  "name": "show",
-                  "type": "boolean",
-                  "required": false,
-                  "default": "false",
-                  "rawType": "boolean"
-                },
-                {
-                  "name": "id",
-                  "type": "string",
-                  "required": true,
-                  "rawType": "string"
-                }
-              ],
-              "slots": [
-                {
-                  "name": "cancel",
-                  "required": false,
-                  "attributes": []
-                },
-                {
-                  "name": "confirm",
-                  "required": false,
                   "attributes": []
                 },
                 {
@@ -758,10 +606,109 @@
                   "attributes": []
                 },
                 {
-                  "name": "title",
+                  "name": "actions",
                   "required": false,
                   "attributes": []
+                }
+              ]
+            },
+            {
+              "name": "table",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 478,
+              "attributes": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "rawType": ":string",
+                  "required": true
                 },
+                {
+                  "name": "rows",
+                  "type": "list",
+                  "rawType": ":list",
+                  "required": true
+                },
+                {
+                  "name": "row_id",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": false,
+                  "default": "nil",
+                  "doc": "the function for generating the row id"
+                },
+                {
+                  "name": "row_click",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": false,
+                  "default": "nil",
+                  "doc": "the function for handling phx-click on each row"
+                },
+                {
+                  "name": "row_item",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": false
+                }
+              ],
+              "slots": [
+                {
+                  "name": "col",
+                  "required": true,
+                  "attributes": [
+                    {
+                      "name": "label",
+                      "type": "string",
+                      "rawType": ":string",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "name": "action",
+                  "required": false,
+                  "attributes": [],
+                  "doc": "the slot for showing user actions in the last table column"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 543,
+              "attributes": [],
+              "slots": [
+                {
+                  "name": "item",
+                  "required": true,
+                  "attributes": [
+                    {
+                      "name": "title",
+                      "type": "string",
+                      "rawType": ":string",
+                      "required": true
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "back",
+              "moduleName": "ZchatWeb.CoreComponents",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex",
+              "line": 566,
+              "attributes": [
+                {
+                  "name": "navigate",
+                  "type": "any",
+                  "rawType": ":any",
+                  "required": true
+                }
+              ],
+              "slots": [
                 {
                   "name": "inner_block",
                   "required": true,
@@ -782,14 +729,18 @@
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex",
           []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/posts.ex",
+          []
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "8c987cc50c8d9c0f689dfb9b864f0cd42327e98c",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/core_components.ex": "247a0ab7a08449a48664e5836d6bcdb6e6b172f4",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/components/layouts.ex": "631a68c7fa633ca3d7435235968e04ce729f3aa3",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/error_html.ex": "89476411f6169a71df4a964330e48f15ac62e9d9",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex": "d47c6af311aadcccb43e2c040aae74edc23bf1e0"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex": "d47c6af311aadcccb43e2c040aae74edc23bf1e0",
+        "/home/dtech/VCF/Blog/zchat/lib/posts.ex": "21e6bd3c06bf02338c8842e056e975e0c6fad336"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
@@ -828,6 +779,10 @@
               {
                 "name": "confirmed_at",
                 "type": "naive_datetime"
+              },
+              {
+                "name": "role",
+                "type": "string"
               },
               {
                 "name": "posts",
@@ -1020,14 +975,6 @@
                 "type": "string"
               },
               {
-                "name": "media_url",
-                "type": "string"
-              },
-              {
-                "name": "media_type",
-                "type": "string"
-              },
-              {
                 "name": "view_count",
                 "type": "integer"
               },
@@ -1046,6 +993,14 @@
               {
                 "name": "is_featured",
                 "type": "boolean"
+              },
+              {
+                "name": "media_url",
+                "type": "string"
+              },
+              {
+                "name": "media_type",
+                "type": "string"
               },
               {
                 "name": "user",
@@ -1080,7 +1035,7 @@
             "associationsDetailed": [],
             "aliases": {},
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex",
-            "line": 38
+            "line": 39
           }
         ],
         [
@@ -1155,6 +1110,10 @@
                 {
                   "name": "confirmed_at",
                   "type": "naive_datetime"
+                },
+                {
+                  "name": "role",
+                  "type": "string"
                 },
                 {
                   "name": "posts",
@@ -1355,14 +1314,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "media_url",
-                  "type": "string"
-                },
-                {
-                  "name": "media_type",
-                  "type": "string"
-                },
-                {
                   "name": "view_count",
                   "type": "integer"
                 },
@@ -1381,6 +1332,14 @@
                 {
                   "name": "is_featured",
                   "type": "boolean"
+                },
+                {
+                  "name": "media_url",
+                  "type": "string"
+                },
+                {
+                  "name": "media_type",
+                  "type": "string"
                 },
                 {
                   "name": "user",
@@ -1415,7 +1374,7 @@
               "associationsDetailed": [],
               "aliases": {},
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex",
-              "line": 38
+              "line": 39
             }
           ]
         ],
@@ -1459,11 +1418,11 @@
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex": "83e2e659721d98b4fb64976a26d4203b6f616d0e",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user.ex": "83f7e9d11dd6c5d50a63d88fd120809aa6277c29",
         "/home/dtech/VCF/Blog/zchat/lib/zchat/accounts/user_token.ex": "4286fea45b894747cbb0ea452accc67605179413",
         "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/comment.ex": "959952e29eae810f96482fceb5835380d3e21597",
         "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/like.ex": "cbf4662026130c69f98439d5589bf583e1d1b4b2",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex": "a7973b70cf5ea69b7663c046e9d6f1280115429a",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/post.ex": "d36487b2709b0d1a81bdfa563dd8fc2c0cc43988",
         "/home/dtech/VCF/Blog/zchat/lib/zchat/posts/repost.ex": "3ad77af0072eac763d6ee07359ba549ccae500ae"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
@@ -1471,116 +1430,155 @@
     "events": {
       "events": [
         [
+          "/home/dtech/VCF/Blog/zchat/lib/posts.ex",
+          []
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
           [
             {
-              "name": "post_unliked",
+              "name": "load-more",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
               "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 128,
-              "params": "{post_unliked, %{}}",
-              "kind": "handle_info",
-              "nameKind": "atom"
+              "line": 74,
+              "params": "_",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"load-more\", _, socket) do",
+              "nameKind": "string"
             },
             {
-              "name": "post_liked",
+              "name": "toggle_like",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
               "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 113,
-              "params": "{post_liked, like}",
-              "kind": "handle_info",
-              "nameKind": "atom"
+              "line": 84,
+              "params": "%{\"post-id\" => post_id}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"toggle_like\", %{\"post-id\" => post_id}, socket) do",
+              "nameKind": "string"
             },
             {
-              "name": "new_post",
+              "name": "toggle_like",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
               "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 107,
-              "params": "{new_post, post}",
-              "kind": "handle_info",
-              "nameKind": "atom"
+              "line": 97,
+              "params": "_params",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"toggle_like\", _params, socket) do",
+              "nameKind": "string"
             },
             {
               "name": "load_more",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
               "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 101,
+              "line": 103,
               "params": ":atom",
               "kind": "handle_info",
+              "clause": "def handle_info(:load_more, socket) do",
               "nameKind": "atom"
-            },
+            }
+          ]
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+          [
             {
-              "name": "toggle_like",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-              "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 95,
-              "params": "_params",
-              "kind": "handle_event",
-              "nameKind": "string"
-            },
-            {
-              "name": "toggle_like",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-              "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 82,
-              "params": "%{}",
-              "kind": "handle_event",
-              "nameKind": "string"
-            },
-            {
-              "name": "load-more",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-              "moduleName": "ZchatWeb.UI.FeedLive",
-              "line": 72,
+              "name": "next_media",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 52,
               "params": "_",
               "kind": "handle_event",
-              "nameKind": "string"
-            }
-          ]
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-          [
-            {
-              "name": "validate",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-              "moduleName": "ZchatWeb.UserRegistrationLive",
-              "line": 74,
-              "params": "%{}",
-              "kind": "handle_event",
+              "clause": "def handle_event(\"next_media\", _, socket) do",
               "nameKind": "string"
             },
             {
-              "name": "save",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-              "moduleName": "ZchatWeb.UserRegistrationLive",
-              "line": 57,
-              "params": "%{}",
+              "name": "prev_media",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 60,
+              "params": "_",
               "kind": "handle_event",
+              "clause": "def handle_event(\"prev_media\", _, socket) do",
               "nameKind": "string"
-            }
-          ]
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
-          [
+            },
             {
-              "name": "confirm_account",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
-              "moduleName": "ZchatWeb.UserConfirmationLive",
-              "line": 33,
-              "params": "%{}",
+              "name": "go_to_media",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 68,
+              "params": "%{\"index\" => index}",
               "kind": "handle_event",
+              "clause": "def handle_event(\"go_to_media\", %{\"index\" => index}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "validate",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 75,
+              "params": "%{\"comment\" => params}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"validate\", %{\"comment\" => params}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "add_comment",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 85,
+              "params": "%{\"comment\" => comment_params}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"add_comment\", %{\"comment\" => comment_params}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "reply_to",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 109,
+              "params": "%{\"parent_id\" => parent_id}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"reply_to\", %{\"parent_id\" => parent_id}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "cancel_reply",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 114,
+              "params": "_",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"cancel_reply\", _, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "like_comment",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 119,
+              "params": "%{\"comment_id\" => _id}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"like_comment\", %{\"comment_id\" => _id}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "toggle_like",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+              "moduleName": "ZchatWeb.UI.SinglePostLive",
+              "line": 125,
+              "params": "_",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"toggle_like\", _, socket) do",
               "nameKind": "string"
             }
           ]
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex",
           []
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex",
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin_auth_live.ex",
           []
         ],
         [
@@ -1601,16 +1599,16 @@
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
               "line": 44,
-              "params": "%{\"tag\" => tag}",
+              "params": "params",
               "kind": "handle_event",
-              "clause": "def handle_event(\"add_tag\", %{\"tag\" => tag}, socket) do",
+              "clause": "def handle_event(\"add_tag\", params, socket) do",
               "nameKind": "string"
             },
             {
               "name": "remove_tag",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
-              "line": 60,
+              "line": 67,
               "params": "%{\"tag\" => tag}",
               "kind": "handle_event",
               "clause": "def handle_event(\"remove_tag\", %{\"tag\" => tag}, socket) do",
@@ -1620,7 +1618,7 @@
               "name": "save",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
-              "line": 70,
+              "line": 79,
               "params": "%{\"post\" => post_params}",
               "kind": "handle_event",
               "clause": "def handle_event(\"save\", %{\"post\" => post_params}, socket) do",
@@ -1630,7 +1628,7 @@
               "name": "cancel-upload",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex",
               "moduleName": "ZchatWeb.CreatePost",
-              "line": 115,
+              "line": 150,
               "params": "%{\"ref\" => ref}",
               "kind": "handle_event",
               "clause": "def handle_event(\"cancel-upload\", %{\"ref\" => ref}, socket) do",
@@ -1639,73 +1637,42 @@
           ]
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
           [
             {
-              "name": "validate",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 47,
-              "params": "%{\"comment\" => params}",
+              "name": "send_instructions",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+              "line": 35,
+              "params": "%{\"user\" => %{\"email\" => email}}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"validate\", %{\"comment\" => params}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "add_comment",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 57,
-              "params": "%{\"comment\" => comment_params}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"add_comment\", %{\"comment\" => comment_params}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "reply_to",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 81,
-              "params": "%{\"parent_id\" => parent_id}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"reply_to\", %{\"parent_id\" => parent_id}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "cancel_reply",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 87,
-              "params": "_",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"cancel_reply\", _, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "like_comment",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 93,
-              "params": "%{\"comment_id\" => _id}",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"like_comment\", %{\"comment_id\" => _id}, socket) do",
-              "nameKind": "string"
-            },
-            {
-              "name": "toggle_like",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex",
-              "moduleName": "ZchatWeb.UI.SinglePostLive",
-              "line": 99,
-              "params": "_params",
-              "kind": "handle_event",
-              "clause": "def handle_event(\"toggle_like\", _params, socket) do",
+              "clause": "def handle_event(\"send_instructions\", %{\"user\" => %{\"email\" => email}}, socket) do",
               "nameKind": "string"
             }
           ]
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
-          []
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
+          [
+            {
+              "name": "confirm_account",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex",
+              "moduleName": "ZchatWeb.UserConfirmationLive",
+              "line": 33,
+              "params": "%{\"user\" => %{\"token\" => token}}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"confirm_account\", %{\"user\" => %{\"token\" => token}}, socket) do",
+              "nameKind": "string"
+            }
+          ]
         ],
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex",
@@ -1723,16 +1690,30 @@
           ]
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
+          []
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
           [
             {
-              "name": "send_instructions",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
-              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
-              "line": 35,
-              "params": "%{\"user\" => %{\"email\" => email}}",
+              "name": "save",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
+              "moduleName": "ZchatWeb.UserRegistrationLive",
+              "line": 57,
+              "params": "%{\"user\" => user_params}",
               "kind": "handle_event",
-              "clause": "def handle_event(\"send_instructions\", %{\"user\" => %{\"email\" => email}}, socket) do",
+              "clause": "def handle_event(\"save\", %{\"user\" => user_params}, socket) do",
+              "nameKind": "string"
+            },
+            {
+              "name": "validate",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
+              "moduleName": "ZchatWeb.UserRegistrationLive",
+              "line": 74,
+              "params": "%{\"user\" => user_params}",
+              "kind": "handle_event",
+              "clause": "def handle_event(\"validate\", %{\"user\" => user_params}, socket) do",
               "nameKind": "string"
             }
           ]
@@ -1809,16 +1790,19 @@
         ]
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "8c987cc50c8d9c0f689dfb9b864f0cd42327e98c",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
+        "/home/dtech/VCF/Blog/zchat/lib/posts.ex": "21e6bd3c06bf02338c8842e056e975e0c6fad336",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "b0b6ab468aabc194b42e001446c54582f1f40970",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "8690b78c8bac5eeaf28f7ce0201737436e92dfd0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex": "36420ed04355a4eb87d2dea9daafd97ecaec3973",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin_auth_live.ex": "e2e45d59c2ebc1be4ce90a11669dd5d46dec2af9",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "1e2ea3cd60af361e6755496cd5291e06d21c7aea",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "f0e639fac4d959fd03ea488fc9949c5e30464dfc",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "7d90654f53d3447fb3730430606f82603a529cf4",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868"
       },
@@ -1862,9 +1846,21 @@
         },
         {
           "verb": "LIVE",
+          "path": "/admin/admindashboard",
+          "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
+          "line": 61,
+          "liveModule": "Admin.DashboardLive",
+          "liveAction": "DashboardLive",
+          "helperBase": "admindashboard",
+          "params": [],
+          "isResource": false,
+          "scopePath": "/admin"
+        },
+        {
+          "verb": "LIVE",
           "path": "/users/register",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 58,
+          "line": 73,
           "liveModule": "UserRegistrationLive",
           "helperBase": "user_register",
           "params": [],
@@ -1874,7 +1870,7 @@
           "verb": "LIVE",
           "path": "/users/log_in",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 59,
+          "line": 74,
           "liveModule": "UserLoginLive",
           "helperBase": "user_log_in",
           "params": [],
@@ -1884,7 +1880,7 @@
           "verb": "LIVE",
           "path": "/users/reset_password",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 60,
+          "line": 75,
           "liveModule": "UserForgotPasswordLive",
           "helperBase": "user_reset_password",
           "params": [],
@@ -1894,7 +1890,7 @@
           "verb": "LIVE",
           "path": "/users/reset_password/:token",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 61,
+          "line": 76,
           "liveModule": "UserResetPasswordLive",
           "helperBase": "user_reset_password",
           "params": [
@@ -1906,7 +1902,7 @@
           "verb": "POST",
           "path": "/users/log_in",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 65,
+          "line": 80,
           "controller": "UserSessionController",
           "action": "create",
           "helperBase": "user_log_in",
@@ -1917,7 +1913,7 @@
           "verb": "LIVE",
           "path": "/feed",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 74,
+          "line": 89,
           "liveModule": "UI.FeedLive",
           "liveAction": "FeedLive",
           "helperBase": "feed",
@@ -1928,7 +1924,7 @@
           "verb": "LIVE",
           "path": "/users/settings",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 75,
+          "line": 90,
           "liveModule": "UserSettingsLive",
           "helperBase": "user_setting",
           "params": [],
@@ -1938,7 +1934,7 @@
           "verb": "LIVE",
           "path": "/users/settings/confirm_email/:token",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 76,
+          "line": 91,
           "liveModule": "UserSettingsLive",
           "helperBase": "user_setting_confirm_email",
           "params": [
@@ -1950,7 +1946,7 @@
           "verb": "LIVE",
           "path": "/posts/:id",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 77,
+          "line": 92,
           "liveModule": "UI.SinglePostLive",
           "liveAction": "SinglePostLive",
           "helperBase": "post",
@@ -1963,7 +1959,7 @@
           "verb": "DELETE",
           "path": "/users/log_out",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 84,
+          "line": 99,
           "controller": "UserSessionController",
           "action": "delete",
           "helperBase": "user_log_out",
@@ -1974,7 +1970,7 @@
           "verb": "LIVE",
           "path": "/users/confirm/:token",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 88,
+          "line": 103,
           "liveModule": "UserConfirmationLive",
           "helperBase": "user_confirm",
           "params": [
@@ -1986,7 +1982,7 @@
           "verb": "LIVE",
           "path": "/users/confirm",
           "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex",
-          "line": 89,
+          "line": 104,
           "liveModule": "UserConfirmationInstructionsLive",
           "helperBase": "user_confirm",
           "params": [],
@@ -1994,7 +1990,7 @@
         }
       ],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex": "a589dd52f9f8d4c1b9721a39bafe1dced32980b6"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/router.ex": "84fc134b7505c2334454fafc9593b9b9d7878c44"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
@@ -2083,6 +2079,17 @@
           ]
         ],
         [
+          "ZchatWeb.Admin.DashboardLive",
+          [
+            {
+              "moduleName": "ZchatWeb.Admin.DashboardLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex#render"
+            }
+          ]
+        ],
+        [
           "ZchatWeb.UI.PostComponent",
           [
             {
@@ -2094,17 +2101,6 @@
           ]
         ],
         [
-          "ZchatWeb.UserConfirmationInstructionsLive",
-          [
-            {
-              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
-              "name": "render",
-              "format": "html",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
-            }
-          ]
-        ],
-        [
           "ZchatWeb.PostShowLive",
           [
             {
@@ -2112,6 +2108,17 @@
               "name": "render",
               "format": "html",
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render"
+            }
+          ]
+        ],
+        [
+          "ZchatWeb.UserConfirmationInstructionsLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
             }
           ]
         ],
@@ -2138,6 +2145,17 @@
           ]
         ],
         [
+          "ZchatWeb.UserResetPasswordLive",
+          [
+            {
+              "moduleName": "ZchatWeb.UserResetPasswordLive",
+              "name": "render",
+              "format": "html",
+              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
+            }
+          ]
+        ],
+        [
           "ZchatWeb.UserRegistrationLive",
           [
             {
@@ -2158,17 +2176,6 @@
               "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex#render"
             }
           ]
-        ],
-        [
-          "ZchatWeb.UserResetPasswordLive",
-          [
-            {
-              "moduleName": "ZchatWeb.UserResetPasswordLive",
-              "name": "render",
-              "format": "html",
-              "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
-            }
-          ]
         ]
       ],
       "templatesByPath": [
@@ -2182,6 +2189,15 @@
           }
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.Admin.DashboardLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex#render"
+          }
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex#update",
           {
             "moduleName": "ZchatWeb.UI.PostComponent",
@@ -2191,21 +2207,21 @@
           }
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render",
-          {
-            "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
-            "name": "render",
-            "format": "html",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
-          }
-        ],
-        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render",
           {
             "moduleName": "ZchatWeb.PostShowLive",
             "name": "render",
             "format": "html",
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex#render"
+          }
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserConfirmationInstructionsLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex#render"
           }
         ],
         [
@@ -2227,6 +2243,15 @@
           }
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render",
+          {
+            "moduleName": "ZchatWeb.UserResetPasswordLive",
+            "name": "render",
+            "format": "html",
+            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
+          }
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex#render",
           {
             "moduleName": "ZchatWeb.UserRegistrationLive",
@@ -2243,15 +2268,6 @@
             "format": "html",
             "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex#render"
           }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render",
-          {
-            "moduleName": "ZchatWeb.UserResetPasswordLive",
-            "name": "render",
-            "format": "html",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex#render"
-          }
         ]
       ],
       "moduleByFile": [
@@ -2260,16 +2276,20 @@
           "ZchatWeb.PageHTML"
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex",
+          "ZchatWeb.Admin.DashboardLive"
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex",
           "ZchatWeb.UI.PostComponent"
         ],
         [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
-          "ZchatWeb.UserConfirmationInstructionsLive"
-        ],
-        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
           "ZchatWeb.PostShowLive"
+        ],
+        [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex",
+          "ZchatWeb.UserConfirmationInstructionsLive"
         ],
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
@@ -2280,284 +2300,49 @@
           "ZchatWeb.UserForgotPasswordLive"
         ],
         [
+          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
+          "ZchatWeb.UserResetPasswordLive"
+        ],
+        [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
           "ZchatWeb.UserRegistrationLive"
         ],
         [
           "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
           "ZchatWeb.UserSettingsLive"
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
-          "ZchatWeb.UserResetPasswordLive"
         ]
       ],
       "fileHashes": {
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/controllers/page_html.ex": "d47c6af311aadcccb43e2c040aae74edc23bf1e0",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex": "aa6a226a47f2649ce4a085faf975b962d7a906b1",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex": "36420ed04355a4eb87d2dea9daafd97ecaec3973",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/post_component.ex": "c235d54d78ccc8a78c346ea4d93ccbe1f53f6852",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     },
     "liveview": {
-      "liveViews": [
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-          {
-            "module": "ZchatWeb.UI.FeedLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex",
-            "functions": [
-              {
-                "line": 128,
-                "name": "post_unliked",
-                "type": "handle_info",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "post_unliked"
-              },
-              {
-                "line": 113,
-                "name": "post_liked",
-                "type": "handle_info",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "post_liked"
-              },
-              {
-                "line": 107,
-                "name": "new_post",
-                "type": "handle_info",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "new_post"
-              },
-              {
-                "line": 101,
-                "name": "load_more",
-                "type": "handle_info",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "load_more"
-              },
-              {
-                "line": 95,
-                "name": "toggle_like",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "toggle_like"
-              },
-              {
-                "line": 82,
-                "name": "toggle_like",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "toggle_like"
-              },
-              {
-                "line": 72,
-                "name": "load-more",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UI.FeedLive",
-                "event_name": "load-more"
-              },
-              {
-                "line": 30,
-                "name": "handle_params",
-                "type": "handle_params",
-                "module_name": "ZchatWeb.UI.FeedLive"
-              },
-              {
-                "line": 8,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UI.FeedLive"
-              }
-            ]
-          }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
-          {
-            "module": "ZchatWeb.PostShowLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex",
-            "functions": [
-              {
-                "line": 12,
-                "name": "render",
-                "type": "render",
-                "module_name": "ZchatWeb.PostShowLive"
-              },
-              {
-                "line": 7,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.PostShowLive"
-              }
-            ]
-          }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
-          {
-            "module": "ZchatWeb.UserLoginLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex",
-            "functions": [
-              {
-                "line": 38,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UserLoginLive"
-              },
-              {
-                "line": 4,
-                "name": "render",
-                "type": "render",
-                "module_name": "ZchatWeb.UserLoginLive"
-              }
-            ]
-          }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-          {
-            "module": "ZchatWeb.UserRegistrationLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex",
-            "functions": [
-              {
-                "line": 74,
-                "name": "validate",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserRegistrationLive",
-                "event_name": "validate"
-              },
-              {
-                "line": 57,
-                "name": "save",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserRegistrationLive",
-                "event_name": "save"
-              },
-              {
-                "line": 46,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UserRegistrationLive"
-              },
-              {
-                "line": 7,
-                "name": "render",
-                "type": "render",
-                "module_name": "ZchatWeb.UserRegistrationLive"
-              }
-            ]
-          }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
-          {
-            "module": "ZchatWeb.UserSettingsLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex",
-            "functions": [
-              {
-                "line": 150,
-                "name": "update_password",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserSettingsLive",
-                "event_name": "update_password"
-              },
-              {
-                "line": 138,
-                "name": "validate_password",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserSettingsLive",
-                "event_name": "validate_password"
-              },
-              {
-                "line": 118,
-                "name": "update_email",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserSettingsLive",
-                "event_name": "update_email"
-              },
-              {
-                "line": 106,
-                "name": "validate_email",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserSettingsLive",
-                "event_name": "validate_email"
-              },
-              {
-                "line": 89,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UserSettingsLive"
-              },
-              {
-                "line": 76,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UserSettingsLive"
-              },
-              {
-                "line": 6,
-                "name": "render",
-                "type": "render",
-                "module_name": "ZchatWeb.UserSettingsLive"
-              }
-            ]
-          }
-        ],
-        [
-          "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
-          {
-            "module": "ZchatWeb.UserResetPasswordLive",
-            "filePath": "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex",
-            "functions": [
-              {
-                "line": 71,
-                "name": "validate",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserResetPasswordLive",
-                "event_name": "validate"
-              },
-              {
-                "line": 58,
-                "name": "reset_password",
-                "type": "handle_event",
-                "module_name": "ZchatWeb.UserResetPasswordLive",
-                "event_name": "reset_password"
-              },
-              {
-                "line": 41,
-                "name": "mount",
-                "type": "mount",
-                "module_name": "ZchatWeb.UserResetPasswordLive"
-              },
-              {
-                "line": 6,
-                "name": "render",
-                "type": "render",
-                "module_name": "ZchatWeb.UserResetPasswordLive"
-              }
-            ]
-          }
-        ]
-      ],
+      "liveViews": [],
       "fileHashes": {
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "8c987cc50c8d9c0f689dfb9b864f0cd42327e98c",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "7d90654f53d3447fb3730430606f82603a529cf4",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "f0e639fac4d959fd03ea488fc9949c5e30464dfc",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/feed_live.ex": "b0b6ab468aabc194b42e001446c54582f1f40970",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/UI/single_post_live.ex": "8690b78c8bac5eeaf28f7ce0201737436e92dfd0",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin/dashboard_live.ex": "36420ed04355a4eb87d2dea9daafd97ecaec3973",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/admin_auth_live.ex": "e2e45d59c2ebc1be4ce90a11669dd5d46dec2af9",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/create_post_live.ex": "1e2ea3cd60af361e6755496cd5291e06d21c7aea",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/post_show_live.ex": "8b9d4f266178f86da3fdc911d18e597836263472",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_instructions_live.ex": "bc43d0aa10e3c7ca70bf2c16fe31bf7ab6d09ea6",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/home_live.ex": "7a8fa433e1e4434577f1f3f3c202c7a75072f400",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_confirmation_live.ex": "038c0a4684bfa3e4d3c99170cd8c8f943ea88f00",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_forgot_password_live.ex": "4b1bcc061ae9e06a7521d3eafba8d9bc0247c57b",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_login_live.ex": "dfbc89fa7922ccc22ae6405efb602e8fdf0569a0",
         "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_registration_live.ex": "f583f717ddffe2fdfc36c4cbbd443b959f24457e",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868",
-        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6"
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_reset_password_live.ex": "962c5971bc4c3017fe1c87e4c98248931c2b30e6",
+        "/home/dtech/VCF/Blog/zchat/lib/zchat_web/live/user_settings_live.ex": "06e4d05117aa607cb2c9549010640a44ddb68868"
       },
       "workspaceRoot": "/home/dtech/VCF/Blog"
     }

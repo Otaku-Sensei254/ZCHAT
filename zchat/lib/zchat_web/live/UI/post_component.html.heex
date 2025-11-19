@@ -77,7 +77,10 @@
           </h3>
         <% end %>
         <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
-          <%= @post.content %>
+          <%= content_cut(@post.content, 200) %>
+          <%= if String.length(@post.content) > 200 do %>
+            <span class="text-blue-600 hover:underline">Read more</span>
+          <% end %>
         </div>
       </div>
     </.link>

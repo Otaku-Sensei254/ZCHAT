@@ -1,0 +1,97 @@
+<div id="notifications-modal-wrapper" class="relative">
+  <!-- Notifications Button -->
+  <button
+    phx-click={show_modal()} 
+    class="relative p-2 text-gray-700 hover:text-orange-500 transition-colors duration-200"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+    
+    <!-- Notification Count Badge -->
+    <%= if @unread_count > 0 do %>
+      <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1 -translate-y-1">
+        <%= if @unread_count > 99, do: "99+", else: @unread_count %>
+      </span>
+    <% end %>
+  </button>
+
+  <!-- Notifications Modal -->
+  <div 
+    id="notifications-modal" 
+    class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+    phx-click-away={hide_modal()}
+  >
+    <!-- Modal Header -->
+    <div class="px-4 py-3 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+        <button 
+          phx-click={hide_modal()}
+          class="text-gray-400 hover:text-gray-600"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="max-h-96 overflow-y-auto">
+      <%= if Enum.empty?(@notifications) do %>
+        <div class="px-4 py-8 text-center text-gray-500">
+          <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <p>No notifications</p>
+        </div>
+      <% else %>
+        <%= for notification <- @notifications do %>
+          <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+            <div class="flex items-start space-x-3">
+              <!-- User Avatar -->
+              <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                <span class="text-sm font-medium text-gray-600">
+                  <%= String.first(notification.actor.username) %>
+                </span>
+              </div>
+              
+              <!-- Notification Content -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-900">
+                  <%= format_notification_text(notification) %>
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  <%= Timex.from_now(notification.inserted_at) %>
+                </p>
+              </div>
+              
+              <!-- Mark as Read Button -->
+              <.link
+                phx-click="mark_as_read"
+                phx-value-notification-id={notification.id}
+                navigate={notification_link(notification)}
+                class="text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
+              >
+                View
+              </.link>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Modal Footer -->
+    <%= if @unread_count > 0 do %>
+      <div class="px-4 py-3 border-t border-gray-200">
+        <button
+          phx-click="mark_all_as_read"
+          class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+        >
+          Mark all as read
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>

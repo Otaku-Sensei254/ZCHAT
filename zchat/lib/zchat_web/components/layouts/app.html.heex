@@ -36,6 +36,13 @@
               Create Post 📝
             </.link>
           </button>
+
+          <!-- Notifications Modal -->
+          <.live_component
+            module={ZchatWeb.Components.NotificationsModal}
+            id="notifications-modal"
+            current_user={@current_user}
+          />
           <p class="ml-4 text-gray-600 text-sm">
             <strong><%= @current_user.username %></strong>
           </p>

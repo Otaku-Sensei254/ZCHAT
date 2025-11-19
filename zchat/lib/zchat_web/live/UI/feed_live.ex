@@ -100,6 +100,16 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
+  def handle_event("mark_all_as_read", _params, socket) do
+    if socket.assigns.current_user do
+      Zchat.Notifications.mark_all_as_read(socket.assigns.current_user.id)
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_info(:load_more, socket) do
     {:noreply, load_posts(socket)}
   end

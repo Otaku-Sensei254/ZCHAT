@@ -8,6 +8,11 @@ defmodule ZchatWeb.UI.FeedLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Zchat.PubSub, "posts")
+
+      # Subscribe to notifications if user is authenticated
+      if socket.assigns[:current_user] do
+        Phoenix.PubSub.subscribe(Zchat.PubSub, "notifications:#{socket.assigns.current_user.id}")
+      end
     end
 
     socket =
@@ -28,23 +33,49 @@ defmodule ZchatWeb.UI.FeedLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
+    # Reset page and stream when filters change to avoid appending old results
+    filters_changed = params["search"] != socket.assigns[:search_term] or params["category"] != socket.assigns[:category]
+
+    socket =
+      if filters_changed do
+        socket
+        |> assign(:page, 1)
+        |> stream(:posts, [], reset: true)
+      else
+        socket
+      end
+
     {:noreply,
       socket
       |> assign(:category, params["category"])
-      |> assign(page: 1, posts: [])
+      |> assign(:search_term, params["search"])
       |> load_posts()
-    }
+      |> load_trending()}
   end
+
+@impl true
+def handle_event("search", %{"search" => search_term}, socket) do
+  term = String.trim(search_term || "")
+  # Only include the search param; no category in URL for search bar
+  to = if term == "" do
+    ~p"/feed"
+  else
+    ~p"/feed?#{[search: term]}"
+  end
+  {:noreply, push_patch(socket, to: to)}
+end
 
   defp load_posts(socket) do
     %{page: page, per_page: per_page} = socket.assigns
     category = socket.assigns[:category]
+    search_term = socket.assigns[:search_term]
 
     posts =
       Posts.list_posts(
         page: page,
         per_page: per_page,
         category: category,
+        search: search_term,
         preload: [:user, :likes, comments: :user]
       )
     |> Enum.map(&Post.ensure_media_files/1)
@@ -119,6 +150,20 @@ defmodule ZchatWeb.UI.FeedLive do
   def handle_info({:new_post, post}, socket) do
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
     {:noreply, stream_insert(socket, :posts, post, at: 0, dom_id: &"post-#{&1.id}")}
+  end
+
+  @impl true
+  # Handle new notifications from PubSub
+  def handle_info({:new_notification, notification}, socket) do
+    # Send a push event to update the notifications modal
+    {:noreply, push_event(socket, "new_notification", %{notification: notification})}
+  end
+
+  @impl true
+  # Handle notifications read broadcast
+  def handle_info(:notifications_read, socket) do
+    # Refresh the notifications modal to show updated read status
+    {:noreply, push_event(socket, "refresh_notifications", %{})}
   end
 
   # Handle like updates for posts in the feed

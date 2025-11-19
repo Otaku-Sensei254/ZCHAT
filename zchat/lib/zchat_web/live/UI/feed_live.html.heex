@@ -1,8 +1,8 @@
 <!-- lib/zchat_web/live/feed_live.html.heex -->
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <!-- Sidebar -->
-    <div class="md:col-span-relative ">
+    <!-- Sidebar (hidden on mobile) -->
+    <div class="hidden md:block md:col-span-1">
       <div class="bg-white rounded-lg shadow p-4 mb-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Categories</h3>
         <ul class="space-y-2">
@@ -51,6 +51,50 @@
 
     <!-- Main Feed -->
     <div class="md:col-span-3">
+      <!-- Search Bar -->
+      <div class="bg-white rounded-lg shadow mb-4 p-3 sm:p-4">
+        <form phx-change="search" phx-submit="search">
+          <div class="relative">
+            <input
+              type="text"
+              name="search"
+              value={@search_term || ""}
+              placeholder="Search users, posts, or tags..."
+              class="w-full pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+            />
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Mobile Categories (chips) -->
+      <div class="md:hidden mb-6">
+        <div class="flex overflow-x-auto gap-2 no-scrollbar">
+          <.link
+            patch={~p"/feed"}
+            class="shrink-0 px-3 py-1.5 rounded-full text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            All
+          </.link>
+          <%= for category <- ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
+            <.link
+              patch={~p"/feed?category=#{category}"}
+              class={[
+                "shrink-0 px-3 py-1.5 rounded-full text-sm border",
+                @category == category && "bg-blue-600 text-white border-blue-600",
+                @category != category && "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              ]}
+            >
+              <%= category %>
+            </.link>
+          <% end %>
+        </div>
+      </div>
+
       <!-- Create Post Card -->
       <div class="bg-white rounded-lg shadow mb-6 p-4">
         <.link navigate={~p"/posts/new"} class="block w-full text-left px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">

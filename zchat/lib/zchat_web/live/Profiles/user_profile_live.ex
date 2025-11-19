@@ -67,6 +67,11 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
   end
 
   @impl true
+  def check_role(socket, role) do
+
+  end
+
+  @impl true
   def handle_event("unfollow", _, socket) do
     current_user = socket.assigns.current_user
     profile_user = socket.assigns.user
@@ -88,4 +93,6 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
       {:noreply, socket}
     end
   end
+  def admin?(%Zchat.Accounts.User{role: "admin"}), do: true
+  def admin?(_), do: false
 end

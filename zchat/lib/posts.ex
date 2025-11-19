@@ -41,7 +41,9 @@ defmodule Zchat.Posts do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 10)
     category = Keyword.get(opts, :category)
+    user_id = Keyword.get(opts, :user_id)
     preload = Keyword.get(opts, :preload, [:user])
+    search_term = Keyword.get(opts, :search)
 
     query = from p in Post,
       order_by: [desc: p.inserted_at],
@@ -49,6 +51,25 @@ defmodule Zchat.Posts do
 
     query = if category do
       from p in query, where: p.category == ^category
+    else
+      query
+    end
+
+    query = if user_id do
+      from p in query, where: p.user_id == ^user_id
+    else
+      query
+    end
+
+    query = if search_term && search_term != "" do
+      search_pattern = "%#{search_term}%"
+      from p in query,
+        left_join: u in assoc(p, :user),
+        where:
+          ilike(fragment("COALESCE(?, '')", p.title), ^search_pattern) or
+          ilike(fragment("COALESCE(?, '')", u.username), ^search_pattern) or
+          fragment("EXISTS (SELECT 1 FROM unnest(?) AS tag WHERE tag ILIKE ?)", p.tags, ^search_pattern),
+        distinct: true
     else
       query
     end
@@ -420,8 +441,17 @@ def delete_post(%Post{} = post) do
 
   # View tracking functions
   def track_view(post_id, user_id) do
-    %Zchat.Posts.View{}
-    |> Zchat.Posts.View.changeset(%{post_id: post_id, user_id: user_id})
-    |> Repo.insert(on_conflict: :nothing)
+    # Only increment view count if viewer is not the post author
+    case Repo.get(Post, post_id) do
+      nil ->
+        :ok  # Post doesn't exist
+      post ->
+        if post.user_id != user_id do
+          from(p in Post, where: p.id == ^post_id)
+          |> Repo.update_all(inc: [view_count: 1])
+        else
+          :ok  # Don't count views from the author
+        end
+    end
   end
 end

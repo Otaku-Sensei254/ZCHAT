@@ -8,7 +8,7 @@
         </.link>
       </div>
       
-      <!-- Navigation Links -->
+      <!-- Desktop Navigation -->
       <div class="hidden md:block">
         <div class="ml-10 flex items-center space-x-8">
           <.link 
@@ -26,69 +26,154 @@
             >
               Settings
             </.link>
-            <p class="ml-4 text-gray-600 text-sm">
-              <strong><%= @current_user.email %></strong>
-            </p>
-            <button class="create-post bg-transparent x-10 py-2 px-4 border-2 border-red-500 text-red-500 hover:bg-orange-50 font-bold transition duration-300 transform hover:scale-105 rounded-xl w-fit"> 
-              <.link
+            
+            <.link
               navigate={~p"/posts/new"}
-              >
+              class="bg-transparent mx-4 py-2 px-4 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-bold transition duration-300 transform hover:scale-105 rounded-xl"
+            >
               Create Post 📝
             </.link>
-          </button>
 
-          <!-- Notifications Modal -->
-          <.live_component
-            module={ZchatWeb.Components.NotificationsModal}
-            id="notifications-modal"
-            current_user={@current_user}
-          />
-          <p class="ml-4 text-gray-600 text-sm">
-            <strong><%= @current_user.username %></strong>
-          </p>
+            <!-- Notifications Component -->
+            <.live_component
+              module={ZchatWeb.Components.NotificationsModal}
+              id="notifications-modal-desktop"
+              current_user={@current_user}
+            />
+            
+           <.link
+              navigate={~p"/users/#{@current_user.username}"}
+              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200" 
+            >
+              <%= @current_user.username %>
+            </.link>
+            
+            <.form 
+              for={%{}}
+              action={~p"/users/log_out"} 
+              method="post"
+              class="inline"
+              as={:user}
+            >
+              <input type="hidden" name="_method" value="delete" />
+              <button 
+                type="submit"
+                class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Log out
+              </button>
+            </.form>
+          <% else %>
+            <!-- Links for guests -->
+            <.link 
+              navigate={~p"/users/log_in"} 
+              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
+            >
+              Log in
+            </.link>
+            <.link 
+              navigate={~p"/users/register"}
+              class="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Sign up
+            </.link>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Mobile menu button -->
+      <div class="md:hidden flex items-center gap-4">
+        <%= if @current_user do %>
+           <!-- Show Notifications on Mobile Header too -->
+           <.live_component
+              module={ZchatWeb.Components.NotificationsModal}
+              id="notifications-modal-mobile"
+              current_user={@current_user}
+            />
+        <% end %>
+
+        <button 
+          type="button" 
+          class="text-gray-500 hover:text-orange-500 focus:outline-none"
+          phx-click={Phoenix.LiveView.JS.toggle(to: "#mobile-menu", display: "block")}
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu (Hidden by default) -->
+  <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full left-0">
+    <div class="px-4 pt-2 pb-6 space-y-2">
+      <.link 
+        navigate={~p"/"} 
+        class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+      >
+        Home
+      </.link>
+
+      <%= if @current_user do %>
+        <.link 
+          navigate={~p"/users/#{@current_user.username}"}
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+        >
+          Profile (<%= @current_user.username %>)
+        </.link>
+        
+        <.link 
+          navigate={~p"/users/settings"} 
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+        >
+          Settings
+        </.link>
+
+        <.link
+          navigate={~p"/posts/new"}
+          class="block px-3 py-2 rounded-md text-base font-medium text-orange-600 hover:bg-orange-50"
+        >
+          Create Post 📝
+        </.link>
+
+        <div class="pt-4 border-t border-gray-100">
+          <div class="px-3 py-2 text-xs text-gray-500">
+            Signed in as <%= @current_user.email %>
+          </div>
           <.form 
             for={%{}}
             action={~p"/users/log_out"} 
             method="post"
-            class="inline"
             as={:user}
           >
             <input type="hidden" name="_method" value="delete" />
             <button 
               type="submit"
-              class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              class="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
             >
               Log out
             </button>
           </.form>
-          <% else %>
-          <!-- Links for guests -->
+        </div>
+      <% else %>
+        <div class="pt-4 border-t border-gray-100 space-y-2">
           <.link 
-          navigate={~p"/users/log_in"} 
-          class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
+            navigate={~p"/users/log_in"} 
+            class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
           >
-          Log in
-        </.link>
-        <.link 
-        navigate={~p"/users/register"}
-        class="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-        >
-        Sign up
-      </.link>
+            Log in
+          </.link>
+          <.link 
+            navigate={~p"/users/register"}
+            class="block px-3 py-2 rounded-md text-base font-medium text-orange-600 hover:bg-orange-50"
+          >
+            Sign up
+          </.link>
+        </div>
       <% end %>
     </div>
   </div>
-  
-  <!-- Mobile menu button -->
-  <div class="md:hidden">
-    <button type="button" class="text-gray-500 hover:text-orange-500 focus:outline-none">
-      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
-  </div>
-</nav>
-</div>
 </header>
 
 <main class="pt-16">

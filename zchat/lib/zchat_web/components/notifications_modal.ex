@@ -17,12 +17,19 @@ defmodule ZchatWeb.Components.NotificationsModal do
 
   defp assign_notifications(socket) do
     current_user = socket.assigns.current_user
-    notifications = Notifications.list_unread_notifications(current_user.id, limit: 10)
-    unread_count = Notifications.get_unread_count(current_user.id)
 
-    socket
-    |> assign(:notifications, notifications)
-    |> assign(:unread_count, unread_count)
+    if current_user do
+      notifications = Notifications.list_unread_notifications(current_user.id, limit: 10)
+      unread_count = Notifications.get_unread_count(current_user.id)
+
+      socket
+      |> assign(:notifications, notifications)
+      |> assign(:unread_count, unread_count)
+    else
+      socket
+      |> assign(:notifications, [])
+      |> assign(:unread_count, 0)
+    end
   end
 
   def show_modal(), do: JS.show(to: "#notifications-modal")
@@ -90,7 +97,7 @@ defmodule ZchatWeb.Components.NotificationsModal do
     case notification.type do
       "like" -> ~p"/posts/#{notification.post_id}"
       "comment" -> ~p"/posts/#{notification.post_id}"
-      "follow" -> ~p"/users/#{notification.actor_id}"
+      "follow" -> ~p"/users/#{notification.actor.username}"
       "new_post" -> ~p"/posts/#{notification.post_id}"
       _ -> ~p"/feed"
     end

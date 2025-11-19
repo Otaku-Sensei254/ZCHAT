@@ -17,7 +17,7 @@ defmodule ZchatWeb.CreatePost do
      |> assign(:form, form)
      |> assign(:changeset, changeset)
      |> allow_upload(:media,
-       accept: ~w(.jpg .jpeg .png .gif .mp4 .mov),
+       accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
        max_entries: 20,
        max_file_size: 10_000_000,
        auto_upload: true

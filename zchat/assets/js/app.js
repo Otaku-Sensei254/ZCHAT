@@ -27,7 +27,34 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 // Define Hooks object
 let Hooks = {};
 
-// Hook for Autoplaying Videos when they scroll into view
+Hooks.NotificationsHook = {
+  mounted() {
+    this.handleEvent("new_notification", ({ notification }) => {
+      // Update notification badge
+      const badge = document.querySelector("#notification-badge");
+      if (badge) {
+        badge.classList.remove("hidden");
+        const count = badge.textContent;
+        badge.textContent = count === "" ? "1" : (parseInt(count) + 1).toString();
+      }
+      
+      // If modal is open, refresh notifications
+      const modal = document.querySelector("#notifications-modal");
+      if (modal && !modal.classList.contains("hidden")) {
+        this.pushEvent("load_notifications", {});
+      }
+    });
+
+    this.handleEvent("refresh_notifications", () => {
+      // If modal is open, refresh notifications
+      const modal = document.querySelector("#notifications-modal");
+      if (modal && !modal.classList.contains("hidden")) {
+        this.pushEvent("load_notifications", {});
+      }
+    });
+  }
+};
+
 Hooks.VideoAutoplay = {
   mounted() {
     this.observer = new IntersectionObserver(

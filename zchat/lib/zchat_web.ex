@@ -63,6 +63,20 @@ defmodule ZchatWeb do
       use Phoenix.LiveComponent
 
       unquote(html_helpers())
+      @impl true
+      def handle_info(:new_notification, socket) do
+        # Tell the components (Desktop AND Mobile) to update
+        send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+        send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+        {:noreply, socket}
+      end
+
+      @impl true
+      def handle_info(:update_notifications, socket) do
+        send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+        send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+        {:noreply, socket}
+      end
     end
   end
 

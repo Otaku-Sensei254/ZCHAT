@@ -1,97 +1,83 @@
-<div id="notifications-modal-wrapper" class="relative" phx-hook="NotificationsHook">
-  <!-- Notifications Button -->
-  <button
-    phx-click={show_modal()} 
-    class="relative p-2 text-gray-700 hover:text-orange-500 transition-colors duration-200"
-  >
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-    
-    <!-- Notification Count Badge -->
-    <%= if @unread_count > 0 do %>
-      <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1 -translate-y-1">
-        <%= if @unread_count > 99, do: "99+", else: @unread_count %>
-      </span>
-    <% end %>
-  </button>
-
-  <!-- Notifications Modal -->
-  <div 
-    id="notifications-modal" 
-    class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-    phx-click-away={hide_modal()}
-  >
-    <!-- Modal Header -->
-    <div class="px-4 py-3 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
-        <button 
-          phx-click={hide_modal()}
-          class="text-gray-400 hover:text-gray-600"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Notifications List -->
-    <div class="max-h-96 overflow-y-auto">
-      <%= if Enum.empty?(@notifications) do %>
-        <div class="px-4 py-8 text-center text-gray-500">
-          <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <p>No notifications</p>
-        </div>
-      <% else %>
-        <%= for notification <- @notifications do %>
-          <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-            <div class="flex items-start space-x-3">
-              <!-- User Avatar -->
-              <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                <span class="text-sm font-medium text-gray-600">
-                  <%= String.first(notification.actor.username) %>
-                </span>
-              </div>
-              
-              <!-- Notification Content -->
-              <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-900">
-                  <%= format_notification_text(notification) %>
-                </p>
-                <p class="text-xs text-gray-500 mt-1">
-                  <%= Timex.from_now(notification.inserted_at) %>
-                </p>
-              </div>
-              
-              <!-- Mark as Read Button -->
-              <.link
-                phx-click="mark_as_read"
-                phx-value-notification-id={notification.id}
-                navigate={notification_link(notification)}
-                class="text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
-              >
-                View
-              </.link>
-            </div>
-          </div>
+<div class="relative">
+      <button
+        phx-click={JS.toggle(to: "#notif-dropdown-#{@id}")}
+        phx-click-away={JS.hide(to: "#notif-dropdown-#{@id}")}
+        class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        
+        <%= if @unread_count > 0 do %>
+          <span class="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-gray-800 animate-pulse">
+            <%= if @unread_count > 9, do: "9+", else: @unread_count %>
+          </span>
         <% end %>
-      <% end %>
-    </div>
+      </button>
 
-    <!-- Modal Footer -->
-    <%= if @unread_count > 0 do %>
-      <div class="px-4 py-3 border-t border-gray-200">
-        <button
-          phx-click="mark_all_as_read"
-          class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-        >
-          Mark all as read
-        </button>
+      <div 
+        id={"notif-dropdown-#{@id}"} 
+        class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden transition-colors duration-200"
+      >
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center">
+          <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Notifications</h3>
+          <%= if @unread_count > 0 do %>
+            <button 
+              phx-click="mark_all_read" 
+              phx-target={@myself} 
+              class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              Mark all read
+            </button>
+          <% end %>
+        </div>
+
+        <div class="max-h-[400px] overflow-y-auto dark:bg-gray-800">
+          <%= if Enum.empty?(@notifications) do %>
+            <div class="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">No notifications yet.</div>
+          <% else %>
+            <%= for notif <- @notifications do %>
+              <div class={"p-4 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex gap-3 #{if is_nil(notif.read_at), do: "bg-blue-50/30 dark:bg-blue-900/20"}"}>
+                
+                <.link navigate={~p"/users/#{notif.actor.username}"} class="flex-shrink-0">
+                  <%= if notif.actor.avatar_url do %>
+                    <img src={notif.actor.avatar_url} class="w-10 h-10 rounded-full object-cover" />
+                  <% else %>
+                    <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-gray-500 dark:text-gray-300 text-xs">
+                      <%= String.first(notif.actor.username) %>
+                    </div>
+                  <% end %>
+                </.link>
+
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-gray-800 dark:text-gray-200 leading-snug">
+                    <span class="font-bold"><%= notif.actor.username %></span> 
+                    <span class="text-gray-600 dark:text-gray-400"><%= format_text(notif) %></span>
+                  </p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <%= Timex.from_now(notif.inserted_at) %>
+                  </p>
+                </div>
+
+                <.link 
+                  navigate={notification_link(notif)}
+                  phx-click="mark_as_read"
+                  phx-value-id={notif.id}
+                  phx-target={@myself}
+                  class="self-center flex-shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  title="View"
+                >
+                   <%= if is_nil(notif.read_at) do %>
+                    <div class="w-2.5 h-2.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                   <% else %>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300 dark:text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                   <% end %>
+                </.link>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
       </div>
-    <% end %>
-  </div>
-</div>
+    </div>

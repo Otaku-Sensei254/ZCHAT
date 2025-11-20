@@ -1,90 +1,137 @@
-<header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+<header class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-dark-900 shadow-sm border-b border-gray-100 dark:border-dark-800">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <nav class="flex items-center justify-between h-16">
-      <!-- Logo/Brand -->
+      
       <div class="flex-shrink-0">
-        <.link navigate={~p"/"} class="flex items-center">
-          <span class="text-orange-500 text-xl font-bold">Zchat</span>
+        <.link navigate={~p"/"} class="flex items-center gap-2 group">
+          <span class="text-orange-500 text-2xl font-bold tracking-tighter group-hover:text-orange-600 transition-colors dark:text-orange-400 dark:group-hover:text-orange-300">Zchat</span>
         </.link>
       </div>
       
-      <!-- Desktop Navigation -->
-      <div class="hidden md:block">
-        <div class="ml-10 flex items-center space-x-8">
+      <div class="hidden md:flex items-center space-x-6">
+        
+        <%= if @current_user do %>
           <.link 
-            navigate={~p"/"} 
-            class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
+            navigate={~p"/feed"} 
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg"
           >
-            Home
+            Feed
           </.link>
-          
-          <%= if @current_user do %>
-            <!-- Links for logged in users -->
-            <.link 
-              navigate={~p"/users/settings"} 
-              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
-            >
-              Settings
-            </.link>
-            
-            <.link
-              navigate={~p"/posts/new"}
-              class="bg-transparent mx-4 py-2 px-4 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-bold transition duration-300 transform hover:scale-105 rounded-xl"
-            >
-              Create Post 📝
-            </.link>
 
-            <!-- Notifications Component -->
+          <button 
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg flex items-center gap-1"
+            title="Coming Soon"
+          >
+            <span>Chats</span>
+            <span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">New</span>
+          </button>
+
+          <.link 
+            navigate={~p"/users/settings"} 
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg"
+          >
+            Settings
+          </.link>
+
+          <div class="relative">
             <.live_component
               module={ZchatWeb.Components.NotificationsModal}
               id="notifications-modal-desktop"
               current_user={@current_user}
             />
-            
-           <.link
-              navigate={~p"/users/#{@current_user.username}"}
-              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200" 
+          </div>
+
+          <.link
+            navigate={~p"/posts/new"}
+            class="bg-orange-500 text-white border border-orange-600 hover:bg-orange-600 px-4 py-2 rounded-full text-sm font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 dark:bg-orange-600 dark:hover:bg-orange-700 dark:border-orange-700"
+          >
+            <span>Create</span>
+            <span>📝</span>
+          </.link>
+
+          <!-- Theme Toggle Button -->
+          <button 
+            type="button" 
+            class="p-2 text-gray-600 hover:text-orange-600 dark:text-gray-300 dark:hover:text-orange-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-800"
+            aria-label="Toggle dark mode"
+            id="theme-toggle"
+          >
+            <!-- Sun icon (shown in dark mode) -->
+            <svg class="w-5 h-5 dark:block hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            <!-- Moon icon (shown in light mode) -->
+            <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+          </button>
+          
+          <!-- Theme Toggle Script -->
+          <script>
+            // Handle theme toggle
+            document.getElementById('theme-toggle')?.addEventListener('click', function() {
+              const html = document.documentElement;
+              const isDark = html.classList.toggle('dark');
+              localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+          </script>
+          
+          <.link
+            navigate={~p"/users/#{@current_user.username}"}
+            class="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-dark-700" 
+          >
+            <%= if @current_user.avatar_url do %>
+              <img 
+                src={@current_user.avatar_url} 
+                alt="Avatar" 
+                class="h-8 w-8 rounded-full object-cover border border-gray-200 dark:border-dark-700" 
+                referrerpolicy="no-referrer" 
+              />
+            <% else %>
+              <div class="h-8 w-8 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 flex items-center justify-center font-bold text-xs border border-orange-200 dark:border-orange-800">
+                <%= String.first(@current_user.username || "?") |> String.upcase() %>
+              </div>
+            <% end %>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"><%= @current_user.username %></span>
+          </.link>
+          
+          <.form 
+            for={%{}}
+            action={~p"/users/log_out"} 
+            method="post"
+            class="inline"
+            as={:user}
+          >
+            <input type="hidden" name="_method" value="delete" />
+            <button 
+              type="submit"
+              class="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-500 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors"
+              title="Log out"
             >
-              <%= @current_user.username %>
-            </.link>
-            
-            <.form 
-              for={%{}}
-              action={~p"/users/log_out"} 
-              method="post"
-              class="inline"
-              as={:user}
-            >
-              <input type="hidden" name="_method" value="delete" />
-              <button 
-                type="submit"
-                class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              >
-                Log out
-              </button>
-            </.form>
-          <% else %>
-            <!-- Links for guests -->
-            <.link 
-              navigate={~p"/users/log_in"} 
-              class="text-gray-700 hover:text-orange-500 px-3 py-2 text-sm font-medium transition-colors duration-200"
-            >
-              Log in
-            </.link>
-            <.link 
-              navigate={~p"/users/register"}
-              class="ml-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Sign up
-            </.link>
-          <% end %>
-        </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </.form>
+
+        <% else %>
+          <.link 
+            navigate={~p"/users/log_in"} 
+            class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium text-sm px-4 py-2"
+          >
+            Log in
+          </.link>
+          <.link 
+            navigate={~p"/users/register"}
+            class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md"
+          >
+            Sign up
+          </.link>
+        <% end %>
       </div>
       
-      <!-- Mobile menu button -->
-      <div class="md:hidden flex items-center gap-4">
+      <div class="md:hidden flex items-center gap-3">
         <%= if @current_user do %>
-           <!-- Show Notifications on Mobile Header too -->
            <.live_component
               module={ZchatWeb.Components.NotificationsModal}
               id="notifications-modal-mobile"
@@ -94,7 +141,7 @@
 
         <button 
           type="button" 
-          class="text-gray-500 hover:text-orange-500 focus:outline-none"
+          class="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none p-2 rounded-md hover:bg-gray-50 dark:hover:bg-dark-800"
           phx-click={Phoenix.LiveView.JS.toggle(to: "#mobile-menu", display: "block")}
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,68 +152,85 @@
     </nav>
   </div>
 
-  <!-- Mobile Menu (Hidden by default) -->
-  <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full left-0">
-    <div class="px-4 pt-2 pb-6 space-y-2">
-      <.link 
-        navigate={~p"/"} 
-        class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
-      >
-        Home
-      </.link>
-
+  <div id="mobile-menu" class="hidden md:hidden bg-white dark:bg-dark-900 border-t border-gray-100 dark:border-dark-800 shadow-lg absolute w-full left-0 z-50">
+    <div class="px-4 pt-2 pb-6 space-y-1">
+      
       <%= if @current_user do %>
         <.link 
-          navigate={~p"/users/#{@current_user.username}"}
-          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+          navigate={~p"/feed"} 
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
         >
-          Profile (<%= @current_user.username %>)
+          📰 Feed
+        </.link>
+
+        <button class="w-full text-left block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800 flex items-center justify-between">
+          <span>💬 Chats</span>
+          <span class="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full">Soon</span>
+        </button>
+
+        <.link 
+          navigate={~p"/users/#{@current_user.username}"}
+          class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-orange-50 dark:hover:bg-dark-800 group"
+        >
+          <%= if @current_user.avatar_url do %>
+            <img src={@current_user.avatar_url} class="h-6 w-6 rounded-full object-cover border border-gray-200 dark:border-dark-700" />
+          <% else %>
+            <div class="h-6 w-6 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 flex items-center justify-center font-bold text-[10px]">
+              <%= String.first(@current_user.username) %>
+            </div>
+          <% end %>
+          <span class="text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-orange-500 dark:group-hover:text-orange-400">My Profile</span>
         </.link>
         
         <.link 
           navigate={~p"/users/settings"} 
-          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
         >
-          Settings
+          ⚙️ Settings
         </.link>
+
+        <div class="my-2 border-t border-gray-100 dark:border-dark-800"></div>
 
         <.link
           navigate={~p"/posts/new"}
-          class="block px-3 py-2 rounded-md text-base font-medium text-orange-600 hover:bg-orange-50"
+          class="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-sm mb-2"
         >
           Create Post 📝
         </.link>
 
-        <div class="pt-4 border-t border-gray-100">
-          <div class="px-3 py-2 text-xs text-gray-500">
-            Signed in as <%= @current_user.email %>
-          </div>
-          <.form 
-            for={%{}}
-            action={~p"/users/log_out"} 
-            method="post"
-            as={:user}
+        <.form 
+          for={%{}}
+          action={~p"/users/log_out"} 
+          method="post"
+          as={:user}
+        >
+          <input type="hidden" name="_method" value="delete" />
+          <button 
+            type="submit"
+            class="w-full text-left block px-3 py-3 rounded-lg text-base font-medium text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/50"
           >
-            <input type="hidden" name="_method" value="delete" />
-            <button 
-              type="submit"
-              class="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
-            >
-              Log out
-            </button>
-          </.form>
-        </div>
+            Log out
+          </button>
+        </.form>
+
       <% else %>
-        <div class="pt-4 border-t border-gray-100 space-y-2">
+        <.link 
+          navigate={~p"/"} 
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
+        >
+          🏠 Home
+        </.link>
+        
+        <div class="pt-4 mt-2 border-t border-gray-100 dark:border-dark-800 space-y-3">
           <.link 
             navigate={~p"/users/log_in"} 
-            class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-orange-500 hover:bg-gray-50"
+            class="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-dark-800 hover:bg-gray-100 dark:hover:bg-dark-700 border border-gray-200 dark:border-dark-700"
           >
             Log in
           </.link>
           <.link 
             navigate={~p"/users/register"}
-            class="block px-3 py-2 rounded-md text-base font-medium text-orange-600 hover:bg-orange-50"
+            class="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-sm"
           >
             Sign up
           </.link>

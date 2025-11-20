@@ -227,7 +227,7 @@ defmodule ZchatWeb.CoreComponents do
   def simple_form(assigns) do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
-      <div class="space-y-8 bg-white mt-10">
+      <div class="space-y-8 bg-white dark:bg-transparent mt-10">
         <%= render_slot(@inner_block, f) %>
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
           <%= render_slot(action, f) %>
@@ -256,7 +256,7 @@ defmodule ZchatWeb.CoreComponents do
     <button
       type={@type}
       class={[
-        "phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3",
+        "phx-submit-loading:opacity-75 rounded-lg bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 py-2 px-3",
         "text-sm font-semibold leading-6 text-white active:text-white/80",
         @class
       ]}
@@ -316,7 +316,7 @@ defmodule ZchatWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name}>
-      <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+      <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
         <input type="hidden" name={@name} value="false" />
         <input
           type="checkbox"
@@ -324,7 +324,7 @@ defmodule ZchatWeb.CoreComponents do
           name={@name}
           value="true"
           checked={@checked}
-          class="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+          class="rounded border-zinc-300 dark:border-zinc-600 text-orange-500 dark:text-orange-400 focus:ring-orange-500 dark:focus:ring-orange-400 dark:bg-dark-800"
           {@rest}
         />
         <%= @label %>
@@ -386,8 +386,10 @@ defmodule ZchatWeb.CoreComponents do
         class={[
           "mt-2 block w-full rounded-lg border-zinc-300 py-[7px] px-[11px]",
           "text-zinc-900 focus:outline-none focus:ring-4 sm:text-sm sm:leading-6",
+          "dark:bg-dark-800 dark:text-white dark:border-zinc-600",
           "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 phx-no-feedback:focus:ring-zinc-800/5",
-          "border-zinc-300 focus:border-zinc-400 focus:ring-zinc-800/5",
+          "dark:phx-no-feedback:focus:border-orange-400",
+          "border-zinc-300 focus:border-zinc-400 focus:ring-zinc-800/5 dark:focus:ring-orange-400/10",
           @errors != [] && "border-rose-400 focus:border-rose-400 focus:ring-rose-400/10"
         ]}
         {@rest}
@@ -405,7 +407,7 @@ defmodule ZchatWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+    <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-zinc-300">
       <%= render_slot(@inner_block) %>
     </label>
     """
@@ -438,10 +440,10 @@ defmodule ZchatWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8 text-zinc-800">
+        <h1 class="text-lg font-semibold leading-8 text-zinc-800 dark:text-zinc-200">
           <%= render_slot(@inner_block) %>
         </h1>
-        <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
+        <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           <%= render_slot(@subtitle) %>
         </p>
       </div>

@@ -41,6 +41,7 @@ defmodule ZchatWeb.UI.FeedLive do
         socket
         |> assign(:page, 1)
         |> stream(:posts, [], reset: true)
+        
       else
         socket
       end

@@ -221,6 +221,18 @@ defmodule Zchat.Accounts do
     end
   end
 
+  ##update user avatar profile pic
+
+def change_user_profile(%User{} = user, attrs \\ %{}) do
+    User.profile_changeset(user, attrs)
+  end
+
+  def update_user_profile(%User{} = user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """

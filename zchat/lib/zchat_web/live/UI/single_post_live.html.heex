@@ -1,21 +1,21 @@
 <div class="max-w-7xl mx-auto px-4 py-6 lg:py-8">
-  <.back navigate={~p"/feed"} class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6">
+  <.link navigate={~p"/feed"} class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6">
     Back to posts
-  </.back>
+  </.link>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-8rem)]">
     
-    <article class="lg:col-span-2 bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden flex flex-col lg:h-full">
+    <article class="lg:col-span-2 bg-white dark:bg-dark-900 shadow-lg rounded-2xl border border-gray-100 dark:border-dark-800 overflow-hidden flex flex-col lg:h-full">
       <div class="flex-1 lg:overflow-y-auto custom-scrollbar">
         <div class="p-6 pb-2">
-          <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
+          <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-200 leading-tight">
             <%= @post.title %>
           </h1>
         </div>
 
         <%!-- MEDIA SLIDER START --%>
         <%= if @post.media_files && @post.media_files != [] do %>
-          <div class="bg-gray-50 p-4 border-y border-gray-100">
+          <div class="bg-gray-50 dark:bg-dark-800/50 p-4 border-y border-gray-100 dark:border-dark-800">
             <div class="relative max-w-4xl mx-auto">
               <div class="overflow-hidden rounded-xl relative">
                 <div class="relative" id={"single-media-slider-#{@post.id}"}>
@@ -41,7 +41,7 @@
                               </video>
                             <% end %>
                           <% true -> %>
-                            <a href={media["url"]} class="text-blue-600 hover:underline" target="_blank">View attached media</a>
+                            <a href={media["url"]} class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank">View attached media</a>
                         <% end %>
                       </div>
                     </div>
@@ -95,7 +95,7 @@
         <%!-- MEDIA SLIDER END --%>
 
         <div class="p-6 space-y-6">
-          <div class="prose max-w-none text-gray-800 leading-relaxed">
+          <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-300 leading-relaxed">
             <%= if Code.ensure_loaded?(Earmark) do %>
               <%= raw(Earmark.as_html!(@post.content)) %>
             <% else %>
@@ -104,10 +104,10 @@
           </div>
 
           <%= if @post.tags && @post.tags != [] do %>
-            <div class="pt-4 border-t border-gray-200">
+            <div class="pt-4 border-t border-gray-200 dark:border-dark-700">
               <div class="flex flex-wrap gap-2">
                 <%= for tag <- @post.tags do %>
-                  <span class="px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700">
+                  <span class="px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
                     #<%= tag %>
                   </span>
                 <% end %>
@@ -117,13 +117,13 @@
         </div>
       </div>
 
-      <div class="p-4 border-t border-gray-100 bg-white z-10 sticky bottom-0 lg:static">
+      <div class="p-4 border-t border-gray-100 dark:border-dark-800 bg-white dark:bg-dark-900 z-10 sticky bottom-0 lg:static">
         <button
           phx-click="toggle_like"
           phx-throttle="1000"
           class={[
             "flex items-center gap-2 transition text-lg font-medium",
-            @current_like && "text-red-500" || "text-gray-600 hover:text-red-500"
+            @current_like && "text-red-500" || "text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
           ]}
         >
           <svg class="w-7 h-7" fill={if @current_like, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -135,9 +135,9 @@
     </article>
 
     <aside class="lg:col-span-1 lg:h-full min-h-[500px]" id="comments-section">
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 h-full flex flex-col overflow-hidden">
-        <div class="p-4 border-b border-gray-200 bg-gray-50/50">
-          <h3 class="text-lg font-bold text-gray-900">
+      <div class="bg-white dark:bg-dark-900 rounded-2xl shadow-lg border border-gray-100 dark:border-dark-800 h-full flex flex-col overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-dark-700 bg-gray-50/50 dark:bg-dark-800/50">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-200">
             Comments
           </h3>
         </div>
@@ -148,7 +148,7 @@
               id={id}
               class={[
                 "group p-3 rounded-xl border transition-all hover:shadow-sm",
-                comment.parent_id && "ml-8 bg-gray-50 border-gray-200" || "bg-white border-gray-100"
+                comment.parent_id && "ml-8 bg-gray-50 dark:bg-dark-800/50 border-gray-200 dark:border-dark-700" || "bg-white dark:bg-dark-900 border-gray-100 dark:border-dark-800"
               ]}
             >
               <div class="flex space-x-3">
@@ -158,15 +158,15 @@
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-semibold text-sm text-gray-900 truncate">
+                    <span class="font-semibold text-sm text-gray-900 dark:text-gray-200 truncate">
                       <%= comment.user.username %>
                     </span>
-                    <span class="text-xs text-gray-400 flex-shrink-0">
+                    <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
                       <%= Timex.from_now(comment.inserted_at) %>
                     </span>
                   </div>
 
-                  <p class="text-sm text-gray-700 leading-relaxed break-words">
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
                     <%= comment.content %>
                   </p>
 
@@ -174,7 +174,7 @@
                     <button
                       phx-click="reply_to"
                       phx-value-parent_id={comment.id}
-                      class="text-xs text-blue-600 hover:text-blue-800 font-medium transition flex items-center gap-1"
+                      class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition flex items-center gap-1"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                       Reply
@@ -183,7 +183,7 @@
                     <button
                       phx-click="like_comment"
                       phx-value-comment_id={comment.id}
-                      class="text-xs text-gray-500 hover:text-red-500 transition flex items-center gap-1"
+                      class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition flex items-center gap-1"
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -197,14 +197,14 @@
           <% end %>
         </div>
 
-        <div class="p-4 border-t border-gray-200 bg-white z-10">
+        <div class="p-4 border-t border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-900 z-10">
           <%= if @replying_to do %>
-            <div class="flex items-center justify-between text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg mb-2 border border-blue-100 animate-fade-in-up">
+            <div class="flex items-center justify-between text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 px-3 py-2 rounded-lg mb-2 border border-blue-100 dark:border-blue-800/50 animate-fade-in-up">
               <span class="font-medium">Replying to comment...</span>
               <button
                 type="button"
                 phx-click="cancel_reply"
-                class="hover:text-blue-900 font-bold p-1"
+                class="hover:text-blue-900 dark:hover:text-blue-200 font-bold p-1"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -219,7 +219,7 @@
               field={f[:content]}
               type="textarea"
               placeholder={if(@replying_to, do: "Reply...", else: "Write a comment...")}
-              class="w-full bg-gray-50 border-0 rounded-xl p-3 text-sm pr-12 resize-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all min-h-[50px] max-h-[120px]"
+              class="w-full bg-gray-50 dark:bg-dark-800 border-0 rounded-xl p-3 text-sm pr-12 resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:bg-white dark:focus:bg-dark-700 transition-all min-h-[50px] max-h-[120px]"
               rows="1"
               autocomplete="off"
             />

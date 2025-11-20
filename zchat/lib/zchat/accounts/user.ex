@@ -6,6 +6,8 @@ defmodule Zchat.Accounts.User do
   schema "users" do
     field :username, :string
     field :email, :string
+    field :avatar_url, :string
+    field :bio, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
@@ -43,7 +45,7 @@ defmodule Zchat.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:username, :email, :password])
+    |> cast(attrs, [:username, :email, :password, :avatar_url])
     |> validate_email(opts)
     |> unique_constraint(:username, message: "Username already taken") # Combined the constraints
     |> validate_length(:username, min: 2, max: 50) # Optional, but good practice
@@ -136,6 +138,20 @@ defmodule Zchat.Accounts.User do
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
+  end
+
+  @doc """
+  A changeset for updating public profile information (Avatar, Bio, Username).
+  """
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :bio, :avatar_url])
+    |> validate_required([:username])
+    |> validate_length(:username, min: 3, max: 20)
+    |> validate_length(:bio, max: 160)
+    # Ensure username is unique (excluding current user)
+    |> unsafe_validate_unique(:username, Zchat.Repo)
+    |> unique_constraint(:username)
   end
 
   @doc """

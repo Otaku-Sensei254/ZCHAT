@@ -47,6 +47,13 @@ defmodule ZchatWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+
+  # Serve uploaded files from priv/static/uploads
+  plug Plug.Static,
+    at: "/uploads",
+    from: Path.expand("../priv/static/uploads", __DIR__),
+    gzip: false
+
   plug Plug.Static,
   at: "/uploads",
   from: Path.expand("./priv/static/uploads"),

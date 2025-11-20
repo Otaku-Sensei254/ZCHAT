@@ -1,26 +1,40 @@
 <!DOCTYPE html>
-<html lang="en" style="scrollbar-gutter: stable;">
+<html lang="en" style="scrollbar-gutter: stable;" class="h-full">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Phoenix Framework">
+    <.live_title suffix=" · Zchat">
       <%= assigns[:page_title] || "Zchat" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+    
+    <!-- Theme Toggle Script -->
+    <script>
+      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+      (function() {
+        // Check for saved theme preference or use system preference
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Apply theme on page load
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
     </script>
   </head>
-  <body class="bg-white antialiased">
+  <body class="bg-white dark:bg-dark-800 antialiased text-gray-800 dark:text-gray-200">
     <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
       <%= if @current_user do %>
-        <li class="text-[0.8125rem] leading-6 text-zinc-900">
+        <li class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-zinc-200">
           {@current_user.email}
         </li>
         <li>
           <.link
             href={~p"/users/settings"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-zinc-200 font-semibold hover:text-zinc-700 dark:hover:text-zinc-400"
           >
             Settings
           </.link>
@@ -29,7 +43,7 @@
           <.link
             href={~p"/users/log_out"}
             method="delete"
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-zinc-200 font-semibold hover:text-zinc-700 dark:hover:text-zinc-400"
           >
             Log out
           </.link>
@@ -38,7 +52,7 @@
         <li>
           <.link
             href={~p"/users/register"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-zinc-200 font-semibold hover:text-zinc-700 dark:hover:text-zinc-400"
           >
             Register
           </.link>
@@ -46,7 +60,7 @@
         <li>
           <.link
             href={~p"/users/log_in"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+            class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-zinc-200 font-semibold hover:text-zinc-700 dark:hover:text-zinc-400"
           >
             Log in
           </.link>

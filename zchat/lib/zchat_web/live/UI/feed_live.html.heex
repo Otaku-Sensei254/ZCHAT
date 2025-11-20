@@ -3,22 +3,22 @@
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <!-- Sidebar (hidden on mobile) -->
     <div class="hidden md:block md:col-span-1">
-      <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Categories</h3>
+      <div class="bg-white dark:bg-dark-900 rounded-lg shadow p-4 mb-6">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-200 mb-4">Categories</h3>
         <ul class="space-y-2">
           <li>
-            <.link patch={~p"/feed"} class="block px-3 py-2 rounded hover:bg-gray-100">
+            <.link patch={~p"/feed"} class="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-dark-800">
               All Categories
             </.link>
             
           </li>
-          <%= for category <- ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
+          <%= for category <- ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
             <li>
               <.link 
                 patch={~p"/feed?category=#{category}"} 
                 class={[
                   "block px-3 py-2 rounded",
-                  @category == category && "bg-blue-50 text-blue-700 font-medium"
+                  @category == category && "bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-medium"
                 ]}
               >
                 <%= category %>
@@ -29,21 +29,21 @@
       </div>
 
       <!-- Trending Section -->
-      <div class="bg-white rounded-lg shadow p-4">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Trending Now</h3>
+      <div class="bg-white dark:bg-dark-900 rounded-lg shadow p-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-200 mb-4">Trending Now</h3>
         <div class="space-y-4">
           <%= for {_id, post} <- @streams.trending do %>
             <div class="text-sm">
-              <.link navigate={~p"/posts/#{post.id}"} class="block hover:bg-gray-50 p-2 rounded">
-                <p class="font-medium text-gray-900 line-clamp-2"><%= post.title || "Untitled" %></p>
-                <p class="text-gray-500 text-xs mt-1">
+              <.link navigate={~p"/posts/#{post.id}"} class="block hover:bg-gray-50 dark:hover:bg-dark-800 p-2 rounded">
+                <p class="font-medium text-gray-900 dark:text-gray-200 line-clamp-2"><%= post.title || "Untitled" %></p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">
                   <%= length(post.likes) %> likes • <%= Timex.from_now(post.inserted_at) %>
                 </p>
               </.link>
             </div>
           <% end %>
           <%= if map_size(@streams.trending) == 0 do %>
-            <p class="text-gray-500 text-sm">No trending posts yet. Be the first to post!</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">No trending posts yet. Be the first to post!</p>
           <% end %>
         </div>
       </div>
@@ -52,7 +52,7 @@
     <!-- Main Feed -->
     <div class="md:col-span-3">
       <!-- Search Bar -->
-      <div class="bg-white rounded-lg shadow mb-4 p-3 sm:p-4">
+      <div class="bg-white dark:bg-dark-900 rounded-lg shadow mb-4 p-3 sm:p-4">
         <form phx-change="search" phx-submit="search">
           <div class="relative">
             <input
@@ -60,10 +60,10 @@
               name="search"
               value={@search_term || ""}
               placeholder="Search users, posts, or tags..."
-              class="w-full pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+              class="w-full pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:ring-orange-500 focus:border-orange-500 dark:focus:ring-orange-400 dark:focus:border-orange-400 dark:bg-dark-800 dark:text-white"
             />
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -76,17 +76,17 @@
         <div class="flex overflow-x-auto gap-2 no-scrollbar">
           <.link
             patch={~p"/feed"}
-            class="shrink-0 px-3 py-1.5 rounded-full text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            class="shrink-0 px-3 py-1.5 rounded-full text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-zinc-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700"
           >
             All
           </.link>
-          <%= for category <- ["Tech", "Drama", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
+          <%= for category <- ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"] do %>
             <.link
               patch={~p"/feed?category=#{category}"}
               class={[
                 "shrink-0 px-3 py-1.5 rounded-full text-sm border",
-                @category == category && "bg-blue-600 text-white border-blue-600",
-                @category != category && "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                @category == category && "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500",
+                @category != category && "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-dark-800 dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-dark-700"
               ]}
             >
               <%= category %>
@@ -96,8 +96,8 @@
       </div>
 
       <!-- Create Post Card -->
-      <div class="bg-white rounded-lg shadow mb-6 p-4">
-        <.link navigate={~p"/posts/new"} class="block w-full text-left px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+      <div class="bg-white dark:bg-dark-900 rounded-lg shadow mb-6 p-4">
+        <.link navigate={~p"/posts/new"} class="block w-full text-left px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-800">
           What's on your mind?
         </.link>
       </div>

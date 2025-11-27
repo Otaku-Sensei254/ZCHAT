@@ -1,19 +1,3 @@
-// If you want to use Phoenix channels, run `mix help phx.gen.channel`
-// to get started and then uncomment the line below.
-// import "./user_socket.js"
-
-// You can include dependencies in two ways.
-//
-// The simplest option is to put them in assets/vendor and
-// import them using relative paths:
-//
-//     import "../vendor/some-package.js"
-//
-// Alternatively, you can `npm install some-package --prefix assets` and import
-// them using a path starting with the package name:
-//
-//     import "some-package"
-//
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
@@ -22,11 +6,105 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-
+//import './user_socket.js'
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+import userSocket from "./user_socket";
 
 // Define Hooks object
 let Hooks = {};
+
+// In your app.js - replace the entire ChatHook with this:
+
+Hooks.ChatHook = {
+  mounted() {
+    // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
+    const form = this.el.querySelector("form");
+    const input = this.el.querySelector("input[name='message[content]']");
+    const conversationId = this.el.dataset.conversationId;
+
+    if (!conversationId) return;
+
+    // 2. CONNECT TO CHANNEL
+    this.channel = userSocket.channel(`conversation:${conversationId}`, {});
+
+    // 3. LISTEN FOR EVENTS (Server -> Client)
+    
+    // Message received
+    this.channel.on("new_message", (payload) => {
+      this.pushEvent("display_new_message", payload);
+    });
+
+    // Typing indicator received
+    this.channel.on("typing", (payload) => {
+      this.pushEvent("update_typing_indicator", {
+        user_id: payload.user.id,
+        username: payload.user.username,
+        is_typing: payload.typing
+      });
+    });
+
+    // Join the channel
+    this.channel.join()
+      .receive("ok", resp => console.log("Joined conversation successfully", resp))
+      .receive("error", resp => console.error("Unable to join conversation", resp));
+
+    // 4. HANDLE INPUT (Client -> Server)
+    
+  if (input) {
+      let typingTimer;
+      input.addEventListener("input", () => {
+        clearTimeout(typingTimer);
+        this.channel.push("typing", { typing: true });
+        typingTimer = setTimeout(() => {
+          this.channel.push("typing", { typing: false });
+        }, 2000);
+      });
+    }
+
+    // 5. HANDLE SUBMIT
+    if (form && input) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const content = input.value.trim();
+
+        if (content) {
+          // Push to channel
+          this.channel.push("new_message", { content: content })
+          
+            .receive("ok", () => {
+              console.log("Message sent");
+              input.value = ""; // Clear input
+              
+              // Stop typing indicator immediately upon send
+              this.channel.push("typing", { typing: false });
+            })
+            .receive("error", (err) => console.error("Failed to send", err));
+        }
+      });
+    }
+  },
+
+  destroyed() {
+    if (this.channel) {
+      this.channel.leave();
+    }
+  }
+};
+
+// Hooks.ChatChannel = {
+//   mounted() {
+//     let conversationId = this.el.dataset.conversationId
+//     this.channel = joinConversation(conversationId, (msg) => {
+//       this.pushEvent("new_message", msg)
+//     })
+//   },
+
+//   destroyed() {
+//     this.channel.leave()
+//   }
+// }
+// 
 
 Hooks.NotificationsHook = {
   mounted() {
@@ -53,6 +131,27 @@ Hooks.NotificationsHook = {
         this.pushEvent("load_notifications", {});
       }
     });
+  }
+};
+Hooks.LocalTime = {
+  mounted() {
+    this.updated();
+  },
+  updated() {
+    const dtStr = this.el.dataset.timestamp;
+    if (!dtStr) return;
+
+    // Create a Date object from the UTC string
+    const date = new Date(dtStr);
+
+    // Format it to the user's locale (e.g. "14:30" or "2:30 PM")
+    this.el.textContent = date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit'
+    });
+    
+    // Optional: Remove the 'invisible' class once formatted to prevent flickering
+    this.el.classList.remove("invisible");
   }
 };
 
@@ -83,6 +182,25 @@ Hooks.VideoAutoplay = {
   },
 };
 
+
+//auto scroll for chat messages
+Hooks.ScrollToBottom = {
+  mounted() {
+    this.scrollToBottom();
+    // CRITICAL: Listen for the event sent by ChatLive.ex
+    this.handleEvent("scroll-to-bottom", () => this.scrollToBottom());
+  },
+
+  updated() {
+    // This runs when the DOM changes (e.g. typing indicator appears/disappears)
+    this.scrollToBottom();
+  },
+
+  scrollToBottom() {
+    // This scrolls the container to the very bottom
+    this.el.scrollTop = this.el.scrollHeight;
+  }
+}
 // Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
@@ -97,8 +215,4 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
-// expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
-// >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
-// >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket

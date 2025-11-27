@@ -12,8 +12,8 @@ defmodule Zchat.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :naive_datetime
-    field :role, :string, default: "user"
     has_many :posts, Post
+    many_to_many :roles, Zchat.Accounts.Role, join_through: "user_roles", on_replace: :delete
     has_many :reposts, Zchat.Posts.Repost
     has_many :likes, Zchat.Posts.Like
 
@@ -197,15 +197,38 @@ defmodule Zchat.Accounts.User do
 @doc """
 Checks if the user is an admin.
 """
-def is_admin?(%Zchat.Accounts.User{role: "admin"}), do: true
+
+def is_admin?(%Zchat.Accounts.User{roles: roles}) when is_list(roles) do
+  Enum.any?(roles, fn role -> role.name == "admin" end)
+end
+
+# Fallback: If roles are not loaded (Ecto.Association.NotLoaded) or user is nil
 def is_admin?(_), do: false
 
 @doc """
 A changeset for upgrading users to admins (only accessible by system)
 """
-def admin_changeset(user, attrs) do
-  user
-  |> cast(attrs, [:role])
-  |> validate_inclusion(:role, ["user", "admin", "moderator"])
-end
+  def admin_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:role])
+    |> validate_inclusion(:role, ["user", "admin", "moderator"])
+  end
+
+  @doc """
+  A user changeset for updating user roles.
+  """
+  def roles_changeset(user, attrs) do
+    user
+    |> cast(attrs, []) # No direct fields to cast, only associations
+    |> cast_assoc(:roles)
+  end
+
+  @doc """
+  A user changeset for updating user roles without initial attributes.
+  """
+  def roles_changeset(user) do
+    user
+    |> cast(%{}, []) # No direct fields to cast, only associations
+    |> cast_assoc(:roles)
+  end
 end

@@ -14,10 +14,14 @@ defmodule Zchat.Application do
       Zchat.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: Zchat.PubSub},
+
+      ZchatWeb.Presence,
       # Start Finch
       {Finch, name: Zchat.Finch},
       # Start the Endpoint (http/https)
       ZchatWeb.Endpoint
+
+
       # Start a worker by calling: Zchat.Worker.start_link(arg)
       # {Zchat.Worker, arg}
     ]

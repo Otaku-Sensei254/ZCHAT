@@ -10,6 +10,9 @@ defmodule ZchatWeb.Endpoint do
     signing_salt: "3HaKtH91",
     same_site: "Lax"
   ]
+  socket "/socket", ZchatWeb.UserSocket,
+    websocket: true,
+    longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
@@ -51,13 +54,13 @@ defmodule ZchatWeb.Endpoint do
   # Serve uploaded files from priv/static/uploads
   plug Plug.Static,
     at: "/uploads",
-    from: Path.expand("../priv/static/uploads", __DIR__),
+    from: "priv/static/uploads",
     gzip: false
 
-  plug Plug.Static,
-  at: "/uploads",
-  from: Path.expand("./priv/static/uploads"),
-  gzip: false
+  # plug Plug.Static,
+  # at: "/uploads",
+  # from: Path.expand("./priv/static/uploads"),
+  # gzip: false
 
   plug ZchatWeb.Router
 end

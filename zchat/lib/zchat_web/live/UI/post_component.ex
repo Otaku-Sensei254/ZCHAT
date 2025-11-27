@@ -95,44 +95,46 @@ defmodule ZchatWeb.UI.PostComponent do
 
   # --- LIKE EVENTS ---
 
+  # FIX: One single event for liking. No local updates. No sending messages to parent.
   @impl true
   def handle_event("toggle_like", _, socket) do
     user = socket.assigns.current_user
     post = socket.assigns.post
 
     if user do
+      # 1. Fire DB command
+      # 2. Wait for PubSub (FeedLive will receive it and stream_insert fresh data)
       case Posts.toggle_like(user.id, "Post", post.id) do
-        {:ok, %Like{} = like} ->
-          # Successfully Liked
-          {:noreply,
-           socket
-           |> assign(:current_like, like)
-           |> assign(:like_count, socket.assigns.like_count + 1)}
-
-        {:ok, nil} ->
-          # Successfully Unliked
-          {:noreply,
-           socket
-           |> assign(:current_like, nil)
-           |> assign(:like_count, max(0, socket.assigns.like_count - 1))}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Error toggling like")}
+        {:ok, _} -> {:noreply, socket}
+        {:error, _} -> {:noreply, put_flash(socket, :error, "Error liking post")}
       end
     else
-      {:noreply, put_flash(socket, :error, "You must be logged in to like posts")}
+      {:noreply,
+       socket |> put_flash(:error, "Log in to like") |> push_navigate(to: ~p"/users/log_in")}
     end
   end
+# --- AUTHORIZATION HELPERS ---
 
-  # --- AUTHORIZATION HELPER ---
-  # Returns true if user is the owner OR an admin
+  # 1. Main entry point
   defp can_manage?(%Zchat.Accounts.User{} = user, %Zchat.Posts.Post{} = post) do
-    user.id == post.user_id or user.role == "admin"
+    is_owner?(user, post) or is_admin?(user)
   end
 
-  # Handle nil user (not logged in)
-  defp can_manage?(_, _), do: false
+  # Fallback for guests (nil user)
+  defp can_manage?(nil, _), do: false
 
+  # 2. Check if user owns the post
+  defp is_owner?(user, post) do
+    user.id == post.user_id
+  end
+
+  # 3. Check if user has admin role (Safely handles missing preloads)
+  defp is_admin?(%Zchat.Accounts.User{roles: roles}) when is_list(roles) do
+    Enum.any?(roles, fn r -> r.name == "admin" end)
+  end
+
+  # If roles are #Ecto.Association.NotLoaded<...>, this clause catches it and returns false
+  defp is_admin?(_), do: false
 
   # --- REAL-TIME UPDATES ---
   # These handle updates broadcasted by other users

@@ -4,12 +4,14 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
   alias Zchat.Accounts
   alias Zchat.Posts
   alias Zchat.Socials
+  alias Zchat.Chat
 
   @impl true
   def mount(%{"username" => username}, session, socket) do
     socket = ZchatWeb.UserAuth.mount_current_user(socket, session)
 
-    case Accounts.get_user_by_username(username) do
+    # Preload roles to prevent crashes in the template
+    case Accounts.get_user_by_username(username) |> Zchat.Repo.preload(:roles) do
       nil ->
         {:ok,
          socket
@@ -17,6 +19,7 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
          |> redirect(to: ~p"/feed")}
 
       user ->
+        # This now works because we fixed the Context!
         posts = Posts.list_posts(user_id: user.id, limit: 20)
         follow_stats = Socials.get_follow_stats(user.id)
 
@@ -33,8 +36,7 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
          |> assign(:user, user)
          |> assign(:posts, posts)
          |> assign(:follow_stats, follow_stats)
-         |> assign(:is_following, is_following)
-         |> assign(:current_user, socket.assigns.current_user)}
+         |> assign(:is_following, is_following)}
     end
   end
 
@@ -50,25 +52,14 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
       }) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
-
-          {:noreply,
-           socket
-           |> assign(:is_following, true)
-           |> assign(:follow_stats, follow_stats)}
+          {:noreply, assign(socket, is_following: true, follow_stats: follow_stats)}
 
         {:error, _changeset} ->
-          {:noreply,
-           socket
-           |> put_flash(:error, "Unable to follow user")}
+          {:noreply, put_flash(socket, :error, "Unable to follow user")}
       end
     else
       {:noreply, socket}
     end
-  end
-
-  @impl true
-  def check_role(socket, role) do
-
   end
 
   @impl true
@@ -80,11 +71,7 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
       case Socials.delete_follow(current_user.id, profile_user.id) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
-
-          {:noreply,
-           socket
-           |> assign(:is_following, false)
-           |> assign(:follow_stats, follow_stats)}
+          {:noreply, assign(socket, is_following: false, follow_stats: follow_stats)}
 
         {:error, :not_found} ->
           {:noreply, socket}
@@ -93,6 +80,25 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
       {:noreply, socket}
     end
   end
-  def admin?(%Zchat.Accounts.User{role: "admin"}), do: true
-  def admin?(_), do: false
+
+  #message the user
+    @impl true
+  def handle_event("message_user", _, socket) do
+    current_user = socket.assigns.current_user
+    profile_user = socket.assigns.user
+
+    # Safety check: Don't message yourself
+    if current_user && current_user.id != profile_user.id do
+      case Chat.get_or_create_private_conversation(current_user.id, profile_user.id) do
+        {:ok, conversation} ->
+          # Navigate to the chat!
+          {:noreply, push_navigate(socket, to: ~p"/chat/#{conversation.id}")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not start conversation")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
 end

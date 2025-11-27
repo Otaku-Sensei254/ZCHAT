@@ -30,7 +30,8 @@ defmodule ZchatWeb.UserAuth do
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
-    put_resp_cookie(conn, @remember_me_cookie, token, @remember_me_options)
+    encoded_token = Base.url_encode64(token)
+    put_resp_cookie(conn, @remember_me_cookie, encoded_token, @remember_me_options)
   end
   defp maybe_write_remember_me_cookie(conn, _token, _params), do: conn
 
@@ -69,16 +70,26 @@ defmodule ZchatWeb.UserAuth do
   def fetch_current_user(conn, _opts) do
     {user_token, conn} = ensure_user_token(conn)
     user = user_token && Accounts.get_user_by_session_token(user_token)
-    assign(conn, :current_user, user)
+
+    conn
+    |> assign(:current_user, user)
+    |> assign(:user_token, user_token && Base.url_encode64(user_token))
   end
 
   defp ensure_user_token(conn) do
-    if token = get_session(conn, :user_token) do
-      {token, conn}
+    if encoded_token = get_session(conn, :user_token) do
+      case Base.url_decode64(encoded_token) do
+        {:ok, token} -> {token, conn}
+        :error -> {nil, conn}
+      end
     else
       conn = fetch_cookies(conn, signed: [@remember_me_cookie])
-      if token = conn.cookies[@remember_me_cookie] do
-        {token, put_token_in_session(conn, token)}
+
+      if encoded_token = conn.cookies[@remember_me_cookie] do
+        case Base.url_decode64(encoded_token) do
+          {:ok, token} -> {token, put_token_in_session(conn, token)}
+          :error -> {nil, conn}
+        end
       else
         {nil, conn}
       end
@@ -123,10 +134,21 @@ defmodule ZchatWeb.UserAuth do
 
   # Private function that does the real work
   defp mount_current_user_private(socket, session) do
-    Phoenix.Component.assign_new(socket, :current_user, fn ->
-      if user_token = session["user_token"] do
-        Accounts.get_user_by_session_token(user_token)
+    encoded_token = session["user_token"]
+
+    socket
+    |> Phoenix.Component.assign_new(:current_user, fn ->
+      if encoded_token do
+        case Base.url_decode64(encoded_token) do
+          {:ok, token} -> Accounts.get_user_by_session_token(token)
+          :error -> nil
+        end
+      else
+        nil
       end
+    end)
+    |> Phoenix.Component.assign_new(:user_token, fn ->
+      encoded_token
     end)
   end
 
@@ -167,9 +189,10 @@ defmodule ZchatWeb.UserAuth do
   ## -----------------------------
 
   defp put_token_in_session(conn, token) do
+    encoded_token = Base.url_encode64(token)
     conn
-    |> put_session(:user_token, token)
-    |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
+    |> put_session(:user_token, encoded_token)
+    |> put_session(:live_socket_id, "users_sessions:#{encoded_token}")
   end
 
   defp maybe_store_return_to(%{method: "GET"} = conn), do: put_session(conn, :user_return_to, current_path(conn))

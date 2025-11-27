@@ -47,22 +47,25 @@ defmodule ZchatWeb.Components.NotificationsModal do
 
   # --- VIEW HELPERS ---
 
-  defp notification_link(notification) do
-    case notification.type do
-      "follow" -> ~p"/users/#{notification.actor.username}"
-      _ -> ~p"/posts/#{notification.post_id}"
-    end
+  def notification_link(%{type: "follow", actor: %{username: username}}) when is_binary(username) do
+    ~p"/users/#{username}"
   end
 
-  defp format_text(n) do
+  def notification_link(%{post_id: post_id}) when is_integer(post_id) do
+    ~p"/posts/#{post_id}"
+  end
+
+  def notification_link(_notification) do
+    ~p"/"  # Fallback to home if we can't determine a proper link
+  end
+
+  def format_text(n) do
     case n.type do
       "like" -> "liked your post"
       "comment" -> "commented on your post"
-      "follow" -> "followed you"
+      "follow" -> "started following you"
       "new_post" -> "posted something new"
       _ -> "sent a notification"
     end
   end
-
- 
 end

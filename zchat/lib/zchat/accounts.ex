@@ -3,10 +3,11 @@ defmodule Zchat.Accounts do
   The Accounts context.
   """
 
+
   import Ecto.Query, warn: false
   alias Zchat.Repo
-
-  alias Zchat.Accounts.{User, UserToken, UserNotifier}
+  alias Zchat.Accounts.{User, Role}
+  alias Zchat.Accounts.{User, UserToken, UserNotifier, Role}
 
   ## Database getters
 
@@ -44,6 +45,7 @@ defmodule Zchat.Accounts do
     if User.valid_password?(user, password), do: user
   end
 
+  def list_users, do: Repo.all(User)
 
   #----Get user by username-----
 
@@ -64,8 +66,10 @@ defmodule Zchat.Accounts do
       ** (Ecto.NoResultsError)
 
   """
-  def get_user!(id), do: Repo.get!(User, id)
-
+def get_user!(id) do
+  Repo.get!(User, id)
+  |> Repo.preload(:roles)
+end
   ## User registration
 
   @doc """
@@ -241,6 +245,7 @@ def change_user_profile(%User{} = user, attrs \\ %{}) do
   def generate_user_session_token(user) do
     {token, user_token} = UserToken.build_session_token(user)
     Repo.insert!(user_token)
+
     token
   end
 
@@ -250,6 +255,7 @@ def change_user_profile(%User{} = user, attrs \\ %{}) do
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
+    |> Repo.preload(:roles)
   end
 
   @doc """
@@ -368,4 +374,167 @@ def change_user_profile(%User{} = user, attrs \\ %{}) do
       {:error, :user, changeset, _} -> {:error, changeset}
     end
   end
+
+
+  # ROLE MANAGEMENT HELPERS
+  def get_roles, do: Repo.all(Role)
+
+  def get_user_with_roles!(id) do
+    Repo.get!(User, id) |> Repo.preload(:roles)
+  end
+    def get_role_by_name(name), do: Repo.get_by(Role, name: name)
+
+
+  @doc """
+  Checks if a user has a specific role.
+  """
+  def user_has_role?(%User{roles: roles}, role_name) when is_list(roles) do
+    Enum.any?(roles, fn role -> role.name == role_name end)
+  end
+
+  def user_has_role?(user, role_name) do
+    # Fallback for when roles are not preloaded
+    user
+    |> Ecto.assoc(:roles)
+    |> Repo.all()
+    |> Enum.any?(fn role -> role.name == role_name end)
+  end
+
+  @doc """
+  Checks if a user has a specific permission.
+  """
+  def user_has_permission?(%User{roles: roles}, permission) when is_list(roles) do
+    Enum.any?(roles, fn role -> permission in role.permissions end)
+  end
+
+  def user_has_permission?(user, permission) do
+    # Fallback for when roles are not preloaded
+    user
+    |> Ecto.assoc(:roles)
+    |> Repo.all()
+    |> Enum.any?(fn role -> permission in role.permissions end)
+  end
+
+  def update_user_roles(%User{} = user, role_ids) do
+    roles = Repo.all(from r in Role, where: r.id in ^role_ids)
+
+    user
+    |> Repo.preload(:roles)
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_assoc(:roles, roles)
+    |> Repo.update()
+end
+  def search_users(query)  do
+    search_term = "%#{query}%"
+    from(u in User,
+    where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term),
+    order_by: [asc: u.inserted_at],
+    preload: [:roles]
+    )
+|> Repo.all()
+  end
+
+  # Add these role management functions to your Accounts module
+
+
+@doc """
+Assigns a role to a user.
+"""
+def assign_role_to_user(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
+  %Zchat.Accounts.UserRole{}
+  |> Zchat.Accounts.UserRole.changeset(%{user_id: user_id, role_id: role_id})
+  |> Repo.insert(
+    conflict_target: [:user_id, :role_id],
+    on_conflict: :nothing
+  )
+end
+
+def assign_role_to_user(%User{} = user, %Role{} = role) do
+  assign_role_to_user(user.id, role.id)
+end
+
+@doc """
+Removes a role from a user.
+"""
+def remove_role_from_user(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
+  from(ur in "user_roles",
+    where: ur.user_id == ^user_id and ur.role_id == ^role_id)
+  |> Repo.delete_all()
+  |> case do
+    {1, _} -> {:ok, "Role removed"}
+    {0, _} -> {:error, "Role assignment not found"}
+  end
+end
+
+def remove_role_from_user(%User{} = user, %Role{} = role) do
+  remove_role_from_user(user.id, role.id)
+end
+
+@doc """
+Makes a user an admin by assigning the admin role.
+"""
+def make_user_admin(user_id) when is_integer(user_id) do
+  case get_role_by_name("admin") do
+    nil -> {:error, "Admin role not found"}
+    admin_role -> assign_role_to_user(user_id, admin_role.id)
+  end
+end
+
+def make_user_admin(%User{} = user) do
+  make_user_admin(user.id)
+end
+
+@doc """
+Removes admin role from a user.
+"""
+def remove_admin_role(user_id) when is_integer(user_id) do
+  case get_role_by_name("admin") do
+    nil -> {:error, "Admin role not found"}
+    admin_role -> remove_role_from_user(user_id, admin_role.id)
+  end
+end
+
+def remove_admin_role(%User{} = user) do
+  remove_admin_role(user.id)
+end
+
+@doc """
+Lists all users with a specific role.
+"""
+def list_users_with_role(role_name) do
+  case get_role_by_name(role_name) do
+    nil -> []
+    role ->
+      from(u in User,
+        join: ur in "user_roles", on: ur.user_id == u.id,
+        where: ur.role_id == ^role.id,
+        preload: [:roles]
+      )
+      |> Repo.all()
+  end
+end
+
+@doc """
+Lists all admins.
+"""
+def list_admins do
+  list_users_with_role("admin")
+end
+
+@doc """
+Checks if a user is an admin.
+"""
+def is_admin?(%User{} = user) do
+  user_has_role?(user, "admin")
+end
+
+def is_admin?(user_id) when is_integer(user_id) do
+  user = get_user!(user_id)
+  user_has_role?(user, "admin")
+end
+
+def can_manage() do
+  
+end
+
 end

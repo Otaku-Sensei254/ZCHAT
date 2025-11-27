@@ -13,7 +13,7 @@ defmodule Zchat.Posts.Post do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @categories ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
+  @categories ["Tech", "Drama", "Fiction", "Fitness", "Sports", "Science", "Fashion", "Food", "Politics", "Business", "Nature", "Couples", "Kids"]
 
   @type t :: %__MODULE__{
           id: integer() | nil,

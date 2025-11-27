@@ -1,16 +1,16 @@
 defmodule Zchat.Posts do
-  @modledoc """
+  @moduledoc """
   The Posts context for handling blog posts, comments, and likes.
   """
   import Ecto.Query, warn: false
   alias Zchat.Repo
   alias Zchat.Notifications
   alias Zchat.Posts.{Post, Like, Comment}
-  # Removed unused alias Zchat.Accounts.User
+
+  # --- TRENDING ---
 
   @doc """
-  Returns a list of trending posts from the last 24 hours, ordered by number of likes.
-  ...
+  Returns a list of trending posts from the last 24 hours.
   """
   def list_trending_posts(limit \\ 5)
 
@@ -34,54 +34,84 @@ defmodule Zchat.Posts do
     |> list_trending_posts()
   end
 
+  # --- MAIN FEED ---
+
   @doc """
   Returns a paginated list of posts with optional filtering.
   """
   def list_posts(opts \\ []) do
-    page = Keyword.get(opts, :page, 1)
-    per_page = Keyword.get(opts, :per_page, 10)
-    category = Keyword.get(opts, :category)
-    user_id = Keyword.get(opts, :user_id)
-    preload = Keyword.get(opts, :preload, [:user])
-    search_term = Keyword.get(opts, :search)
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 10 # Support 'limit' from profile    search_term = opts[:search]
+    category = opts[:category]
+    user_id = opts[:user_id]
+    search_term = opts[:search]
+    base_query =
+      Post
+      |> join(:inner, [p], u in assoc(p, :user)) # Join User table
+      |> order_by([p], desc: p.inserted_at)
 
-    query = from p in Post,
-      order_by: [desc: p.inserted_at],
-      preload: ^preload
-
-    query = if category do
-      from p in query, where: p.category == ^category
-    else
-      query
-    end
-
-    query = if user_id do
-      from p in query, where: p.user_id == ^user_id
-    else
-      query
-    end
-
-    query = if search_term && search_term != "" do
-      search_pattern = "%#{search_term}%"
-      from p in query,
-        left_join: u in assoc(p, :user),
-        where:
-          ilike(fragment("COALESCE(?, '')", p.title), ^search_pattern) or
-          ilike(fragment("COALESCE(?, '')", u.username), ^search_pattern) or
-          fragment("EXISTS (SELECT 1 FROM unnest(?) AS tag WHERE tag ILIKE ?)", p.tags, ^search_pattern),
-        distinct: true
-    else
-      query
-    end
-
-    offset = max((page - 1) * per_page, 0)
-
-    query
+    base_query
+    |> apply_filters(search_term, category)
+    |> filter_by_user(user_id)
     |> limit(^per_page)
-    |> offset(^offset)
+    |> offset(^((page - 1) * per_page))
+    |> Repo.all()
+    |> Repo.preload(opts[:preload] || [])
+  end
+
+  # --- DROPDOWN SEARCH ---
+
+  @doc """
+  Searches posts by title and content, returns up to 5 results.
+  Used for the live search dropdown logic.
+  """
+  def search_posts(query) do
+    pattern = "%#{query}%"
+
+    from(p in Post,
+      join: u in assoc(p, :user),
+      # Searching Title or Content (using 'content' column)
+      where: ilike(p.title, ^pattern) or ilike(p.content, ^pattern),
+      preload: [:user],
+      order_by: [desc: p.inserted_at],
+      limit: 5
+    )
     |> Repo.all()
   end
 
+  # --- FILTER LOGIC ---
+
+  defp apply_filters(query, search_term, category) do
+    query
+    |> filter_by_search(search_term)
+    |> filter_by_category(category)
+  end
+
+  defp filter_by_user(query, nil), do: query
+  defp filter_by_user(query, user_id) do
+    from [p, u] in query, where: p.user_id == ^user_id
+  end
+
+  defp filter_by_search(query, nil), do: query
+  defp filter_by_search(query, ""), do: query
+  defp filter_by_search(query, term) do
+    pattern = "%#{term}%"
+
+    # Search: Title OR Content OR Username
+    from [p, u] in query,
+      where: ilike(p.title, ^pattern) or
+             ilike(p.content, ^pattern) or
+             ilike(u.username, ^pattern)
+  end
+
+  defp filter_by_category(query, nil), do: query
+  defp filter_by_category(query, ""), do: query
+  defp filter_by_category(query, category) do
+    # FIX: Use ilike so "Tech" matches "tech"
+    from [p, u] in query, where: ilike(p.category, ^category)
+  end
+
+  # --- GETTING POSTS ---
 
   @doc """
   Gets a single post and increments its view count.
@@ -103,9 +133,7 @@ defmodule Zchat.Posts do
   @doc """
   Gets a single post with preloaded associations.
   """
-  def get_post!(id, opts \\ [])
-
-  def get_post!(id, opts) do
+  def get_post!(id, opts \\ []) do
     preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
 
     Post
@@ -118,7 +146,7 @@ defmodule Zchat.Posts do
   Gets all categories.
   """
   def categories do
-    ["Tech", "Drama", "Fiction", "Fitness", "Science", "Fashion", "Food", "Politics", "Nature", "Couples", "Kids"]
+    ["Tech", "Drama", "Fiction", "Fitness", "Sports", "Science", "Fashion", "Food", "Politics", "Business", "Nature", "Couples", "Kids"]
   end
 
   @doc """
@@ -130,6 +158,8 @@ defmodule Zchat.Posts do
     |> Repo.preload([:user, :likes, comments: :user])
   end
 
+
+  # --- POST CRUD ---
 
   @doc """
   Creates a post, associating it with the user and broadcasting the event.
@@ -163,7 +193,7 @@ defmodule Zchat.Posts do
   @doc """
   Deletes a post.
   """
-def delete_post(%Post{} = post) do
+  def delete_post(%Post{} = post) do
     Repo.delete(post)
     |> case do
       {:ok, post} ->
@@ -183,7 +213,8 @@ def delete_post(%Post{} = post) do
     Post.changeset(post, attrs)
   end
 
-  # Comments
+
+  # --- COMMENTS ---
 
   @doc """
   Gets a single comment.
@@ -196,14 +227,10 @@ def delete_post(%Post{} = post) do
     |> Repo.preload(preload)
   end
 
-
-
   @doc """
   Lists comments with optional filtering.
   """
   def list_comments(opts \\ []) do
-    _page = Keyword.get(opts, :page, 1)
-    _per_page = Keyword.get(opts, :per_page, 10)
     post_id = Keyword.get(opts, :post_id)
     parent_id = Keyword.get(opts, :parent_id)
     preload = Keyword.get(opts, :preload, [:user, :likes])
@@ -215,15 +242,12 @@ def delete_post(%Post{} = post) do
     query
     |> preload(^preload)
     |> order_by(desc: :inserted_at)
-    |> Repo.all() # FIX: Replaced Repo.paginate, which was causing a crash.
-
+    |> Repo.all()
   end
 
   @doc """
   Creates a new comment and broadcasts the event.
   """
- # ... inside lib/posts.ex
-
   def create_comment(attrs \\ %{}) do
     %Comment{}
     |> Comment.changeset(attrs)
@@ -249,6 +273,7 @@ def delete_post(%Post{} = post) do
       error -> error
     end
   end
+
   @doc """
   Updates a comment.
   """
@@ -272,10 +297,8 @@ def delete_post(%Post{} = post) do
     Comment.changeset(comment, attrs)
   end
 
-  #helper function for comments form
 
-
-  # Likes
+  # --- LIKES ---
 
   @doc """
   Creates a like for a post or comment and broadcasts the event.
@@ -286,10 +309,8 @@ def delete_post(%Post{} = post) do
     |> Repo.insert()
     |> case do
       {:ok, like} ->
-        # Update the like count on the liked item
         update_like_count(like)
 
-        # Broadcast the like event
         like = Repo.preload(like, :user)
 
         unless like.likeable_type == "Post" and Repo.get(Post, like.likeable_id) |> Map.get(:user_id) == like.user_id do
@@ -306,7 +327,6 @@ def delete_post(%Post{} = post) do
             Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_liked, like})
             Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_liked, like})
           like.likeable_type == "Comment" ->
-            # Get the comment to find its post_id
             comment = Repo.get(Comment, like.likeable_id)
             if comment do
               Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_liked, like})
@@ -325,10 +345,8 @@ def delete_post(%Post{} = post) do
     Repo.delete(like)
     |> case do
       {:ok, like} ->
-        # Update the like count on the unliked item
         update_like_count(like)
 
-        # Broadcast the unlike event
         like = Repo.preload(like, :user)
 
         cond do
@@ -336,7 +354,6 @@ def delete_post(%Post{} = post) do
             Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
             Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
           like.likeable_type == "Comment" ->
-            # Get the comment to find its post_id
             comment = Repo.get(Comment, like.likeable_id)
             if comment do
               Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}})
@@ -357,12 +374,10 @@ def delete_post(%Post{} = post) do
 
   @doc """
   Toggles a like for a post or comment.
-  Returns {:ok, like} if liked, {:ok, nil} if unliked, or {:error, changeset} if there was an error.
   """
   def toggle_like(user_id, likeable_type, likeable_id) do
     case get_like_by_user_and_target(user_id, likeable_type, likeable_id) do
       nil ->
-        # Like doesn't exist, create it
         create_like(%{
           user_id: user_id,
           likeable_type: likeable_type,
@@ -370,14 +385,13 @@ def delete_post(%Post{} = post) do
         })
 
       like ->
-        # Like exists, remove it
         delete_like(like)
     end
   end
 
 
+  # --- ANALYTICS / STATS ---
 
-  #posts analystics for admin dashboard
   @doc """
   Returns a list of tuples: {category_name, count}
   """
@@ -393,17 +407,11 @@ def delete_post(%Post{} = post) do
 
   @doc """
   Returns a list of tuples: {tag_name, count}
-  Unnests the tags array to count individual tag usage.
   """
   def count_top_tags(limit \\ 10) do
     from(p in Post,
-      # 1. Select the unnested tag and the count of posts
       select: {fragment("unnest(?)", p.tags), count(p.id)},
-
-      # 2. Group by that same unnested value
       group_by: fragment("unnest(?)", p.tags),
-
-      # 3. Order by popularity
       order_by: [desc: count(p.id)],
       limit: ^limit
     )
@@ -421,36 +429,35 @@ def delete_post(%Post{} = post) do
     }
   end
 
-  # Private functions
 
-  # FIX: Correctly updates the likes_count on a Post
+  # --- PRIVATE HELPERS ---
+
+  # Updates the likes_count on a Post
   defp update_like_count(%Like{likeable_type: "Post", likeable_id: post_id}) do
     count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^post_id and l.likeable_type == "Post"), :count)
     from(p in Post, where: p.id == ^post_id) |> Repo.update_all(set: [likes_count: count])
     :ok
   end
 
-  # FIX: Correctly updates the likes_count on a Comment
+  # Updates the likes_count on a Comment
   defp update_like_count(%Like{likeable_type: "Comment", likeable_id: comment_id}) do
     count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^comment_id and l.likeable_type == "Comment"), :count)
     from(c in Comment, where: c.id == ^comment_id) |> Repo.update_all(set: [likes_count: count])
     :ok
   end
 
-  defp update_like_count(_), do: :ok # Catches any other case
+  defp update_like_count(_), do: :ok
 
   # View tracking functions
   def track_view(post_id, user_id) do
-    # Only increment view count if viewer is not the post author
     case Repo.get(Post, post_id) do
-      nil ->
-        :ok  # Post doesn't exist
+      nil -> :ok
       post ->
         if post.user_id != user_id do
           from(p in Post, where: p.id == ^post_id)
           |> Repo.update_all(inc: [view_count: 1])
         else
-          :ok  # Don't count views from the author
+          :ok
         end
     end
   end

@@ -1,20 +1,20 @@
 defmodule ZchatWeb.AdminAuthLive do
-  import Phoenix.Component
+
   import Phoenix.LiveView
-  use ZchatWeb, :verified_routes
-  alias ZchatWeb.Router.Helpers, as: Routes
+  alias Zchat.Accounts
 
   def on_mount(:ensure_admin, _params, _session, socket) do
-    user = socket.assigns.current_user
+    user = socket.assigns[:current_user]
 
-    # Check if user exists AND has the admin role
-    if user && user.role == "admin" do
+    # FIX: Use the Accounts helper we made, or check the list manually.
+    # Do NOT use user.role (singular)
+    if user && Accounts.user_has_role?(user, "admin") do
       {:cont, socket}
     else
       {:halt,
        socket
-       |> put_flash(:error, "Unauthorized access. Admins only.")
-       |> redirect(to: ~p"/feed")}
+       |> put_flash(:error, "You must be an admin to access this page.")
+       |> redirect(to: "/")}
     end
   end
 end

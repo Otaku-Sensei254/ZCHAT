@@ -213,4 +213,11 @@ defmodule ZchatWeb.UserSettingsLive do
   defp error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
   defp error_to_string(_), do: "Something went wrong"
 
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    # Handle notification updates - typically this would refresh notification counts
+    # For now, just acknowledge the message to suppress the warning
+    {:noreply, socket}
+  end
+
 end

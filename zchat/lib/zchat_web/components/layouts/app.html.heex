@@ -1,4 +1,4 @@
-<header class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-dark-900 shadow-sm border-b border-gray-100 dark:border-dark-800">
+<header class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <nav class="flex items-center justify-between h-16">
       
@@ -13,22 +13,29 @@
         <%= if @current_user do %>
           <.link 
             navigate={~p"/feed"} 
-            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg"
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 px-3 py-2 rounded-lg"
           >
             Feed
           </.link>
 
           <button 
-            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg flex items-center gap-1"
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 px-3 py-2 rounded-lg flex items-center gap-1"
             title="Coming Soon"
           >
-            <span>Chats</span>
-            <span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">New</span>
+            <span>
+              <.link 
+                navigate={~p"/chat"} 
+                class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 px-3 py-2 rounded-lg"
+              >
+              Chats
+              <span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold">New</span>
+            </.link>
+            </span>
           </button>
 
           <.link 
             navigate={~p"/users/settings"} 
-            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-dark-800 px-3 py-2 rounded-lg"
+            class="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 px-3 py-2 rounded-lg"
           >
             Settings
           </.link>
@@ -52,7 +59,7 @@
           <!-- Theme Toggle Button -->
           <button 
             type="button" 
-            class="p-2 text-gray-600 hover:text-orange-600 dark:text-gray-300 dark:hover:text-orange-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-800"
+            class="p-2 text-gray-600 hover:text-orange-600 dark:text-gray-300 dark:hover:text-orange-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
             aria-label="Toggle dark mode"
             id="theme-toggle"
           >
@@ -78,13 +85,13 @@
           
           <.link
             navigate={~p"/users/#{@current_user.username}"}
-            class="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-dark-700" 
+            class="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-zinc-700" 
           >
             <%= if @current_user.avatar_url do %>
               <img 
                 src={@current_user.avatar_url} 
                 alt="Avatar" 
-                class="h-8 w-8 rounded-full object-cover border border-gray-200 dark:border-dark-700" 
+                class="h-8 w-8 rounded-full object-cover border border-gray-200 dark:border-zinc-700" 
                 referrerpolicy="no-referrer" 
               />
             <% else %>
@@ -141,7 +148,7 @@
 
         <button 
           type="button" 
-          class="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none p-2 rounded-md hover:bg-gray-50 dark:hover:bg-dark-800"
+          class="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 focus:outline-none p-2 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800"
           phx-click={Phoenix.LiveView.JS.toggle(to: "#mobile-menu", display: "block")}
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -152,28 +159,30 @@
     </nav>
   </div>
 
-  <div id="mobile-menu" class="hidden md:hidden bg-white dark:bg-dark-900 border-t border-gray-100 dark:border-dark-800 shadow-lg absolute w-full left-0 z-50">
+  <div id="mobile-menu" class="hidden md:hidden bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 shadow-lg absolute w-full left-0 z-50">
     <div class="px-4 pt-2 pb-6 space-y-1">
       
       <%= if @current_user do %>
         <.link 
           navigate={~p"/feed"} 
-          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800"
         >
           📰 Feed
         </.link>
 
-        <button class="w-full text-left block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800 flex items-center justify-between">
+        <button class="w-full text-left px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800 flex items-center justify-between">
+          <.link navigate={~p"/chat"}>
           <span>💬 Chats</span>
-          <span class="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full">Soon</span>
+          <span class="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full">New</span>
+          </.link>
         </button>
 
         <.link 
           navigate={~p"/users/#{@current_user.username}"}
-          class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-orange-50 dark:hover:bg-dark-800 group"
+          class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-orange-50 dark:hover:bg-zinc-800 group"
         >
           <%= if @current_user.avatar_url do %>
-            <img src={@current_user.avatar_url} class="h-6 w-6 rounded-full object-cover border border-gray-200 dark:border-dark-700" />
+            <img src={@current_user.avatar_url} class="h-6 w-6 rounded-full object-cover border border-gray-200 dark:border-zinc-700" />
           <% else %>
             <div class="h-6 w-6 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 flex items-center justify-center font-bold text-[10px]">
               <%= String.first(@current_user.username) %>
@@ -184,12 +193,12 @@
         
         <.link 
           navigate={~p"/users/settings"} 
-          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800"
         >
           ⚙️ Settings
         </.link>
 
-        <div class="my-2 border-t border-gray-100 dark:border-dark-800"></div>
+        <div class="my-2 border-t border-gray-100 dark:border-zinc-800"></div>
 
         <.link
           navigate={~p"/posts/new"}
@@ -216,15 +225,15 @@
       <% else %>
         <.link 
           navigate={~p"/"} 
-          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-dark-800"
+          class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800"
         >
           🏠 Home
         </.link>
         
-        <div class="pt-4 mt-2 border-t border-gray-100 dark:border-dark-800 space-y-3">
+        <div class="pt-4 mt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
           <.link 
             navigate={~p"/users/log_in"} 
-            class="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-dark-800 hover:bg-gray-100 dark:hover:bg-dark-700 border border-gray-200 dark:border-dark-700"
+            class="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 border border-gray-200 dark:border-zinc-700"
           >
             Log in
           </.link>

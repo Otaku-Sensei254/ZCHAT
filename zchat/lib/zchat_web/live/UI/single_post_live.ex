@@ -2,8 +2,10 @@ defmodule ZchatWeb.UI.SinglePostLive do
   use ZchatWeb, :live_view
 
   alias Zchat.Posts
-  alias Zchat.Posts.{Like, Comment}
+  alias Zchat.Posts.Comment
   alias ZchatWeb.UserAuth
+
+  def layout(_assigns), do: {ZchatWeb.Layouts, :app}
 
   @impl true
   def mount(_params, session, socket) do
@@ -12,7 +14,7 @@ defmodule ZchatWeb.UI.SinglePostLive do
     {:ok,
      socket
      |> assign(:replying_to, nil)
-     |> assign(:comment_form, Posts.change_comment(%Comment{}))
+     |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> stream(:comments, [])
      |> assign(:current_like, nil)
      |> assign(:like_count, 0)
@@ -22,8 +24,8 @@ defmodule ZchatWeb.UI.SinglePostLive do
 
   @impl true
   def handle_params(%{"id" => id}, _uri, socket) do
-    post = Posts.get_post!(id)
-    comments = Posts.list_comments(post_id: post.id)
+    post = Posts.get_post!(id, preload: [:user, :likes, comments: :user])
+    comments = Posts.list_comments(post_id: post.id, preload: [:user])
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Zchat.PubSub, "post:#{post.id}")
@@ -47,7 +49,8 @@ defmodule ZchatWeb.UI.SinglePostLive do
      |> assign(:current_media_index, 0)
      |> stream(:comments, comments, reset: true)
      |> assign(:like_count, post.likes_count || 0)
-     |> assign(:current_like, current_like)}
+     |> assign(:current_like, current_like)
+     |> assign(:comment_count, length(post.comments || []))}
   end
 
   # --- CAROUSEL LOGIC ---
@@ -88,18 +91,22 @@ defmodule ZchatWeb.UI.SinglePostLive do
   @impl true
   def handle_event("add_comment", %{"comment" => comment_params}, socket) do
     if socket.assigns.current_user do
-      attrs = Map.merge(comment_params, %{
-        "user_id" => socket.assigns.current_user.id,
-        "post_id" => socket.assigns.post.id,
-        "parent_id" => socket.assigns.replying_to
-      })
+      attrs =
+        Map.merge(comment_params, %{
+          "user_id" => socket.assigns.current_user.id,
+          "post_id" => socket.assigns.post.id,
+          "parent_id" => socket.assigns.replying_to
+        })
 
       case Posts.create_comment(attrs) do
         {:ok, _comment} ->
+          # FIX: Ensure clear_flash happens inside the tuple, before the closing brace '}'
           {:noreply,
            socket
-           |> assign(:comment_form, Posts.change_comment(%Comment{}))
-           |> assign(:replying_to, nil)}
+           |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
+           |> assign(:replying_to, nil)
+           |> clear_flash()
+           |> put_flash(:info, "Comment added successfully 💬 !")}
 
         {:error, changeset} ->
           {:noreply, assign(socket, :comment_form, to_form(changeset))}
@@ -129,32 +136,54 @@ defmodule ZchatWeb.UI.SinglePostLive do
   def handle_event("toggle_like", _, socket) do
     if socket.assigns.current_user do
       post_id = socket.assigns.post.id
-      current_user = socket.assigns.current_user
+      user_id = socket.assigns.current_user.id
 
-      case Posts.toggle_like(current_user.id, "Post", post_id) do
-        {:ok, %Like{} = like} ->
-          {:noreply, assign(socket, current_like: like, like_count: socket.assigns.like_count + 1)}
-        {:ok, nil} ->
-          {:noreply, assign(socket, current_like: nil, like_count: max(0, socket.assigns.like_count - 1))}
+      # 1. Check if we are currently liking or unliking based on existing state
+      was_liked = socket.assigns.current_like != nil
+
+      case Posts.toggle_like(user_id, "Post", post_id) do
+        {:ok, _result} ->
+          msg = if was_liked, do: "Unliked post 💔", else: "Liked post ❤️"
+
+          {:noreply,
+           socket
+           |> clear_flash()
+           |> put_flash(:info, msg)}
+
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Error liking post")}
+          {:noreply, put_flash(socket, :error, "Error toggling like")}
       end
     else
-      {:noreply, put_flash(socket, :error, "You must be logged in to like posts")}
+      {:noreply,
+       socket
+       |> put_flash(:error, "You must be logged in to like posts")
+       |> push_navigate(to: ~p"/users/log_in")}
     end
   end
 
   @impl true
   def handle_info({:new_comment, comment}, socket) do
-    {:noreply, stream_insert(socket, :comments, comment, at: 0)}
+    socket =
+      socket
+      |> stream_insert(:comments, comment, at: 0)
+      |> update(:like_count, & &1)
+
+    {:noreply, socket}
   end
 
   @impl true
   def handle_info({:post_liked, like}, socket) do
     if like.likeable_id == socket.assigns.post.id do
       new_count = socket.assigns.like_count + 1
-      current = if socket.assigns.current_user && like.user_id == socket.assigns.current_user.id, do: like, else: socket.assigns.current_like
-      {:noreply, assign(socket, like_count: new_count, current_like: current)}
+
+      current_like =
+        if socket.assigns.current_user && like.user_id == socket.assigns.current_user.id do
+          like
+        else
+          socket.assigns.current_like
+        end
+
+      {:noreply, assign(socket, like_count: new_count, current_like: current_like)}
     else
       {:noreply, socket}
     end
@@ -164,10 +193,22 @@ defmodule ZchatWeb.UI.SinglePostLive do
   def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
     if post_id == socket.assigns.post.id do
       new_count = max(0, socket.assigns.like_count - 1)
-      current = if socket.assigns.current_user && user_id == socket.assigns.current_user.id, do: nil, else: socket.assigns.current_like
-      {:noreply, assign(socket, like_count: new_count, current_like: current)}
+
+      current_like =
+        if socket.assigns.current_user && user_id == socket.assigns.current_user.id do
+          nil
+        else
+          socket.assigns.current_like
+        end
+
+      {:noreply, assign(socket, like_count: new_count, current_like: current_like)}
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info(:new_notification, socket) do
+    {:noreply, socket}
   end
 end

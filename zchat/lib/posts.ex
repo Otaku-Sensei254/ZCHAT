@@ -129,6 +129,17 @@ defmodule Zchat.Posts do
 
     post
   end
+  def list_fresh_random_posts(limit \\ 20, days_ago \\ 5) do
+    cutoff_date =  DateTime.add(DateTime.utc_now(), -days_ago, :day)
+
+    from(p in Post,
+              where: p.inserted_at >= ^cutoff_date,
+              order_by: fragment("RANDOM()"),
+              limit: ^limit,
+              preload: [:user, :likes]
+          )
+          |> Repo.all()
+  end
 
   @doc """
   Gets a single post with preloaded associations.
@@ -146,7 +157,7 @@ defmodule Zchat.Posts do
   Gets all categories.
   """
   def categories do
-    ["Tech", "Drama", "Fiction", "Fitness", "Sports", "Science", "Fashion", "Food", "Politics", "Business", "Nature", "Couples", "Kids"]
+    ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy/ Humor", "Nature", "Couples", "Kids"]
   end
 
   @doc """

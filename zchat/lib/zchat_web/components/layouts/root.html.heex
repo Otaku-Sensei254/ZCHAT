@@ -20,7 +20,11 @@
       })();
     </script>
   </head>
-<body data-token={if assigns[:user_token], do: @user_token, else: nil} class={assigns[:body_class] || ""}>
+  
+  <body 
+    data-token={if assigns[:user_token], do: @user_token, else: nil} 
+    class={"h-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 antialiased #{assigns[:body_class] || ""}"}
+  >
     <%= @inner_content %>
   </body>
 </html>

@@ -24,7 +24,7 @@ defmodule ZchatWeb.UserSettingsLive do
   end
 
   # --- PROFILE HANDLERS ---
-
+@impl true
   def handle_event("validate_profile", %{"user" => user_params}, socket) do
     profile_form =
       socket.assigns.current_user

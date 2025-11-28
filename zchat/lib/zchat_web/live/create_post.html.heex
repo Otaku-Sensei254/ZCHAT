@@ -7,7 +7,7 @@
     <p class="mt-2 text-gray-600 dark:text-gray-400">Share your thoughts, images, or videos with the community</p>
   </div>
 
-  <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6 bg-white dark:bg-dark-900 shadow-md rounded-lg p-6">
+  <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6 bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6">
     <div>
       <label for={@form[:title].id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Title <span class="text-red-500">*</span>
@@ -27,7 +27,7 @@
   <select 
     id="post_category" 
     name="post[category]" 
-    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-zinc-600 dark:bg-dark-800 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 dark:focus:ring-orange-400 dark:focus:border-orange-400 sm:text-sm rounded-md"
+    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 dark:focus:ring-orange-400 dark:focus:border-orange-400 sm:text-sm rounded-md"
   >
     <option value="">Select a category</option>
     <%= for category <- Zchat.Posts.Post.categories() do %>
@@ -95,9 +95,9 @@
 
       <!-- <<Uploaded Document Official>> -->
       <div :if={Enum.count(@uploads.media.entries)> 0}
-        class="rounded-md border border-hr-maroon dark:border-orange-400 mt-1.5"
+        class="rounded-md border border-hr-maroon dark:border-zinc-600 mt-1.5"
         >
-        <div class="flex justify-between p-3 pb-4 border-b border-gray-200 dark:border-dark-700">
+        <div class="flex justify-between p-3 pb-4 border-b border-gray-200 dark:border-zinc-700">
           <div class="flex gap-3.5">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" class="dark:hidden">
               <rect x="2" y="2" width="32" height="32" rx="16" fill="#EFEFFB" />
@@ -179,7 +179,7 @@
           name="tag_input" 
           value="" 
           placeholder="Add a tag (e.g. tech)"
-          class="flex-1 rounded-md border-gray-300 dark:border-zinc-600 dark:bg-dark-800 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:focus:border-orange-400 dark:focus:ring-orange-400 sm:text-sm" 
+          class="flex-1 rounded-md border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:focus:border-orange-400 dark:focus:ring-orange-400 sm:text-sm" 
           phx-keydown="add_tag" 
           phx-key="Enter"
         />
@@ -228,7 +228,7 @@
     </div>
 
     <div class="flex items-center justify-end gap-4 pt-4">
-      <.link navigate={~p"/feed"} class="px-6 py-2 border border-gray-300 dark:border-dark-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-800">
+      <.link navigate={~p"/feed"} class="px-6 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800">
         Cancel
       </.link>
       <.button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600">

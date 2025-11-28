@@ -128,8 +128,8 @@ defmodule Zchat.Chat do
   end
 
   def member_of_conversation?(user, conversation_id) do
-    query = from cm in ConversationMember,
-      where: cm.user_id == ^user.id and cm.conversation_id == ^conversation_id
+    query = from convom in ConversationMember,
+      where: convom.user_id == ^user.id and convom.conversation_id == ^conversation_id
 
     Repo.exists?(query)
   end
@@ -142,15 +142,15 @@ defmodule Zchat.Chat do
     |> case do
       nil -> {:error, :not_found}
       member ->
-        # FIX: Ensure we truncate microseconds to prevent DB errors
+        # Ensure to use microseconds to prevent DB errors
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-        {:ok, updated_member} = 
+        {:ok, updated_member} =
         member
         |> Ecto.Changeset.change(last_read_at: now)
         |> Repo.update()
 
-        #and now to show a seen or blue tick
+        #and now to show a seen or green tick
         Phoenix.PubSub.broadcast(
           Zchat.PubSub, "conversation:#{conversation_id}",
           {:message_read, %{user_id: user_id, conversation_id: conversation_id, last_read_at: now}}

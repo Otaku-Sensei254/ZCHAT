@@ -106,7 +106,8 @@ defmodule ZchatWeb.Router do
     end
 
     live_session :chat,
-      on_mount: [{ZchatWeb.UserAuth, :mount_current_user}] do
+      on_mount: [{ZchatWeb.UserAuth, :mount_current_user},
+      {ZchatWeb.ChatAuthHook, :require_member }] do
       live "/chat", Chat.ChatLive, :index
       live "/chat/:id", Chat.ChatLive, :index
     end

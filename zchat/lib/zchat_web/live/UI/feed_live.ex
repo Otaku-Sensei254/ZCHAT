@@ -2,13 +2,14 @@ defmodule ZchatWeb.UI.FeedLive do
   use ZchatWeb, :live_view
   alias Zchat.Posts
   alias Zchat.Posts.Post
-  alias Zchat.Accounts
   alias Zchat.Notifications
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Zchat.PubSub, "posts")
+      # Listen for global posts (for the "New Posts" pill or auto-insert)
+      Phoenix.PubSub.subscribe(Zchat.PubSub, "feed:global")
+
       if socket.assigns[:current_user] do
         Phoenix.PubSub.subscribe(Zchat.PubSub, "notifications:#{socket.assigns.current_user.id}")
       end
@@ -22,12 +23,13 @@ defmodule ZchatWeb.UI.FeedLive do
         page: 1,
         per_page: 10,
         loading: false,
-        has_more: true,
+        has_more: true, # Controls if the infinite scroll hook fires
         search_term: nil,
         category: nil,
         search_results: [],
         show_search: false,
-        data_loaded: false
+        data_loaded: false,
+        pending_posts: [] # For the "Show New Posts" pill logic
       )
 
     {:ok, socket}
@@ -50,11 +52,10 @@ defmodule ZchatWeb.UI.FeedLive do
     socket =
       if filters_changed or !socket.assigns.data_loaded do
         socket
-        |> assign(:page, 1)
+        |> assign(:page, 1) # Reset to page 1
         |> assign(:data_loaded, true)
-        |> stream(:posts, [], reset: true) # 1. Clear OLD data
-        |> load_posts()                    # 2. Load NEW data
-        # FIXED: Removed the extra stream reset here that was deleting your posts!
+        |> stream(:posts, [], reset: true) # Clear old data from UI immediately
+        |> load_posts() # Load fresh data
         |> load_trending()
       else
         socket
@@ -63,18 +64,37 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, socket}
   end
 
-  # --- EVENTS ---
+  # --- INFINITE SCROLL EVENT ---
 
-  # FIXED: Matches "search" because your HTML input has name="search"
+  @impl true
+  def handle_event("load-more", _, socket) do
+    # Only load if not currently loading AND we know there is more data
+    if !socket.assigns.loading and socket.assigns.has_more do
+      # Set loading: true immediately to prevent double-firing
+      send(self(), :load_more_data)
+      {:noreply, assign(socket, loading: true)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # --- ASYNC LOADING HANDLER ---
+
+  @impl true
+  def handle_info(:load_more_data, socket) do
+    {:noreply, load_posts(socket)}
+  end
+
+  # --- SEARCH EVENTS ---
+
   @impl true
   def handle_event("live_search", %{"search" => query}, socket) do
-    # Use the Search helper directly
     results = Zchat.Search.global_search(query)
     show_search = length(results) > 0
     {:noreply, assign(socket, search_results: results, show_search: show_search)}
   end
 
-  # Fallback for "value" (just in case)
+  # Fallback for search input name mismatch
   @impl true
   def handle_event("live_search", %{"value" => query}, socket) do
     results = Zchat.Search.global_search(query)
@@ -97,70 +117,33 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, push_patch(socket, to: to)}
   end
 
+  # --- REAL-TIME UPDATES (PubSub) ---
+
+  # 1. New Post Created by someone else
   @impl true
-  def handle_event("load-more", _, socket) do
-    if !socket.assigns.loading and socket.assigns.has_more do
-      send(self(), :load_more_data)
-      {:noreply, assign(socket, loading: true)}
-    else
-      {:noreply, socket}
-    end
-  end
+  def handle_info({:post_created, post}, socket) do
+    # Option A: Auto-insert at top (Discovery Mode)
+    # post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
+    # {:noreply, stream_insert(socket, :posts, post, at: 0)}
 
-  @impl true
-  def handle_event("mark_all_as_read", _, socket) do
-    if socket.assigns.current_user do
-      Notifications.mark_all_read(socket.assigns.current_user.id)
-    end
-    {:noreply, socket}
-  end
-
-  # --- HELPERS ---
-
-  defp load_posts(socket) do
-    %{page: page, per_page: per_page} = socket.assigns
-
-    posts =
-      Posts.list_posts(
-        page: page,
-        per_page: per_page,
-        category: socket.assigns[:category],
-        search: socket.assigns[:search_term],
-        preload: [:user, :likes, comments: :user]
-      )
-      |> Enum.map(&Post.ensure_media_files/1)
-
-    if page == 1 do
-      assign(socket, has_more: length(posts) == per_page, page: page + 1, loading: false)
-      |> stream(:posts, posts, reset: true)
-    else
-      assign(socket, has_more: length(posts) == per_page, page: page + 1, loading: false)
-      |> stream_insert_many(posts)
-    end
-  end
-
-  defp stream_insert_many(socket, posts) do
-    Enum.reduce(posts, socket, fn post, sock ->
-      stream_insert(sock, :posts, post, at: -1)
-    end)
-  end
-
-  defp load_trending(socket) do
-    trending = Posts.list_trending_posts(5)
-    stream(socket, :trending, trending, reset: true)
-  end
-
-  # --- PUBSUB ---
-
-  @impl true
-  def handle_info(:load_more_data, socket), do: {:noreply, load_posts(socket)}
-
-  @impl true
-  def handle_info({:new_post, post}, socket) do
+    # Option B: "Show New Posts" Pill (Twitter Style - Preferred)
+    # We add it to pending_posts instead of the stream
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
-    {:noreply, stream_insert(socket, :posts, post, at: 0)}
+    {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
   end
 
+  # Event to flush pending posts (The Pill Click)
+  @impl true
+  def handle_event("load_new_posts", _params, socket) do
+    pending = socket.assigns.pending_posts
+    socket =
+      Enum.reduce(pending, socket, fn post, acc ->
+        stream_insert(acc, :posts, post, at: 0)
+      end)
+    {:noreply, assign(socket, :pending_posts, [])}
+  end
+
+  # 2. Interactions
   @impl true
   def handle_info({:post_deleted, post}, socket) do
     {:noreply, stream_delete(socket, :posts, post)}
@@ -194,5 +177,52 @@ defmodule ZchatWeb.UI.FeedLive do
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
     {:noreply, socket}
+  end
+
+  # --- CORE HELPERS ---
+
+  defp load_posts(socket) do
+    %{page: page, per_page: per_page} = socket.assigns
+
+    # Fetch Data
+    # NOTE: If you implemented list_fresh_random_posts, call that here.
+    # Otherwise, this calls your standard list_posts
+    posts =
+      Posts.list_posts(
+        page: page,
+        per_page: per_page,
+        category: socket.assigns[:category],
+        search: socket.assigns[:search_term],
+        preload: [:user, :likes, comments: :user]
+      )
+      |> Enum.map(&Post.ensure_media_files/1)
+
+    # Determine if we hit the end
+    has_more = length(posts) == per_page
+
+    socket
+    |> assign(loading: false, has_more: has_more, page: page + 1)
+    |> update_stream_based_on_page(page, posts)
+  end
+
+  defp update_stream_based_on_page(socket, 1, posts) do
+    # If Page 1, RESET everything (New random batch or filter change)
+    stream(socket, :posts, posts, reset: true)
+  end
+
+  defp update_stream_based_on_page(socket, _page, posts) do
+    # If Page 2+, APPEND to bottom (-1)
+    stream_insert_many(socket, posts)
+  end
+
+  defp stream_insert_many(socket, posts) do
+    Enum.reduce(posts, socket, fn post, sock ->
+      stream_insert(sock, :posts, post, at: -1)
+    end)
+  end
+
+  defp load_trending(socket) do
+    trending = Posts.list_trending_posts(5)
+    stream(socket, :trending, trending, reset: true)
   end
 end

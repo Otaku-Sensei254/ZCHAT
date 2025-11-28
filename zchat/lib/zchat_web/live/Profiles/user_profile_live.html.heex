@@ -40,6 +40,7 @@
           Admin Dashboard
         </.link>
       </div>
+     
     <% end %>
   </div>
 
@@ -60,10 +61,10 @@
               <img
                 src={@user.avatar_url}
                 alt={@user.username}
-                class="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-white dark:border-dark-800 shadow-lg group-hover:scale-105 transition-transform duration-300"
+                class="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-white dark:border-zinc-800 shadow-lg group-hover:scale-105 transition-transform duration-300"
               />
             <% else %>
-              <div class="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 text-orange-600 dark:from-orange-900 dark:to-dark-800 dark:text-orange-400 flex items-center justify-center font-bold text-4xl border-4 border-white dark:border-dark-800 shadow-lg">
+              <div class="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 text-orange-600 dark:from-orange-900 dark:to-zinc-800 dark:text-orange-400 flex items-center justify-center font-bold text-4xl border-4 border-white dark:border-zinc-800 shadow-lg">
                 <%= String.first(@user.username || @user.email || "?") |> String.upcase() %>
               </div>
             <% end %>
@@ -76,7 +77,7 @@
             </h1>
 
             <div class="flex items-center justify-center sm:justify-start gap-3 mt-2">
-              <span class="px-3 py-1 bg-gray-100 dark:bg-dark-800 text-gray-600 dark:text-gray-400 rounded-full text-xs font-medium flex items-center gap-1">
+              <span class="px-3 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded-full text-xs font-medium flex items-center gap-1">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-3 w-3"
@@ -114,7 +115,7 @@
 
         <%!-- Stats Row (Pills) --%>
         <div class="flex justify-center sm:justify-start gap-4 mt-8">
-          <div class="px-6 py-3 bg-gray-50 dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 text-center min-w-[90px]">
+          <div class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 text-center min-w-[90px]">
             <span class="block font-black text-xl text-gray-900 dark:text-white">
               <%= length(@posts) %>
             </span>
@@ -122,7 +123,7 @@
               Posts
             </span>
           </div>
-          <div class="px-6 py-3 bg-gray-50 dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 text-center min-w-[90px] cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+          <div class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 text-center min-w-[90px] cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
             <span class="block font-black text-xl text-gray-900 dark:text-white">
               <%= @follow_stats.followers_count %>
             </span>
@@ -130,7 +131,7 @@
               Followers
             </span>
           </div>
-          <div class="px-6 py-3 bg-gray-50 dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 text-center min-w-[90px] cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+          <div class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 text-center min-w-[90px] cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
             <span class="block font-black text-xl text-gray-900 dark:text-white">
               <%= @follow_stats.following_count %>
             </span>
@@ -146,7 +147,7 @@
         <%= if @current_user.id == @user.id do %>
           <.link
             navigate={~p"/users/settings"}
-            class="w-full md:w-40 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full text-sm border-2 border-gray-200 dark:bg-dark-800 dark:hover:bg-dark-700 dark:text-white dark:border-dark-700 shadow-sm transition-all hover:shadow-md text-center"
+            class="w-full md:w-40 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full text-sm border-2 border-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white dark:border-zinc-700 shadow-sm transition-all hover:shadow-md text-center"
           >
             Edit Profile
           </.link>
@@ -154,7 +155,7 @@
           <%= if @is_following do %>
             <button
               phx-click="unfollow"
-              class="w-full md:w-40 px-6 py-2.5 bg-white text-gray-700 font-bold rounded-full text-sm border-2 border-gray-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm dark:bg-dark-800 dark:border-dark-700 dark:text-white dark:hover:bg-red-900/30 dark:hover:text-red-400"
+              class="w-full md:w-40 px-6 py-2.5 bg-white text-gray-700 font-bold rounded-full text-sm border-2 border-gray-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white dark:hover:bg-red-900/30 dark:hover:text-red-400"
             >
               Following
             </button>
@@ -179,7 +180,7 @@
   <%!-- POSTS SECTION --%>
   <div>
     <%!-- Tabs --%>
-    <div class="flex justify-center gap-8 mb-8 border-b border-gray-200 dark:border-dark-800">
+    <div class="flex justify-center gap-8 mb-8 border-b border-gray-200 dark:border-zinc-800">
       <div class="flex items-center gap-2 px-6 py-3 border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white font-bold text-sm tracking-wide cursor-pointer">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -217,8 +218,8 @@
     </div>
 
     <%= if Enum.empty?(@posts) do %>
-      <div class="bg-white dark:bg-dark-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-dark-700 py-24 flex flex-col items-center justify-center text-center">
-        <div class="w-20 h-20 bg-gray-50 dark:bg-dark-800 rounded-full flex items-center justify-center mb-4">
+      <div class="bg-white dark:bg-zinc-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-zinc-700 py-24 flex flex-col items-center justify-center text-center">
+        <div class="w-20 h-20 bg-gray-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-10 w-10 text-gray-300"
@@ -243,7 +244,7 @@
         <%= for post <- @posts do %>
           <.link
             navigate={~p"/posts/#{post.id}"}
-            class="relative group aspect-square bg-white dark:bg-dark-800 cursor-pointer overflow-hidden rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-dark-700 transition-all duration-300 hover:-translate-y-1"
+            class="relative group aspect-square bg-white dark:bg-zinc-800 cursor-pointer overflow-hidden rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-zinc-700 transition-all duration-300 hover:-translate-y-1"
           >
             <%!-- Media Logic --%>
             <% media = (post.media_files || []) |> List.first()
@@ -291,7 +292,7 @@
               <% end %>
             <% else %>
               <%!-- Text Fallback --%>
-              <div class="w-full h-full flex items-center justify-center p-4 text-center bg-gradient-to-br from-gray-50 to-white dark:from-dark-800 dark:to-dark-900">
+              <div class="w-full h-full flex items-center justify-center p-4 text-center bg-gradient-to-br from-gray-50 to-white dark:from-zinc-800 dark:to-zinc-900">
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 line-clamp-4 italic">
                   "<%= post.content %>"
                 </p>

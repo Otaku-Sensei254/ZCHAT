@@ -182,6 +182,31 @@ Hooks.VideoAutoplay = {
   },
 };
 
+Hooks.InfiniteScroll = {
+  mounted() {
+    this.observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      // If the element is visible (scrolled to bottom)
+      if (entry.isIntersecting) {
+        // Send the "load-more" event to LiveView
+        this.pushEvent("load-more", {});
+      }
+    }, {
+      root: null, // viewport
+      rootMargin: "200px", // Trigger loading 200px BEFORE the bottom
+      threshold: 0.1
+    });
+
+    this.observer.observe(this.el);
+  },
+
+  destroyed() {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
+};
+
 
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {

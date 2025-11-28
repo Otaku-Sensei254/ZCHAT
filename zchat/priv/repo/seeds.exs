@@ -1,105 +1,129 @@
 # priv/repo/seeds.exs
 alias Zchat.Repo
 alias Zchat.Accounts
-alias Zchat.Accounts.{User, Role}
 alias Zchat.Posts
+alias Zchat.Chat
+alias Zchat.Chat.{Conversation, ConversationMember}
 
-IO.puts("🌱 Starting Seed Script...")
+IO.puts("🌱 Starting Additive Seed Script...")
 
-# 1. CLEANUP (Safely delete old data)
-Repo.delete_all(Zchat.Chat.Message)
-Repo.delete_all(Zchat.Posts.Like)
-Repo.delete_all(Zchat.Posts.Comment)
-Repo.delete_all(Zchat.Posts.Post)
-Repo.delete_all(User)
-Repo.delete_all(Role)
+# ==============================================
+# 1. FETCH EXISTING USERS
+# ==============================================
+# We need to know who is already in the DB to make them interact
+existing_users = Repo.all(Accounts.User)
+IO.puts("ℹ️  Found #{length(existing_users)} existing users.")
 
-IO.puts("🗑️  Database cleared.")
-
-# 2. SETUP ROLES
-role_names = ["admin", "moderator", "sales_executive", "user"]
-
-# Insert roles
-Enum.each(role_names, fn name ->
-  Repo.insert!(%Role{name: name}, on_conflict: :nothing)
-end)
-
-# Fetch them back to ensure we have the IDs (This is safer)
-roles = Repo.all(Role)
-role_map = Map.new(roles, fn r -> {r.name, r} end)
-
-IO.puts("✅ Roles created.")
-
-# 3. CREATE SUPER ADMIN
-admin_email = "admin@zchat.com"
+# ==============================================
+# 2. CREATE NEW DUMMY USERS (Additive)
+# ==============================================
+# We add a random suffix to ensure emails are unique every time you run this
+suffix = System.unique_integer([:positive])
 password = "Password1234!"
 
-{:ok, admin} =
-  Accounts.register_user(%{
-    username: "TheBoss",
-    email: admin_email,
-    password: password,
-    avatar_url: nil
-  })
+new_user_data = [
+  {"Alice_#{suffix}", "alice_#{suffix}@test.com"},
+  {"Bob_#{suffix}", "bob_#{suffix}@test.com"},
+  {"Charlie_#{suffix}", "charlie_#{suffix}@test.com"},
+  {"Diana_#{suffix}", "diana_#{suffix}@test.com"}
+]
 
-# Assign ADMIN role
-Accounts.update_user_roles(admin, [role_map["admin"].id])
-
-IO.puts("👑 Admin created! Login: #{admin_email} / #{password}")
-
-# 4. CREATE DUMMY USERS
-users =
-  for i <- 1..5 do
-    {:ok, user} =
-      Accounts.register_user(%{
-        username: "User_#{i}",
-        email: "user#{i}@test.com",
-        password: password,
-        avatar_url: nil
-      })
-
-    # Assign USER role
-    Accounts.update_user_roles(user, [role_map["user"].id])
+new_users =
+  Enum.map(new_user_data, fn {name, email} ->
+    {:ok, user} = Accounts.register_user(%{
+      username: name,
+      email: email,
+      password: password,
+      avatar_url: nil
+    })
     user
-  end
+  end)
 
-IO.puts("👥 Created 5 dummy users.")
+IO.puts("✅ Added #{length(new_users)} new users.")
 
-# 5. CREATE POSTS
-all_users = [admin | users]
-categories = Zchat.Posts.categories()
+# Combine existing users and new users for the content generation
+all_users = existing_users ++ new_users
 
-for _i <- 1..25 do
+# ==============================================
+# 3. CREATE POSTS
+# ==============================================
+categories = ["Tech", "Fitness", "Food", "Politics", "Nature", "Comedy/ Humor"]
+titles = [
+  "Just saw something amazing",
+  "Does anyone know how to fix this?",
+  "My daily routine",
+  "Unpopular opinion...",
+  "Check out this view!",
+  "Coding is life",
+  "Why I love Elixir",
+  "Pizza vs Burgers",
+  "The weather today is crazy",
+  "Monday motivation"
+]
+
+IO.puts("📝 Creating 30 new posts...")
+
+for _ <- 1..30 do
   random_user = Enum.random(all_users)
   random_category = Enum.random(categories)
+  random_title = Enum.random(titles)
 
   {:ok, post} =
     Posts.create_post(random_user, %{
-      title: "Random Topic #{System.unique_integer([:positive])}",
-      content: "This is a seeded post to test the feed. Zchat is growing!",
+      title: "#{random_title} ##{System.unique_integer([:positive])}",
+      content: "This is a seeded post about #{random_category}. We are testing the random feed logic!",
       category: random_category,
-      tags: ["seed", "test", "elixir"]
+      tags: ["seed", String.downcase(random_category)]
     })
 
-  # Add random likes
-  if :rand.uniform(10) > 3 do
-    random_liker = Enum.random(all_users)
-    Posts.toggle_like(random_liker.id, "Post", post.id)
+  # Add Random Likes (0 to 4 likes per post)
+  likers = all_users |> Enum.shuffle() |> Enum.take(:rand.uniform(5) - 1)
+
+  for liker <- likers do
+    try do
+      Posts.toggle_like(liker.id, "Post", post.id)
+    rescue
+      _ -> :ok
+    end
   end
 end
 
-IO.puts("📝 Created posts with likes.")
+IO.puts("✅ Posts created.")
 
-# 6. CREATE CONVERSATION
-alias Zchat.Chat.Conversation
-alias Zchat.Chat.ConversationMember
+# ==============================================
+# 4. CREATE CHATS
+# ==============================================
 
-{:ok, conversation} = Repo.insert(%Conversation{name: "General"})
+IO.puts("💬 Setting up conversations...")
+
+# A. Create ONE "General" Group Chat for this specific seed run
+{:ok, group_chat} = Repo.insert(%Conversation{name: "Seed Group #{suffix}", type: "group"})
 
 for user <- all_users do
-  Repo.insert(%ConversationMember{user_id: user.id, conversation_id: conversation.id})
+  Repo.insert!(%ConversationMember{
+    user_id: user.id,
+    conversation_id: group_chat.id,
+    last_read_at: DateTime.utc_now()
+  })
 end
 
-IO.puts("💬 Created a general conversation and added all users.")
+# B. Create Random 1-on-1 Chats (DMs)
+# Create 5 random private conversations between ANY users (new or old)
+for _ <- 1..5 do
+  [user1, user2] = all_users |> Enum.shuffle() |> Enum.take(2)
 
-IO.puts("✅ Seeding Complete!")
+  # Use context helper to check if chat exists, or create new
+  case Chat.get_or_create_private_conversation(user1.id, user2.id) do
+    {:ok, conv} ->
+      # Add a starter message
+      Chat.create_message(%{
+        content: "Hey! This is a seeded message ID: #{System.unique_integer([:positive])}",
+        user_id: user1.id,
+        conversation_id: conv.id
+      })
+    _ -> :ok
+  end
+end
+
+IO.puts("✅ Chats created.")
+IO.puts("🚀 SEEDING COMPLETE!")

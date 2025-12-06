@@ -3,7 +3,10 @@ defmodule ZchatWeb.UI.PostComponent do
   alias Zchat.Posts
   alias Zchat.Posts.{Like, Comment}
   alias Zchat.Repo
+  alias Zchat.Powers
   import Ecto.Query
+
+  import Canada
 
   @impl true
   def mount(socket) do
@@ -73,18 +76,18 @@ defmodule ZchatWeb.UI.PostComponent do
   end
 
   # --- DELETE EVENT ---
-  @impl true
+@impl true
   def handle_event("delete_post", _, socket) do
     post = socket.assigns.post
     user = socket.assigns.current_user
 
-    if can_manage?(user, post) do
+    if user && (user |> can?(:delete, post)) do
       case Posts.delete_post(post) do
         {:ok, _} ->
           {:noreply,
            socket
            |> put_flash(:info, "Post deleted successfully")
-           |> push_navigate(to: ~p"/feed")} # Refresh or redirect
+           |> push_navigate(to: ~p"/feed")}
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not delete post")}
       end
@@ -96,78 +99,99 @@ defmodule ZchatWeb.UI.PostComponent do
   # --- LIKE EVENTS ---
 
   # FIX: One single event for liking. No local updates. No sending messages to parent.
-  @impl true
+
+ @impl true
   def handle_event("toggle_like", _, socket) do
     user = socket.assigns.current_user
     post = socket.assigns.post
 
     if user do
-      # 1. Fire DB command
-      # 2. Wait for PubSub (FeedLive will receive it and stream_insert fresh data)
-      case Posts.toggle_like(user.id, "Post", post.id) do
-        {:ok, _} -> {:noreply, socket}
-        {:error, _} -> {:noreply, put_flash(socket, :error, "Error liking post")}
-      end
+      # 1. CALCULATE NEW STATE (Optimistic UI)
+      # Check if currently liked (truthy check works for struct or true)
+      is_currently_liked = !!socket.assigns.current_like
+
+      # Flip the status
+      new_status = !is_currently_liked
+
+      # Calculate the new number
+      new_count =
+        if new_status do
+          socket.assigns.like_count + 1
+        else
+          max(0, socket.assigns.like_count - 1)
+        end
+
+      # 2. FIRE AND FORGET DB CALL
+      # We don't wait for the result to update the UI. We assume it works.
+      Zchat.Posts.toggle_like(user.id, "Post", post.id)
+
+      # 3. UPDATE UI IMMEDIATELY
+      {:noreply,
+       socket
+       |> assign(:current_like, new_status) # Sets to true/false
+       |> assign(:like_count, new_count)}   # Updates number
     else
       {:noreply,
-       socket |> put_flash(:error, "Log in to like") |> push_navigate(to: ~p"/users/log_in")}
+       socket
+       |> put_flash(:error, "Log in to like")
+       |> push_navigate(to: ~p"/users/log_in")}
     end
   end
 # --- AUTHORIZATION HELPERS ---
 
   # 1. Main entry point
-  defp can_manage?(%Zchat.Accounts.User{} = user, %Zchat.Posts.Post{} = post) do
-    is_owner?(user, post) or is_admin?(user)
-  end
+  # defp can_manage?(%Zchat.Accounts.User{} = user, %Zchat.Posts.Post{} = post) do
+  #   is_owner?(user, post) or is_admin?(user)
+  # end
 
-  # Fallback for guests (nil user)
-  defp can_manage?(nil, _), do: false
+  # # Fallback for guests (nil user)
+  # defp can_manage?(nil, _), do: false
 
-  # 2. Check if user owns the post
-  defp is_owner?(user, post) do
-    user.id == post.user_id
-  end
+  # # 2. Check if user owns the post
+  # defp is_owner?(user, post) do
+  #   user.id == post.user_id
+  # end
 
-  # 3. Check if user has admin role (Safely handles missing preloads)
-  defp is_admin?(%Zchat.Accounts.User{roles: roles}) when is_list(roles) do
-    Enum.any?(roles, fn r -> r.name == "admin" end)
-  end
+  # # 3. Check if user has admin role (Safely handles missing preloads)
+  # defp is_admin?(%Zchat.Accounts.User{roles: roles}) when is_list(roles) do
+  #   Enum.any?(roles, fn r -> r.name == "admin" end)
+  # end
 
-  # If roles are #Ecto.Association.NotLoaded<...>, this clause catches it and returns false
-  defp is_admin?(_), do: false
+  # # If roles are #Ecto.Association.NotLoaded<...>, this clause catches it and returns false
+  # defp is_admin?(_), do: false
 
   # --- REAL-TIME UPDATES ---
   # These handle updates broadcasted by other users
 
-  @impl true
-  def handle_info({:post_liked, like}, socket) do
-    # If someone else liked this post, increment count
-    if like.likeable_id == socket.assigns.post.id and like.user_id != socket.assigns.current_user.id do
-      {:noreply, assign(socket, :like_count, socket.assigns.like_count + 1)}
-    else
-      {:noreply, socket}
-    end
-  end
+  # @impl true
+  # def handle_info({:post_liked, like}, socket) do
+  #   # If someone else liked this post, increment count
+  #   if like.likeable_id == socket.assigns.post.id and like.user_id != socket.assigns.current_user.id do
+  #     {:noreply, assign(socket, :like_count, socket.assigns.like_count + 1)}
+  #   else
+  #     {:noreply, socket}
+  #   end
+  # end
 
-  @impl true
-  def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
-    # If someone else unliked this post, decrement count
-    if post_id == socket.assigns.post.id and user_id != socket.assigns.current_user.id do
-      {:noreply, assign(socket, :like_count, max(0, socket.assigns.like_count - 1))}
-    else
-      {:noreply, socket}
-    end
-  end
+  # @impl true
+  # def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
+  #   # If someone else unliked this post, decrement count
+  #   if post_id == socket.assigns.post.id and user_id != socket.assigns.current_user.id do
+  #     {:noreply, assign(socket, :like_count, max(0, socket.assigns.like_count - 1))}
+  #   else
+  #     {:noreply, socket}
+  #   end
+  # end
 
-  @impl true
-  def handle_info({:new_comment, comment}, socket) do
-    # If someone commented, increment count
-    if comment.post_id == socket.assigns.post.id do
-      {:noreply, assign(socket, :comment_count, socket.assigns.comment_count + 1)}
-    else
-      {:noreply, socket}
-    end
-  end
+  # @impl true
+  # def handle_info({:new_comment, comment}, socket) do
+  #   # If someone commented, increment count
+  #   if comment.post_id == socket.assigns.post.id do
+  #     {:noreply, assign(socket, :comment_count, socket.assigns.comment_count + 1)}
+  #   else
+  #     {:noreply, socket}
+  #   end
+  # end
 
   # Ignore other messages
   def handle_info(_, socket), do: {:noreply, socket}

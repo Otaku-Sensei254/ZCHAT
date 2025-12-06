@@ -167,27 +167,32 @@
                       </span>
                     </span>
 
-                    <%= if is_me do %>
+                   <%= if is_me do %>
                       <% 
-                         # --- FIX STARTS HERE ---
-                         # 1. Convert the message time from Naive (~N) to UTC (~U)
-                         # We use DateTime.from_naive! with "Etc/UTC" to match the types.
+                         # 1. Convert message time
                          message_utc = DateTime.from_naive!(message.inserted_at, "Etc/UTC")
-                         
-                         # 2. Now compare the two UTC dates
-                         is_read = @other_last_read_at && DateTime.compare(message_utc, @other_last_read_at) != :gt 
-                         # --- FIX ENDS HERE ---
+                         message_flat = DateTime.truncate(message_utc, :second)
+
+                         # 2. Compare Time
+                         is_read = 
+                           if @other_last_read_at do
+                             read_flat = DateTime.truncate(@other_last_read_at, :second)
+                             # Logic: Message Time <= Read Time
+                             DateTime.compare(message_flat, read_flat) != :gt
+                           else
+                             false
+                           end
                       %>
                       
                       <%= if is_read do %>
-                        <div class="flex ">
+                        <div class="flex">
                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                         </div>
                       <% else %>
-                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-red-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                         </svg>
+                         <div class="flex opacity-50">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-400 dark:text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                         </div>
                       <% end %>
                     <% end %>
 

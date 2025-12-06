@@ -19,7 +19,7 @@ defmodule Zchat.MixProject do
   def application do
     [
       mod: {Zchat.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :canada]
     ]
   end
 
@@ -55,7 +55,8 @@ defmodule Zchat.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:timex, "~> 3.0"},
-      {:scrivener_ecto, "~> 2.0"}
+      {:scrivener_ecto, "~> 2.0"},
+      {:canada, "~> 2.0"}
     ]
   end
 

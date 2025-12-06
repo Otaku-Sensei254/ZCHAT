@@ -9,6 +9,7 @@ defmodule ZchatWeb.Components.NotificationsModal do
       Phoenix.PubSub.subscribe(Zchat.PubSub, "notifications:#{assigns.current_user.id}")
     end
 
+
     {:ok,
      socket
      |> assign(assigns)
@@ -54,6 +55,10 @@ defmodule ZchatWeb.Components.NotificationsModal do
   def notification_link(%{post_id: post_id}) when is_integer(post_id) do
     ~p"/posts/#{post_id}"
   end
+   def notification_link(%{type: "role_change", user: %{username: username}}) when is_binary(username) do
+
+    ~p"/users/#{username}"
+  end
 
   def notification_link(_notification) do
     ~p"/"  # Fallback to home if we can't determine a proper link
@@ -65,6 +70,7 @@ defmodule ZchatWeb.Components.NotificationsModal do
       "comment" -> "commented on your post"
       "follow" -> "started following you"
       "new_post" -> "posted something new"
+      "role_change" -> "updated your role"
       _ -> "sent a notification"
     end
   end

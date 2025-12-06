@@ -14,6 +14,7 @@ defmodule ZchatWeb.UI.SinglePostLive do
     {:ok,
      socket
      |> assign(:replying_to, nil)
+     |> assign(:editing_comment_id, nil)
      |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> stream(:comments, [])
      |> assign(:current_like, nil)
@@ -128,8 +129,32 @@ defmodule ZchatWeb.UI.SinglePostLive do
 
   @impl true
   def handle_event("like_comment", %{"comment_id" => _id}, socket) do
-    # Placeholder
+
     {:noreply, socket}
+  end
+  #edit comment
+  def handle_event("edit_comment", %{"id" => comment_id}, socket) do
+    {:noreply, assign(socket, editing_comment_id: String.to_integer(comment_id))}
+  end
+  #cancel the comment edit
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, editing_coment_id: nil)}
+  end
+
+  #save your editted comment
+
+  def handle_event("save_comment_edit", %{"comment" => comment_params}, socket) do
+    comment_id = comment_params["id"]
+    new_comment = comment_params["content"]
+
+    comment = Enum.find(socket.assigns.comments, &(&1.id == String.to_integer(comment_id)))
+    case Zchat.Posts.update_comment(comment, %{"content"=>  new_comment}) do
+      {:ok, _updated_comment} ->
+        {:noreply, socket
+      |>assign(:editing_comment_id, nil)
+      |>put_flash(:info, "Comment updated successfully")
+    }
+    end
   end
 
   @impl true
@@ -161,14 +186,28 @@ defmodule ZchatWeb.UI.SinglePostLive do
     end
   end
 
+
   @impl true
   def handle_info({:new_comment, comment}, socket) do
     socket =
       socket
       |> stream_insert(:comments, comment, at: 0)
       |> update(:like_count, & &1)
-
     {:noreply, socket}
+  end
+
+  def handle_info({:comment_updated, updated_comment}, socket) do
+    #replace old comment with updated comment
+    updated_comment_list =
+    Enum.map(socket.assigns.comments, fn current_comment ->
+      if current_comment.id == updated_comment do
+        updated_comment
+      else
+        current_comment
+      end
+    end)
+
+    {:noreply, assign(socket, comments: updated_comment_list)}
   end
 
   @impl true
@@ -209,6 +248,31 @@ defmodule ZchatWeb.UI.SinglePostLive do
 
   @impl true
   def handle_info(:new_notification, socket) do
+    {:noreply, socket}
+  end
+   @impl true
+  def handle_info(:new_notification, socket) do
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+    {:noreply, socket}
+  end
+
+@impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    {:noreply, socket}
+  end
+  
+  @impl true
+  def handle_info(:notifications_read, socket) do
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    # Example: Send update to the Nav component or refresh assigns
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     {:noreply, socket}
   end
 end

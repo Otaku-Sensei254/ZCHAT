@@ -126,7 +126,11 @@ defmodule Zchat.Chat do
       {:new_message, message}
     )
   end
-
+def mark_message_as_read(message_id) do
+    Repo.get(Message, message_id)
+    |> Ecto.Changeset.change(read_at: DateTime.utc_now())
+    |> Repo.update()
+  end
   def member_of_conversation?(user, conversation_id) do
     query = from convom in ConversationMember,
       where: convom.user_id == ^user.id and convom.conversation_id == ^conversation_id
@@ -142,20 +146,35 @@ defmodule Zchat.Chat do
     |> case do
       nil -> {:error, :not_found}
       member ->
-        # Ensure to use microseconds to prevent DB errors
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
         {:ok, updated_member} =
-        member
-        |> Ecto.Changeset.change(last_read_at: now)
-        |> Repo.update()
+          member
+          |> Ecto.Changeset.change(last_read_at: now)
+          |> Repo.update()
 
-        #and now to show a seen or green tick
         Phoenix.PubSub.broadcast(
           Zchat.PubSub, "conversation:#{conversation_id}",
           {:message_read, %{user_id: user_id, conversation_id: conversation_id, last_read_at: now}}
         )
-        {{:noreply, updated_member}}
+          Phoenix.PubSub.broadcast(
+            Zchat.PubSub, "user_sidebar:#{user_id}",
+            :update_sidebar
+          )
+
+        {:ok, updated_member}
     end
+  end
+
+  #check for unread convos
+  def count_unread_conversations(user_id) do
+    from(convo in Conversation,
+        join: convom in assoc(convo, :conversation_members),
+        join: messo in assoc(convo, :messages),
+        where: convom.user_id == ^user_id,
+        where: messo.inserted_at > convom.last_read_at and messo.user_id != ^user_id,
+        select: count(convo.id, :distinct)
+        )
+        |> Repo.one() || 0
   end
 end

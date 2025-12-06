@@ -21,7 +21,7 @@ defmodule ZchatWeb.Router do
     pipe_through :browser
 
     live_session :public,
-      on_mount: [{ZchatWeb.UserAuth, :mount_current_user}] do
+      on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, ZchatWeb.UserActivityHook] do
       live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
       live "/posts/new", CreatePost, :new
@@ -54,25 +54,92 @@ defmodule ZchatWeb.Router do
     end
   end
 
+
+
+  #MODERATOR ZONE
+  pipeline :moderator do
+    plug ZchatWeb.Plugs.EnsureModerator
+    plug :put_root_layout, html: {ZchatWeb.Layouts, :root}
+    plug :put_layout, html: {ZchatWeb.Layouts, :sidepanel}
+    plug ZchatWeb.Plugs.LoadNavigation
+  end
+
+  scope "/moderator", ZchatWeb.Moderator do
+    pipe_through [:browser, :require_authenticated_user, :moderator]
+
+    live_session :moderator,
+      layout: {ZchatWeb.Layouts, :sidepanel},
+      on_mount: [
+        {ZchatWeb.UserAuth, :mount_current_user},
+        {ZchatWeb.ModeratorAuthLive, :ensure_moderator},
+        {ZchatWeb.AdminLayoutHook, :default}
+      ] do
+      live "/dashboard", DashboardLive, :index
+      live "/reports", ReportsLive, :index
+      live "/reports/:id", ReportsLive, :show
+    end
+  end
+
+
+  #SALES EXECUTIVE ZONE
+  pipeline :sales do
+  plug ZchatWeb.Plugs.EnsureSalesExecutive
+  plug :put_root_layout, html: {ZchatWeb.Layouts, :root}
+  plug :put_layout, html: {ZchatWeb.Layouts, :sidepanel}
+  plug ZchatWeb.Plugs.LoadNavigation
+end
+
+scope "/sales-executive", ZchatWeb.Sales do
+  pipe_through [:browser, :require_authenticated_user, :sales]
+
+  live_session :sales,
+    layout: {ZchatWeb.Layouts, :sidepanel},
+    on_mount: [
+      {ZchatWeb.UserAuth, :mount_current_user},
+      {ZchatWeb.SalesAuthLive, :ensure_sales_executive},
+      {ZchatWeb.AdminLayoutHook, :default}
+    ] do
+    live "/dashboard", DashboardLive, :index
+    live "/ads-request", AdsRequestLive, :index
+    live "/ads-request/new", AdsRequestLive, :new
+    live "/ads-request/:id", AdsRequestLive, :show
+  end
+end
+
+
+
+
   # ADMIN ZONE
 
   pipeline :admin do
     plug ZchatWeb.Plugs.EnsureAdmin
+    plug :put_root_layout, html: {ZchatWeb.Layouts, :root}
+    plug :put_layout, html: {ZchatWeb.Layouts, :sidepanel}
+    plug ZchatWeb.Plugs.LoadNavigation
   end
 
-  scope "/admin", ZchatWeb.Admin do
-    pipe_through [:browser, :require_authenticated_user, :admin]
+scope "/admin", ZchatWeb.Admin do
+  pipe_through [:browser, :require_authenticated_user, :admin]
 
-    live_session :admin,
-      on_mount: [
-        {ZchatWeb.UserAuth, :mount_current_user},
-        {ZchatWeb.AdminAuthLive, :ensure_admin}
-      ] do
-      live "/dashboard", DashboardLive, :index
-      live "/users", ManagementLive, :index
-      live "/users/:user_id/edit_roles", UserRolesLive, :edit
-    end
+  live_session :admin,
+    layout: {ZchatWeb.Layouts, :sidepanel},
+    on_mount: [
+      {ZchatWeb.UserAuth, :mount_current_user},
+      {ZchatWeb.AdminAuthLive, :ensure_admin},
+      {ZchatWeb.AdminLayoutHook, :default}
+    ] do
+    live "/dashboard", DashboardLive, :index
+    live "/users", ManagementLive, :index
+    live "/users/:user_id/edit_roles", UserRolesLive, :edit
+    live "/roles", CreateRolesLive
   end
+end
+
+  # scope "/moderator", ZchatWeb.Moderator do
+  #   pipe_yhrough [:browser, :require_authenticated_user]
+  #   live_session :moderator
+
+  # end
 
   ## Authentication routes
 

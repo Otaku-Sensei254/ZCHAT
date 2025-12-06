@@ -17,7 +17,7 @@ def mount(_params, _session, socket) do
      |> assign(:tags, Posts.count_top_tags())}
   end
 
- 
+
   # --- Handle POST updates ---
   @impl true
   def handle_info({:post_created, _post}, socket) do

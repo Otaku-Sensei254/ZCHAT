@@ -101,4 +101,8 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
       {:noreply, socket}
     end
   end
+  @impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    {:noreply, socket}
+  end
 end

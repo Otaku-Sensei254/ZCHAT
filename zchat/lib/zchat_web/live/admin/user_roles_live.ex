@@ -18,33 +18,38 @@ defmodule ZchatWeb.Admin.UserRolesLive do
   end
 
   @impl true
-  def handle_event("toggle_role", %{"role" => role_name}, socket) do
-    user = socket.assigns.user |> Repo.preload(:roles)
-    current_roles = user.roles || []
+ def handle_event("toggle_role", %{"user_id" => u_id, "role_id" => r_id}, socket) do
+    user_id = String.to_integer(u_id)
+    role_id = String.to_integer(r_id)
+    currentUser = socket.assigns.current_user
 
-    updated_roles =
-      if Enum.any?(current_roles, &(&1.name == role_name)) do
-        Enum.reject(current_roles, &(&1.name == role_name))
-      else
-        role = Enum.find(socket.assigns.roles, &(&1.name == role_name))
+    case Accounts.toggle_user_role(user_id, role_id) do
+      {:ok, :added} ->
+        # 1. Logic for when role was GRANTED
+        Notifications.create_notification(%{
+          user_id: user_id,
+          actor_id: currentUser.id,
+          type: "role_granted"
+        })
 
-        case role do
-          nil -> current_roles
-          _ -> [role | current_roles]
-        end
-      end
+        # Refresh Data
+        users = Accounts.list_users() |> Zchat.Repo.preload(:roles)
+        {:noreply, socket |> assign(:users, users) |> put_flash(:info, "Role granted.")}
 
-    changeset = User.roles_changeset(user, %{roles: updated_roles})
+      {:ok, :removed} ->
+        # 2. Logic for when role was REVOKED
+        Notifications.create_notification(%{
+          user_id: user_id,
+          actor_id: currentUser.id,
+          type: "role_revoked"
+        })
 
-    case Accounts.update_user_roles(user, changeset) do
-      {:ok, updated_user} ->
-        {:noreply,
-         socket
-         |> assign(:user, Repo.preload(updated_user, :roles))
-         |> put_flash(:info, "Roles updated successfully")}
+        # Refresh Data
+        users = Accounts.list_users() |> Zchat.Repo.preload(:roles)
+        {:noreply, socket |> assign(:users, users) |> put_flash(:info, "Role removed.")}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, :changeset, changeset)}
+      _ ->
+        {:noreply, put_flash(socket, :error, "Operation failed.")}
     end
   end
 end

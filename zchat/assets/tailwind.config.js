@@ -18,6 +18,10 @@ module.exports = {
           800: '#1f2937',
           900: '#111827',
         },
+        bg: {
+          DEFAULT: "",
+          light: ""
+        }
       },
       transitionProperty: {
         'theme': 'background-color, border-color, color',

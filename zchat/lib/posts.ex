@@ -157,7 +157,7 @@ defmodule Zchat.Posts do
   Gets all categories.
   """
   def categories do
-    ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy/ Humor", "Nature", "Couples", "Kids"]
+    ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
   end
 
   @doc """
@@ -252,7 +252,7 @@ defmodule Zchat.Posts do
 
     query
     |> preload(^preload)
-    |> order_by(desc: :inserted_at)
+    |> order_by(asc: :inserted_at)
     |> Repo.all()
   end
 
@@ -292,6 +292,8 @@ defmodule Zchat.Posts do
     comment
     |> Comment.changeset(attrs)
     |> Repo.update()
+    |> handle_comment_update()
+
   end
 
   @doc """
@@ -300,6 +302,13 @@ defmodule Zchat.Posts do
   def delete_comment(%Comment{} = comment) do
     Repo.delete(comment)
   end
+
+  #broadcast the edit comment
+  defp handle_comment_update({:ok, comment}) do
+  Phoenix.PubSub.broadcast(Zchat.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
+  {:ok, comment}
+end
+defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   @doc """
   Returns a comment changeset.

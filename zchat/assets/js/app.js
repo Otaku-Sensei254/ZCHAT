@@ -133,6 +133,37 @@ Hooks.NotificationsHook = {
     });
   }
 };
+
+Hooks.ChatVisibility = {
+  mounted() {
+    this.handleEvent("new_message_arrived", ({msg_id}) => {
+      if (document.visibilityState === "visible") {
+        // User is looking at the screen -> Mark Read
+        this.pushEvent("mark_as_read", {id: msg_id});
+      } else {
+        // User is in another tab -> Do nothing (stays unread)
+        // Optionally play a sound
+      }
+    });
+
+    // When they click back to this tab, mark pending messages read
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        this.pushEvent("mark_all_read", {});
+      }
+    });
+  }
+}
+
+Hooks.ThemeToggle = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      const html = document.documentElement;
+      const isDark = html.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+  }
+};
 Hooks.LocalTime = {
   mounted() {
     this.updated();

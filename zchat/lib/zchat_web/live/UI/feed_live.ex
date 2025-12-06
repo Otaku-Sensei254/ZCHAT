@@ -122,12 +122,6 @@ defmodule ZchatWeb.UI.FeedLive do
   # 1. New Post Created by someone else
   @impl true
   def handle_info({:post_created, post}, socket) do
-    # Option A: Auto-insert at top (Discovery Mode)
-    # post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
-    # {:noreply, stream_insert(socket, :posts, post, at: 0)}
-
-    # Option B: "Show New Posts" Pill (Twitter Style - Preferred)
-    # We add it to pending_posts instead of the stream
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
     {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
   end
@@ -179,6 +173,22 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    # We don't display online status on the feed, so just ignore it.
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    # Example: Send update to the Nav component or refresh assigns
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    {:noreply, socket}
+  end
+
+  def handle_info(:update_sidebar, socket) do
+    {:noreply, socket}
+  end
   # --- CORE HELPERS ---
 
   defp load_posts(socket) do

@@ -44,7 +44,7 @@ defmodule ZchatWeb do
 
       import Plug.Conn
       import ZchatWeb.Gettext
-
+      import Canada.Can
       unquote(verified_routes())
     end
   end
@@ -54,15 +54,16 @@ defmodule ZchatWeb do
       use Phoenix.LiveView,
         layout: {ZchatWeb.Layouts, :app}
 
-      unquote(html_helpers())
+        unquote(html_helpers())
+        import Canada.Can
     end
   end
 
   def live_component do
     quote do
       use Phoenix.LiveComponent
-
       unquote(html_helpers())
+      import Canada.Can
       @impl true
       def handle_info(:new_notification, socket) do
         # Tell the components (Desktop AND Mobile) to update

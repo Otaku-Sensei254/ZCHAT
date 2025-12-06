@@ -16,18 +16,16 @@ defmodule Zchat.Accounts.Role do
 
   schema "roles" do
     field :name, :string
-    field :permissions, {:array, :string}, default: []
 
     many_to_many :users, Zchat.Accounts.User, join_through: "user_roles"
-
+    many_to_many :permissions, Zchat.Accounts.Permission, join_through: "role_permissions", on_replace: :delete
     timestamps()
   end
 
   def changeset(role, attrs) do
     role
-    |> cast(attrs, [:name, :permissions])
+    |> cast(attrs, [:name])
     |> validate_required([:name])
-    |> validate_inclusion(:permissions, @permission_types)
     |> unique_constraint(:name)
   end
 

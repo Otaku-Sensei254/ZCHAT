@@ -11,7 +11,8 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
     socket = ZchatWeb.UserAuth.mount_current_user(socket, session)
 
     # Preload roles to prevent crashes in the template
-    case Accounts.get_user_by_username(username) |> Zchat.Repo.preload(:roles) do
+    case Accounts.get_user_by_username(username)
+    |> Zchat.Repo.preload(:roles) do
       nil ->
         {:ok,
          socket

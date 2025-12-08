@@ -9,13 +9,13 @@ defmodule Zchat.Notifications.Notification do
     belongs_to :user, Zchat.Accounts.User
     belongs_to :actor, Zchat.Accounts.User
     belongs_to :post, Zchat.Posts.Post
-
+    belongs_to :conversation, Zchat.Chat.Conversation
     timestamps()
   end
 
   def changeset(notification, attrs) do
     notification
-    |> cast(attrs, [:type, :read_at, :user_id, :actor_id, :post_id])
-    |> validate_required([:type, :user_id, :actor_id])
+  |> cast(attrs, [:type, :user_id, :actor_id, :post_id, :read_at, :conversation_id])
+   |> validate_required([:type, :user_id, :actor_id])
   end
 end

@@ -42,7 +42,6 @@ defmodule ZchatWeb.UI.PostComponent do
      |> assign(:current_like, current_like)
      |> assign(:like_count, like_count)
      |> assign(:comment_count, comment_count)
-     # 3. Initialize Media Slider Index (Start at the first image: 0)
      |> assign(:current_media_index, 0)}
   end
 
@@ -136,6 +135,14 @@ defmodule ZchatWeb.UI.PostComponent do
        |> put_flash(:error, "Log in to like")
        |> push_navigate(to: ~p"/users/log_in")}
     end
+  end
+#handles the share function
+  @impl true
+  def handle_event("request_share", _, socket) do
+    # We send a message to the process (FeedLive) identified by self()
+    # The message is a tuple: {:open_share_modal, post_id}
+    send(self(), {:open_share_modal, socket.assigns.post.id})
+    {:noreply, socket}
   end
 # --- AUTHORIZATION HELPERS ---
 

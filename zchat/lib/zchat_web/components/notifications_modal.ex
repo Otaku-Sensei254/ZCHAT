@@ -47,6 +47,9 @@ defmodule ZchatWeb.Components.NotificationsModal do
   end
 
   # --- VIEW HELPERS ---
+  def notification_link(%{type: "shared_post", conversation_id: conv_id}) when is_integer(conv_id) do
+    ~p"/chat/#{conv_id}"
+  end
 
   def notification_link(%{type: "follow", actor: %{username: username}}) when is_binary(username) do
     ~p"/users/#{username}"
@@ -55,14 +58,11 @@ defmodule ZchatWeb.Components.NotificationsModal do
   def notification_link(%{post_id: post_id}) when is_integer(post_id) do
     ~p"/posts/#{post_id}"
   end
-   def notification_link(%{type: "role_change", user: %{username: username}}) when is_binary(username) do
+  def notification_link(%{type: "role_change", user: %{username: username}}) when is_binary(username) do
 
     ~p"/users/#{username}"
   end
 
-  def notification_link(_notification) do
-    ~p"/"  # Fallback to home if we can't determine a proper link
-  end
 
   def format_text(n) do
     case n.type do
@@ -71,6 +71,7 @@ defmodule ZchatWeb.Components.NotificationsModal do
       "follow" -> "started following you"
       "new_post" -> "posted something new"
       "role_change" -> "updated your role"
+      "shared_post" -> "Shared a post with you"
       _ -> "sent a notification"
     end
   end

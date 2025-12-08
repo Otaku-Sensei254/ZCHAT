@@ -1,6 +1,6 @@
 <div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
   
- <div class="w-20 md:w-80 border-r border-gray-200 dark:border-zinc-800 flex flex-col">
+  <div class="w-20 md:w-80 border-r border-gray-200 dark:border-zinc-800 flex flex-col">
     <div class="p-4 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 hidden md:block">
       <h2 class="font-bold text-gray-800 dark:text-gray-100">Messages</h2>
     </div>
@@ -16,9 +16,7 @@
            
            is_active = @conversation && conv.id == @conversation.id
 
-           # --- NEW: Check Online Status ---
            is_online = if !is_group && other_member do
-             # Presence keys are usually strings, so we convert the ID
              Map.has_key?(@online_users, to_string(other_member.user.id))
            else
              false
@@ -93,7 +91,6 @@
               header_name = if is_group, do: @conversation.name, else: (header_member && header_member.user.username) || "Unknown"
               header_avatar = if is_group, do: nil, else: (header_member && header_member.user.avatar_url) || "/images/default_avatar.png"
               
-              # Presence Logic: Check if ID exists in the Presence Map
               other_user_online = if !is_group && header_member do
                 Map.has_key?(@online_users, to_string(header_member.user.id)) || Map.has_key?(@online_users, header_member.user.id)
               else
@@ -135,69 +132,128 @@
               <% is_me = message.user_id == @current_user.id %>
               
               <div id={dom_id} class={"flex w-full " <> if(is_me, do: "justify-end", else: "justify-start")}>
-                <div class={"max-w-[75%] px-4 py-2 rounded-2xl shadow-sm text-sm wrap-break-words " <> 
-                  if(is_me, 
-                    do: "bg-blue-500 text-white rounded-br-none", 
-                    else: "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-bl-none")
-                }>
-                  <p><%= message.content %></p>
+                
+                <%= if message.shared_post do %>
+                  <% post = message.shared_post %>
+                  <% media = List.first(post.media_files || []) %>
                   
-                  <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                  <.link 
+                    navigate={~p"/posts/#{post.id}"}
+                    class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> 
+                      if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}
+                  >
+                    <%= if media do %>
+                      <%= if media["type"] == "video" do %>
+                        <video src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
+                      <% else %>
+                        <img src={media["url"]} class="absolute inset-0 w-full h-full object-cover" />
+                      <% end %>
+                    <% else %>
+                      <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4">
+                        <p class="text-xs text-gray-500 line-clamp-3 text-center italic"><%= post.content %></p>
+                      </div>
+                    <% end %>
+
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
+
+                    <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
+                      <img src={post.user.avatar_url || "/images/default_avatar.png"} class="w-6 h-6 rounded-full border border-white/50 object-cover">
+                      <span class="text-xs font-bold text-white shadow-sm"><%= post.user.username %></span>
+                    </div>
+
+                   <%= if post.content do %>
+                      <div class="absolute bottom-3 left-3 right-3 z-10">
+                        <p class="text-xs text-white/90 font-medium drop-shadow-md break-words">
+                          <%= content_cut(post.content, 80) %>
+                        </p>
+                      </div>
+                    <% end %>
+
+                    <%= if media && media["type"] == "video" do %>
+                      <div class="absolute top-3 right-3 text-white">
+                        <svg class="w-4 h-4 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                      </div>
+                    <% end %>
+                  </.link>
+
+                <% else %>
+                  <div class={"max-w-[75%] px-4 py-2 rounded-2xl shadow-sm text-sm wrap-break-words " <> 
+                    if(is_me, 
+                      do: "bg-blue-500 text-white rounded-br-none", 
+                      else: "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-bl-none")
+                  }>
+                    <p><%= message.content %></p>
                     
-                    <span class="text-[10px]">
-                     <% 
-                         # Ensure we have a valid ISO string for JavaScript
-                         # If it's Naive (from DB), treat it as UTC.
-                         iso_time = 
-                           if message.inserted_at do
-                             message.inserted_at
-                             |> DateTime.from_naive!("Etc/UTC") 
-                             |> DateTime.to_iso8601()
-                           else 
-                             "" 
-                           end
-                      %>
-                      <span 
-                        id={"time-#{dom_id}"} 
-                        phx-hook="LocalTime" 
-                        data-timestamp={iso_time} 
-                        class="invisible"
-                      >
-                        <%= iso_time %>
+                    <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                      <span class="text-[10px]">
+                        <% 
+                           iso_time = 
+                             if message.inserted_at do
+                               message.inserted_at
+                               |> DateTime.from_naive!("Etc/UTC") 
+                               |> DateTime.to_iso8601()
+                             else 
+                               "" 
+                             end
+                        %>
+                        <span 
+                          id={"time-#{dom_id}"} 
+                          phx-hook="LocalTime" 
+                          data-timestamp={iso_time} 
+                          class="invisible"
+                        >
+                          <%= iso_time %>
+                        </span>
                       </span>
-                    </span>
 
-                   <%= if is_me do %>
-                      <% 
-                         # 1. Convert message time
-                         message_utc = DateTime.from_naive!(message.inserted_at, "Etc/UTC")
-                         message_flat = DateTime.truncate(message_utc, :second)
+                      <%= if is_me do %>
+                        <% 
+                           # Tick Logic
+                           message_utc = DateTime.from_naive!(message.inserted_at, "Etc/UTC")
+                           message_flat = DateTime.truncate(message_utc, :second)
 
-                         # 2. Compare Time
-                         is_read = 
-                           if @other_last_read_at do
-                             read_flat = DateTime.truncate(@other_last_read_at, :second)
-                             # Logic: Message Time <= Read Time
-                             DateTime.compare(message_flat, read_flat) != :gt
-                           else
-                             false
-                           end
-                      %>
-                      
-                      <%= if is_read do %>
+                           is_read = 
+                             if @other_last_read_at do
+                               read_flat = DateTime.truncate(@other_last_read_at, :second)
+                               DateTime.compare(message_flat, read_flat) != :gt
+                             else
+                               false
+                             end
+                        %>
+                        
+                        <%= if is_read do %>
+                          <div class="flex">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                          </div>
+                        <% else %>
+                           <div class="flex opacity-50">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                           </div>
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+
+                <%= if message.shared_post && is_me do %>
+                   <% 
+                       # Re-calc is_read specifically for the card view logic
+                       msg_time = DateTime.from_naive!(message.inserted_at, "Etc/UTC") |> DateTime.truncate(:second)
+                       is_read_card = if @other_last_read_at, do: DateTime.compare(msg_time, DateTime.truncate(@other_last_read_at, :second)) != :gt, else: false
+                   %>
+                   <div class="flex items-end ml-1 mb-1">
+                      <%= if is_read_card do %>
                         <div class="flex">
                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                         </div>
                       <% else %>
-                         <div class="flex opacity-50">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-400 dark:text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                         </div>
+                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                       <% end %>
-                    <% end %>
+                   </div>
+                <% end %>
 
-                  </div>
-                </div>
               </div>
             <% end %>
           </div>

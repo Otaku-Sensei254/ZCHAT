@@ -3,11 +3,12 @@ defmodule ZchatWeb.UI.FeedLive do
   alias Zchat.Posts
   alias Zchat.Posts.Post
   alias Zchat.Notifications
+  alias Zchat.Socials
+  alias Zchat.Accounts # Added for listing friends
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      # Listen for global posts (for the "New Posts" pill or auto-insert)
       Phoenix.PubSub.subscribe(Zchat.PubSub, "feed:global")
 
       if socket.assigns[:current_user] do
@@ -23,13 +24,17 @@ defmodule ZchatWeb.UI.FeedLive do
         page: 1,
         per_page: 10,
         loading: false,
-        has_more: true, # Controls if the infinite scroll hook fires
+        has_more: true,
         search_term: nil,
         category: nil,
         search_results: [],
         show_search: false,
         data_loaded: false,
-        pending_posts: [] # For the "Show New Posts" pill logic
+        pending_posts: [],
+        # --- SHARE MODAL STATE ---
+        show_share_modal: false,
+        post_to_share: nil,
+        friends_list: []
       )
 
     {:ok, socket}
@@ -52,10 +57,10 @@ defmodule ZchatWeb.UI.FeedLive do
     socket =
       if filters_changed or !socket.assigns.data_loaded do
         socket
-        |> assign(:page, 1) # Reset to page 1
+        |> assign(:page, 1)
         |> assign(:data_loaded, true)
-        |> stream(:posts, [], reset: true) # Clear old data from UI immediately
-        |> load_posts() # Load fresh data
+        |> stream(:posts, [], reset: true)
+        |> load_posts()
         |> load_trending()
       else
         socket
@@ -64,13 +69,50 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, socket}
   end
 
+  # --- SHARE HANDLERS (NEW) ---
+
+  @impl true
+  def handle_event("open_share_modal", %{"post_id" => post_id}, socket) do
+    # Fetch friends/following only when modal opens
+    current_user = socket.assigns.current_user
+    # Assuming you have a list_following/1 function. If not, use list_users() or similar.
+    friends = Accounts.list_following(current_user.id)
+
+    {:noreply,
+     socket
+     |> assign(:show_share_modal, true)
+     |> assign(:post_to_share, post_id)
+     |> assign(:friends_list, friends)}
+  end
+
+  @impl true
+  def handle_event("close_share_modal", _, socket) do
+    {:noreply, assign(socket, :show_share_modal, false)}
+  end
+
+  @impl true
+  def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
+    current_user_id = socket.assigns.current_user.id
+    post_id = socket.assigns.post_to_share
+    recipient_int_id = String.to_integer(recipient_id)
+
+    # Call the context function we created earlier
+    case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
+      {:ok, _msg} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Sent to chat!")
+         |> assign(:show_share_modal, false)} # Close modal on success
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not send.")}
+    end
+  end
+
   # --- INFINITE SCROLL EVENT ---
 
   @impl true
   def handle_event("load-more", _, socket) do
-    # Only load if not currently loading AND we know there is more data
     if !socket.assigns.loading and socket.assigns.has_more do
-      # Set loading: true immediately to prevent double-firing
       send(self(), :load_more_data)
       {:noreply, assign(socket, loading: true)}
     else
@@ -94,7 +136,6 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, assign(socket, search_results: results, show_search: show_search)}
   end
 
-  # Fallback for search input name mismatch
   @impl true
   def handle_event("live_search", %{"value" => query}, socket) do
     results = Zchat.Search.global_search(query)
@@ -119,14 +160,12 @@ defmodule ZchatWeb.UI.FeedLive do
 
   # --- REAL-TIME UPDATES (PubSub) ---
 
-  # 1. New Post Created by someone else
   @impl true
   def handle_info({:post_created, post}, socket) do
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
     {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
   end
 
-  # Event to flush pending posts (The Pill Click)
   @impl true
   def handle_event("load_new_posts", _params, socket) do
     pending = socket.assigns.pending_posts
@@ -137,7 +176,6 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, assign(socket, :pending_posts, [])}
   end
 
-  # 2. Interactions
   @impl true
   def handle_info({:post_deleted, post}, socket) do
     {:noreply, stream_delete(socket, :posts, post)}
@@ -175,28 +213,66 @@ defmodule ZchatWeb.UI.FeedLive do
 
   @impl true
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
-    # We don't display online status on the feed, so just ignore it.
     {:noreply, socket}
   end
 
   @impl true
   def handle_info(:update_notifications, socket) do
-    # Example: Send update to the Nav component or refresh assigns
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     {:noreply, socket}
   end
 
+  @impl true
   def handle_info(:update_sidebar, socket) do
     {:noreply, socket}
   end
+
+#======================SHARE LIKE REELS ON IG============
+  @impl true
+  def handle_info({:open_share_modal, post_id}, socket) do
+    current_user = socket.assigns.current_user
+
+    # Lazy Load: Get friends list only when clicking share
+    # Ensure Zchat.Accounts.list_following/1 exists in your context!
+    friends = Socials.list_following(current_user.id)
+
+    {:noreply,
+     socket
+     |> assign(:show_share_modal, true)
+     |> assign(:post_to_share, post_id)
+     |> assign(:friends_list, friends)}
+  end
+
+  # 2. Close Modal
+  @impl true
+  def handle_event("close_share_modal", _, socket) do
+    {:noreply, assign(socket, :show_share_modal, false)}
+  end
+
+  # 3. Confirm Send (Clicked inside the Modal)
+  @impl true
+  def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
+    current_user_id = socket.assigns.current_user.id
+    post_id = socket.assigns.post_to_share
+
+    # Call the chat context to send the link
+    case Zchat.Chat.share_post_to_user(current_user_id, recipient_id, post_id) do
+      {:ok, _msg} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Sent to chat!")
+         |> assign(:show_share_modal, false)} # Close modal immediately
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not send.")}
+    end
+  end
+
+
   # --- CORE HELPERS ---
 
   defp load_posts(socket) do
     %{page: page, per_page: per_page} = socket.assigns
 
-    # Fetch Data
-    # NOTE: If you implemented list_fresh_random_posts, call that here.
-    # Otherwise, this calls your standard list_posts
     posts =
       Posts.list_posts(
         page: page,
@@ -207,7 +283,6 @@ defmodule ZchatWeb.UI.FeedLive do
       )
       |> Enum.map(&Post.ensure_media_files/1)
 
-    # Determine if we hit the end
     has_more = length(posts) == per_page
 
     socket
@@ -216,12 +291,10 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   defp update_stream_based_on_page(socket, 1, posts) do
-    # If Page 1, RESET everything (New random batch or filter change)
     stream(socket, :posts, posts, reset: true)
   end
 
   defp update_stream_based_on_page(socket, _page, posts) do
-    # If Page 2+, APPEND to bottom (-1)
     stream_insert_many(socket, posts)
   end
 

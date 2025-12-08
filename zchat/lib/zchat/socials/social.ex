@@ -5,7 +5,7 @@ defmodule Zchat.Socials do
 
   import Ecto.Query, warn: false
   alias Zchat.Repo
-
+  alias Zchat.Posts
   alias Zchat.Socials.Follow
   alias Zchat.Notifications
 
@@ -105,5 +105,9 @@ defmodule Zchat.Socials do
     )
     |> Repo.all()
     |> Enum.map(& &1.follower)
+  end
+
+  def share(post_id, user_id) do
+    target_post = Posts.get_post!()
   end
 end

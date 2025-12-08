@@ -3,7 +3,8 @@ defmodule Zchat.Chat do
   alias Zchat.Repo
   alias Zchat.Chat.{Message, Conversation, ConversationMember}
   alias Zchat.Accounts.User
-
+  alias Zchat.Posts
+  alias Zchat.Notifications
   # --- CONVERSATIONS ---
 
   def get_conversation!(id) do
@@ -70,7 +71,7 @@ defmodule Zchat.Chat do
     from(m in Message,
       where: m.conversation_id == ^conversation_id,
       order_by: [asc: m.inserted_at],
-      preload: [:user]
+      preload: [:user, shared_post: :user]
     )
     |> Repo.all()
   end
@@ -118,7 +119,7 @@ defmodule Zchat.Chat do
 
   def broadcast_message(conversation, message) do
     # Preload user so the LiveView can display avatar/username immediately
-    message = Repo.preload(message, :user)
+    message = Repo.preload(message, [:user,shared_post: :user])
 
     Phoenix.PubSub.broadcast(
       Zchat.PubSub,
@@ -177,4 +178,32 @@ def mark_message_as_read(message_id) do
         )
         |> Repo.one() || 0
   end
+
+  #sharing reels/posts
+  def share_posts_to_friend(sender_id, friend_id, post_id) do
+    {:ok, conversation} = get_or_create_private_conversation(sender_id, friend_id)
+    #now get the post
+    post = Repo.get!(Zchat.Posts.Post, post_id)
+     |> Repo.preload(:user)
+    content = "Shared a post"
+
+    {:ok, message} =
+      create_message(%{
+        content: content,
+        user_id: sender_id,
+        conversation_id: conversation.id,
+        shared_post_id: post_id
+      })
+
+      Notifications.create_notification(%{
+        user_id: friend_id,
+        actor_id: sender_id,
+        type: "shared_post",
+        post_id: post_id,
+        conversation_id: conversation.id
+      })
+
+        {:ok, message}
+  end
+
 end

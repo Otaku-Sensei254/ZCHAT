@@ -166,4 +166,12 @@ defmodule ZchatWeb.Chat.ChatLive do
       n when n > 2 -> "#{n} people are typing..."
     end
   end
+   defp content_cut(nil, _), do: ""
+  defp content_cut(content, length) do
+    if String.length(content) > length do
+      String.slice(content, 0, length) <> "..."
+    else
+      content
+    end
+  end
 end

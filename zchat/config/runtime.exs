@@ -31,7 +31,7 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :zchat, Zchat.Repo,
-    # ssl: true,
+    ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6
@@ -52,7 +52,7 @@ if config_env() == :prod do
   port = String.to_integer(System.get_env("PORT") || "4000")
 
   config :zchat, ZchatWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -62,6 +62,9 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+
+
 
   # ## SSL Support
   #

@@ -6,6 +6,7 @@ defmodule ZchatWeb.Chat.ChatLive do
   alias Zchat.Chat.Message
   alias Zchat.Chat.Conversation
   alias ZchatWeb.Presence
+  alias Zchat.Search
 
   @impl true
   def mount(_params, _session, socket) do
@@ -156,17 +157,29 @@ def handle_info(:update_sidebar, socket), do: {:noreply, socket}
   def handle_info(_, socket), do: {:noreply, socket}
 
   # Client Events
-  @impl true
+ @impl true
   def handle_event("search_new_chat", %{"query" => query}, socket) do
-    if String.length(query) >=2 do
-      #do not show user logged in
+    if String.length(query) >= 2 do
       current_user_id = socket.assigns.current_user.id
+
       results =
-        results = Zchat.Search.global_query(query)
+        Zchat.Search.global_search(query)
+        # 1. Ensure we only get USERS (if global search returns posts too)
+        |> Enum.filter(fn result -> Map.get(result, :type) == :user end)
+        # 2. Remove the current user from list
         |> Enum.filter(&(&1.id != current_user_id))
+        |> Enum.map(fn r ->
+             %{
+               id: r.id,
+               username: r.title,
+               avatar_url: r.image
+             }
+           end)
+
       {:noreply, assign(socket, user_search_results: results, user_search_query: query)}
     else
-      {:noreply, assign(socket, user_search_query: [], user_search_query: query)}
+      # 3. FIX: Clear 'results' (list), keep 'query' (string)
+      {:noreply, assign(socket, user_search_results: [], user_search_query: query)}
     end
   end
 

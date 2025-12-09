@@ -106,4 +106,23 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
     {:noreply, socket}
   end
+
+  @impl true
+  def handle_info(:new_notification, socket) do
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:notifications_read, socket) do
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+    {:noreply, socket}
+  end
+    @impl true
+  def handle_info(:update_notifications, socket) do
+    send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    {:noreply, socket}
+  end
 end

@@ -9,4 +9,6 @@ defmodule ZchatWeb.HomeLive do
     # This is handled client-side, so we just return the socket
     {:noreply, socket}
   end
+  @impl true
+  def handle_info(_, socket), do: {:noreply, socket}
 end

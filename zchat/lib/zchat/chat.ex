@@ -89,7 +89,7 @@ defmodule Zchat.Chat do
         # 1. Bump the conversation's "updated_at" so it jumps to top
         touch_conversation(message.conversation_id)
         broadcast_message(%Conversation{id: message.conversation_id}, message)
-        notify_sidebar_members(message.conversation_id)
+        notify_sidebar_members(message.conversation_id, message)
         {:ok, message}
 
       error ->
@@ -98,7 +98,7 @@ defmodule Zchat.Chat do
   end
 
 
-  defp notify_sidebar_members(conversation_id) do
+  defp notify_sidebar_members(conversation_id, message) do
     members =
       from(convom in ConversationMember,
         where: convom.conversation_id == ^conversation_id,
@@ -108,7 +108,10 @@ defmodule Zchat.Chat do
 
     Enum.each(members, fn user_id ->
 
-      Phoenix.PubSub.broadcast(Zchat.PubSub, "user_sidebar:#{user_id}", :update_sidebar)
+      Phoenix.PubSub.broadcast(
+        Zchat.PubSub,
+         "user_sidebar:#{user_id}",
+          {:update_sidebar, message})
     end)
   end
 

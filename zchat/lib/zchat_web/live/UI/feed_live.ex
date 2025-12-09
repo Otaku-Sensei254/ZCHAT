@@ -198,7 +198,7 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_info(:new_notification, socket) do
+  def handle_info({:new_notification,_notif} , socket) do
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
     {:noreply, socket}
@@ -223,9 +223,11 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_info(:update_sidebar, socket) do
+  def handle_info({:update_sidebar, _message}, socket) do
     {:noreply, socket}
   end
+  @impl true
+  def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
 
 #======================SHARE LIKE REELS ON IG============
   @impl true

@@ -3,50 +3,109 @@ defmodule ZchatWeb.UserActivityHook do
   import Phoenix.Component
   alias ZchatWeb.Presence
   alias Zchat.Chat
+  alias Zchat.Notifications
 
   def on_mount(:default, _params, _session, socket) do
     if socket.assigns[:current_user] do
       user = socket.assigns.current_user
-      topic = "users:online"
-      unread_chats_count = Chat.count_unread_conversations(user.id)
 
+      # 1. Subscribe to Chat Sidebar (For Messages)
+      if !socket.assigns[:sidebar_subscribed] do
+        Phoenix.PubSub.subscribe(Zchat.PubSub, "user_sidebar:#{user.id}")
+      end
 
-  if !socket.assigns[:sidebar_subscribed] do
-    Phoenix.PubSub.subscribe(Zchat.PubSub, "user_sidebar:#{user.id}")
+      # 2. Subscribe to Notifications (For Shares/Likes)
+      if !socket.assigns[:notifications_subscribed] do
+        Phoenix.PubSub.subscribe(Zchat.PubSub, "notifications:#{user.id}")
+      end
 
-  end
-      # Only track if not already tracking (to prevent duplicate noise)
+      # 3. Track Presence
       if !socket.assigns[:presenced_tracked] do
+        topic = "users:online"
         {:ok, _} = Presence.track(self(), topic, user.id, %{
           online_at: inspect(System.system_time(:second)),
           username: user.username,
           avatar: user.avatar_url
         })
+        ZchatWeb.Endpoint.subscribe(topic)
       end
 
-      # Subscribe so this socket knows about others
-      ZchatWeb.Endpoint.subscribe(topic)
+      unread_chats_count = Chat.count_unread_conversations(user.id)
 
       socket =
         socket
         |> assign(:presenced_tracked, true)
         |> assign(:sidebar_subscribed, true)
+        |> assign(:notifications_subscribed, true)
         |> assign(:unread_chats_count, unread_chats_count)
-        |> attach_hook(:global_sidebar_update, :handle_info, &handle_sidebar_event/2)
+        # Attach the universal handler
+        |> attach_hook(:global_popups, :handle_info, &handle_global_event/2)
 
-      {:cont, socket }
+      {:cont, socket}
     else
       {:cont, socket}
     end
   end
-  defp handle_sidebar_event(:update_sidebar, socket) do
-    user_id = socket.assigns.current_user.id
-    new_count = Chat.count_unread_conversations(user_id)
 
+  # --- HANDLER 1: NEW CHAT MESSAGE ---
+  defp handle_global_event({:new_sidebar_message, message}, socket) do
+    current_user_id = socket.assigns.current_user.id
+
+    # Don't show popup if I sent the message myself
+    if message.user_id != current_user_id do
+
+      # 1. Update the Header Badge Count
+      new_count = Chat.count_unread_conversations(current_user_id)
+
+      # 2. Determine Text (Is it text or a shared post?)
+      popup_text =
+        if message.shared_post_id do
+          "#{message.user.username} shared a post with you 🚀"
+        else
+          "Message from #{message.user.username}: #{truncate(message.content)}"
+        end
+
+      {:cont,
+       socket
+       |> assign(:unread_chats_count, new_count)
+       |> put_flash(:info, popup_text)} # <--- THIS MAKES IT POP ON SCREEN
+    else
+      {:cont, socket}
+    end
+  end
+
+  # --- HANDLER 2: NEW NOTIFICATION (Likes, Follows, etc) ---
+  defp handle_global_event({:new_notification, notif}, socket) do
+    # Format the text like "Batman liked your post"
+    text = format_notification_text(notif)
+
+    # We use :cont so the specific page (Feed/Chat) can also update its UI if needed
+    {:cont, put_flash(socket, :info, text)}
+  end
+
+  # --- HANDLER 3: Sidebar Read Update (Just clear badge, no popup) ---
+  defp handle_global_event(:update_sidebar, socket) do
+    new_count = Chat.count_unread_conversations(socket.assigns.current_user.id)
     {:cont, assign(socket, :unread_chats_count, new_count)}
   end
 
-  # Ignore other messages
-  defp handle_sidebar_event(_event, socket), do: {:cont, socket}
+  # Catch-all
+  defp handle_global_event(_event, socket), do: {:cont, socket}
 
+  # --- HELPERS ---
+
+  defp truncate(text) do
+    if String.length(text) > 30, do: String.slice(text, 0, 30) <> "...", else: text
+  end
+
+  defp format_notification_text(n) do
+    actor = n.actor.username
+    case n.type do
+      "like" -> "#{actor} liked your post ❤️"
+      "comment" -> "#{actor} commented on your post 💬"
+      "follow" -> "#{actor} started following you 👤"
+      "shared_post" -> "#{actor} shared a post with you 🚀" # Fallback if chat logic misses
+      _ -> "You have a new notification 🔔"
+    end
+  end
 end

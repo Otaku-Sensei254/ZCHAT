@@ -1,8 +1,65 @@
 <div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
   
-  <div class="w-20 md:w-80 border-r border-gray-200 dark:border-zinc-800 flex flex-col">
-    <div class="p-4 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 hidden md:block">
-      <h2 class="font-bold text-gray-800 dark:text-gray-100">Messages</h2>
+  <div class={
+    "border-r border-gray-200 dark:border-zinc-800 flex-col " <>
+    if(@conversation, do: "hidden md:flex md:w-80", else: "flex w-full md:w-80")
+  }>
+    
+    <div class="p-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-20 sticky top-0">
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+        </div>
+
+        <form phx-change="search_new_chat" onsubmit="return false;">
+          <input 
+            type="text" 
+            name="query"
+            value={@user_search_query}
+            placeholder="Search users..." 
+            class="block w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
+            phx-debounce="300"
+            autocomplete="off"
+          />
+        </form>
+
+        <%= if @user_search_query != "" do %>
+          <button 
+            phx-click="clear_user_search" 
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        <% end %>
+      </div>
+
+      <%= if @user_search_results != [] do %>
+        <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 overflow-hidden z-50 max-h-64 overflow-y-auto">
+          <%= for user <- @user_search_results do %>
+            <button 
+              phx-click="start_new_chat" 
+              phx-value-user_id={user.id}
+              class="w-full text-left flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
+            >
+              <img src={user.avatar_url || "/images/default_avatar.png"} class="h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600" />
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
+              </div>
+            </button>
+          <% end %>
+        </div>
+      <% end %>
+      
+      <%= if @user_search_query != "" && length(@user_search_query) >= 2 && @user_search_results == [] do %>
+        <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 p-4 text-center z-50">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No users found.</p>
+        </div>
+      <% end %>
     </div>
     
     <div class="flex-1 overflow-y-auto">
@@ -10,67 +67,64 @@
         <% 
            is_group = conv.type == "group"
            other_member = Enum.find(conv.conversation_members, &(&1.user.id != @current_user.id))
-           
            display_name = if is_group, do: conv.name || "Unnamed Group", else: (other_member && other_member.user.username) || "Unknown"
-           avatar_url = if is_group, do: nil, else: (other_member && other_member.user.avatar_url) || "/images/default_avatar.png"
+           
+           avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
+           name_for_initial = if !is_group && other_member, do: other_member.user.username || other_member.user.email, else: "?"
+           initial = String.first(name_for_initial || "?") |> String.upcase()
            
            is_active = @conversation && conv.id == @conversation.id
-
-           is_online = if !is_group && other_member do
-             Map.has_key?(@online_users, to_string(other_member.user.id))
-           else
-             false
-           end
+           is_online = if !is_group && other_member, do: Map.has_key?(@online_users, to_string(other_member.user.id)), else: false
         %>
         
         <.link navigate={~p"/chat/#{conv.id}"} class={[
-          "flex items-center justify-center md:justify-start gap-3 p-3 md:p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
+          "flex items-center gap-3 p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
           is_active && "bg-blue-50 dark:bg-blue-900/20 md:border-l-4 md:border-l-blue-500"
         ]}>
           
           <div class="relative shrink-0">
-            <%= if is_group do %>
-              <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            <% else %>
-              <img src={avatar_url} class="w-10 h-10 rounded-full object-cover" />
+            <%= cond do %>
+              <% is_group -> %>
+                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              <% avatar_url -> %>
+                <img src={avatar_url} class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-zinc-700" />
+              <% true -> %>
+                <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 flex items-center justify-center font-bold text-lg border border-orange-200 dark:border-orange-800">
+                  <%= initial %>
+                </div>
             <% end %>
 
             <%= if is_online do %>
-              <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-zinc-900"></span>
+              <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-zinc-900 border-2 border-white dark:border-zinc-900"></span>
             <% end %>
           </div>
 
-          <div class="overflow-hidden hidden md:block w-full">
-            <div class="flex justify-between items-center">
-              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate"><%= display_name %></p>
-              
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-1">
+              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base"><%= display_name %></p>
               <%= if conv.unread_count > 0 do %>
-                <span class="ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                   <%= conv.unread_count %>
                 </span>
               <% end %>
             </div>
-            
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
-              <%= if is_online, do: "Online", else: conv.type %>
+              <%= if is_online, do: "Active now", else: "Offline" %>
             </p>
           </div>
-
-          <%= if conv.unread_count > 0 do %>
-            <div class="md:hidden absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
-          <% end %>
-
         </.link>
       <% end %>
     </div>
   </div>
 
-  <div class="flex-1 flex flex-col relative min-w-0 bg-white dark:bg-zinc-900">
-    
+  <div class={
+    "flex-col relative min-w-0 bg-white dark:bg-zinc-900 " <>
+    if(@conversation, do: "flex w-full md:flex-1", else: "hidden md:flex md:flex-1")
+  }>
     <%= if @conversation do %>
       <div 
         id={"chat-container-#{@conversation.id}"}
@@ -79,45 +133,45 @@
         data-conversation-id={@conversation.id}
         data-user-token={@user_token}
       >
-        <div class="p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 z-10 shadow-sm shrink-0">
-          <div class="flex items-center gap-3">
-            <div class="md:hidden">
-              <.link navigate={~p"/feed"} class="text-gray-500 dark:text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></.link>
-            </div>
-            
-            <% 
-              is_group = @conversation.type == "group"
-              header_member = Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
-              header_name = if is_group, do: @conversation.name, else: (header_member && header_member.user.username) || "Unknown"
-              header_avatar = if is_group, do: nil, else: (header_member && header_member.user.avatar_url) || "/images/default_avatar.png"
-              
-              other_user_online = if !is_group && header_member do
-                Map.has_key?(@online_users, to_string(header_member.user.id)) || Map.has_key?(@online_users, header_member.user.id)
-              else
-                false
-              end
-            %>
-            
-            <div class="relative">
-              <%= if is_group do %>
-                <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                </div>
-              <% else %>
-                <img src={header_avatar} class="w-8 h-8 rounded-full object-cover" />
-              <% end %>
-              
-              <%= if other_user_online do %>
-                <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
-              <% end %>
-            </div>
-            
-            <div>
-              <span class="font-bold text-gray-900 dark:text-gray-100"><%= header_name %></span>
-              <%= if other_user_online do %>
-                <p class="text-xs text-green-500 dark:text-green-400">Online</p>
-              <% end %>
-            </div>
+        <div class="p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 z-10 shadow-sm shrink-0">
+          <div class="md:hidden">
+            <.link navigate={~p"/chat"} class="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </.link>
+          </div>
+          
+          <% 
+            header_member = Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
+            header_name = if @conversation.type == "group", do: @conversation.name, else: (header_member && header_member.user.username) || "Unknown"
+            header_avatar = if @conversation.type != "group" && header_member, do: header_member.user.avatar_url
+            header_name_source = if @conversation.type != "group" && header_member, do: header_member.user.username || header_member.user.email, else: "?"
+            header_initial = String.first(header_name_source || "?") |> String.upcase()
+            other_user_online = if @conversation.type != "group" && header_member, do: Map.has_key?(@online_users, to_string(header_member.user.id)), else: false
+          %>
+          
+          <div class="relative">
+            <%= cond do %>
+               <% @conversation.type == "group" -> %>
+                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                 </div>
+               <% header_avatar -> %>
+                 <img src={header_avatar} class="w-10 h-10 rounded-full object-cover" />
+               <% true -> %>
+                 <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 flex items-center justify-center font-bold text-sm">
+                   <%= header_initial %>
+                 </div>
+            <% end %>
+            <%= if other_user_online do %>
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
+            <% end %>
+          </div>
+          
+          <div>
+            <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight"><%= header_name %></span>
+            <%= if other_user_online do %>
+              <p class="text-xs text-green-500 font-medium">Active now</p>
+            <% end %>
           </div>
         </div>
 
@@ -130,18 +184,12 @@
           <div id="messages" phx-update="stream" class="flex flex-col space-y-2 min-h-0">
             <%= for {dom_id, message} <- @streams.messages do %>
               <% is_me = message.user_id == @current_user.id %>
-              
               <div id={dom_id} class={"flex w-full " <> if(is_me, do: "justify-end", else: "justify-start")}>
                 
                 <%= if message.shared_post do %>
                   <% post = message.shared_post %>
                   <% media = List.first(post.media_files || []) %>
-                  
-                  <.link 
-                    navigate={~p"/posts/#{post.id}"}
-                    class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> 
-                      if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}
-                  >
+                  <.link navigate={~p"/posts/#{post.id}"} class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}>
                     <%= if media do %>
                       <%= if media["type"] == "video" do %>
                         <video src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
@@ -149,138 +197,85 @@
                         <img src={media["url"]} class="absolute inset-0 w-full h-full object-cover" />
                       <% end %>
                     <% else %>
-                      <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4">
-                        <p class="text-xs text-gray-500 line-clamp-3 text-center italic"><%= post.content %></p>
-                      </div>
+                      <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4"><p class="text-xs text-gray-500 line-clamp-3 text-center italic"><%= post.content %></p></div>
                     <% end %>
-
                     <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
-
                     <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
                       <img src={post.user.avatar_url || "/images/default_avatar.png"} class="w-6 h-6 rounded-full border border-white/50 object-cover">
                       <span class="text-xs font-bold text-white shadow-sm"><%= post.user.username %></span>
                     </div>
-
-                   <%= if post.content do %>
-                      <div class="absolute bottom-3 left-3 right-3 z-10">
-                        <p class="text-xs text-white/90 font-medium drop-shadow-md break-words">
-                          <%= content_cut(post.content, 80) %>
-                        </p>
-                      </div>
-                    <% end %>
-
-                    <%= if media && media["type"] == "video" do %>
-                      <div class="absolute top-3 right-3 text-white">
-                        <svg class="w-4 h-4 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-                      </div>
+                    <%= if post.content do %>
+                      <div class="absolute bottom-3 left-3 right-3 z-10"><p class="text-xs text-white/90 font-medium drop-shadow-md break-words"><%= content_cut(post.content, 80) %></p></div>
                     <% end %>
                   </.link>
-
                 <% else %>
-                  <div class={"max-w-[75%] px-4 py-2 rounded-2xl shadow-sm text-sm wrap-break-words " <> 
-                    if(is_me, 
-                      do: "bg-blue-500 text-white rounded-br-none", 
-                      else: "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-bl-none")
-                  }>
+                  <div class={"max-w-[75%] px-4 py-2 rounded-2xl shadow-sm text-sm wrap-break-words " <> if(is_me, do: "bg-blue-500 text-white rounded-br-none", else: "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-bl-none")}>
                     <p><%= message.content %></p>
-                    
                     <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
                       <span class="text-[10px]">
-                        <% 
-                           iso_time = 
-                             if message.inserted_at do
-                               message.inserted_at
-                               |> DateTime.from_naive!("Etc/UTC") 
-                               |> DateTime.to_iso8601()
-                             else 
-                               "" 
-                             end
-                        %>
-                        <span 
-                          id={"time-#{dom_id}"} 
-                          phx-hook="LocalTime" 
-                          data-timestamp={iso_time} 
-                          class="invisible"
-                        >
-                          <%= iso_time %>
-                        </span>
+                        <%= if message.inserted_at do %>
+                          <%= message.inserted_at 
+                              |> DateTime.from_naive!("Etc/UTC") 
+                              |> Timex.Timezone.convert("Africa/Nairobi") 
+                              |> Timex.format!("%H:%M", :strftime) %>
+                        <% end %>
                       </span>
-
                       <%= if is_me do %>
                         <% 
-                           # Tick Logic
-                           message_utc = DateTime.from_naive!(message.inserted_at, "Etc/UTC")
-                           message_flat = DateTime.truncate(message_utc, :second)
-
-                           is_read = 
-                             if @other_last_read_at do
-                               read_flat = DateTime.truncate(@other_last_read_at, :second)
-                               DateTime.compare(message_flat, read_flat) != :gt
-                             else
-                               false
-                             end
+                           msg_time = DateTime.from_naive!(message.inserted_at, "Etc/UTC") |> DateTime.truncate(:second)
+                           is_read = if @other_last_read_at, do: DateTime.compare(msg_time, DateTime.truncate(@other_last_read_at, :second)) != :gt, else: false
                         %>
-                        
                         <%= if is_read do %>
-                          <div class="flex">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                          </div>
+                          <div class="flex"><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
                         <% else %>
-                           <div class="flex opacity-50">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                           </div>
+                          <div class="flex opacity-50"><svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
                         <% end %>
                       <% end %>
                     </div>
                   </div>
                 <% end %>
-
                 <%= if message.shared_post && is_me do %>
                    <% 
-                       # Re-calc is_read specifically for the card view logic
                        msg_time = DateTime.from_naive!(message.inserted_at, "Etc/UTC") |> DateTime.truncate(:second)
                        is_read_card = if @other_last_read_at, do: DateTime.compare(msg_time, DateTime.truncate(@other_last_read_at, :second)) != :gt, else: false
                    %>
                    <div class="flex items-end ml-1 mb-1">
                       <%= if is_read_card do %>
-                        <div class="flex">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                           <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                        </div>
+                        <div class="flex"><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
                       <% else %>
-                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                         <svg class="w-3 h-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                       <% end %>
                    </div>
                 <% end %>
-
               </div>
             <% end %>
           </div>
-          
+
           <%= if typing_text = get_typing_text(@typing_users) do %>
-            <div class="flex items-center gap-2 px-4 py-2">
+            <div class="flex items-center gap-2 px-4 py-2 mt-2">
               <div class="flex gap-1">
-                <div class="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                <div class="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                <div class="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
               </div>
-              <span class="text-sm text-gray-500 dark:text-gray-400 italic"><%= typing_text %></span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 italic animate-pulse">
+                <%= typing_text %>
+              </span>
             </div>
           <% end %>
 
         </div>
 
         <div class="p-4 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shrink-0">
-          <form class="flex gap-2">
+          <form class="flex gap-2 items-center">
             <input 
               type="text" 
               name="message[content]" 
-              placeholder="Type a message..." 
+              placeholder="Message..." 
               autocomplete="off"
-              class="flex-1 rounded-full border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+              class="flex-1 rounded-full border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-2.5 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
             />
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-md transition-transform hover:scale-105">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-full shadow-md transition-transform active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
               </svg>
@@ -289,10 +284,11 @@
         </div>
       </div> 
     <% else %>
-      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 bg-white dark:bg-zinc-900 h-full">
+      <div class="hidden md:flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 bg-white dark:bg-zinc-900 h-full">
         <div class="text-center">
-          <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-          <p class="text-lg text-gray-600 dark:text-gray-300">Select a conversation to start chatting</p>
+          <svg class="w-20 h-20 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <p class="text-xl font-medium text-gray-500">Your Messages</p>
+          <p class="text-sm mt-1">Select a chat to start messaging</p>
         </div>
       </div>
     <% end %>

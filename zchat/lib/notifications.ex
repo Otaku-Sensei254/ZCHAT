@@ -32,10 +32,14 @@ defmodule Zchat.Notifications do
       {:ok, notif} ->
         notif = Repo.preload(notif, [:actor, :post])
         # Broadcast generic event to trigger UI refresh
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "notifications:#{notif.user_id}", :new_notification)
+        Phoenix.PubSub.broadcast(
+          Zchat.PubSub,
+          "notifications:#{notif.user_id}",
+          {:new_notification, notif})
         {:ok, notif}
       error -> error
     end
+    # |> put_flash(:info , "New notification")
   end
 
   def mark_as_read(notification_id) do

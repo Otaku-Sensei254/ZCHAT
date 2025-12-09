@@ -85,9 +85,7 @@
                   <%= String.first(@current_user.username || "?" ) |> String.upcase() %>
                 </div>
                 <% end %>
-                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    <%= @current_user.username %>
-                  </span>
+                
           </.link>
 
           <.form for={%{}} action={~p"/users/log_out"} method="post" class="inline" as={:user}>

@@ -31,6 +31,8 @@ defmodule ZchatWeb.Chat.ChatLive do
      |> assign(:typing_users, %{})
      |> assign(:online_users, online_users)
      |> assign(:other_last_read_at, nil)
+     |> assign(:user_search_query, "")
+     |> assign(:user_search_results, [])
      |> stream(:messages, [])}
   end
 
@@ -111,10 +113,13 @@ defmodule ZchatWeb.Chat.ChatLive do
 
   # Sidebar Logic
   @impl true
-  def handle_info(:update_sidebar, socket) do
+  def handle_info({:new_sidebar_message, _msg}, socket) do
+    # Refresh the conversation list
     conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
     {:noreply, assign(socket, :conversations, conversations)}
   end
+  @impl true
+def handle_info(:update_sidebar, socket), do: {:noreply, socket}
 
   # Typing Logic
   @impl true
@@ -151,6 +156,35 @@ defmodule ZchatWeb.Chat.ChatLive do
   def handle_info(_, socket), do: {:noreply, socket}
 
   # Client Events
+  @impl true
+  def handle_event("search_new_chat", %{"query" => query}, socket) do
+    if String.length(query) >=2 do
+      #do not show user logged in
+      current_user_id = socket.assigns.current_user.id
+      results =
+        results = Zchat.Search.global_query(query)
+        |> Enum.filter(&(&1.id != current_user_id))
+      {:noreply, assign(socket, user_search_results: results, user_search_query: query)}
+    else
+      {:noreply, assign(socket, user_search_query: [], user_search_query: query)}
+    end
+  end
+
+  @imple true
+  def handle_event("clear_user_search", _, socket) do
+    {:nireply, assign(socket, user_search_query: [], user_search_query: "")}
+  end
+  @impl true
+  def handle_event("start_new_chat", %{"user_id" => target_user_id}, socket) do
+    current_user = socket.assigns.current_user
+    {:ok, conversation} = Chat.get_or_create_private_conversation(current_user.id, target_user_id)
+    {:noreply,
+     socket
+     |> assign(user_search_results: [], user_search_query: "")
+     |> push_patch(to: ~p"/chat/#{conversation.id}")}
+  end
+
+
   @impl true
   def handle_event("display_new_message", _, socket), do: {:noreply, socket}
 

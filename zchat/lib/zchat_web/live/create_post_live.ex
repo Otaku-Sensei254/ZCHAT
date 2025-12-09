@@ -151,6 +151,8 @@ def handle_event("cancel-upload", %{"ref" => ref}, socket) do
   {:noreply, cancel_upload(socket, :media, ref)}
 end
 
+@impl true
+  def handle_info(_, socket), do: {:noreply, socket}
 
 def error_to_string(:too_large), do: "Too large"
   def error_to_string(:too_many_files), do: "You have selected too many files"

@@ -7,7 +7,7 @@ defmodule ZchatWeb.UserSettingsLive do
     user = socket.assigns.current_user
     email_changeset = Accounts.change_user_email(user)
     password_changeset = Accounts.change_user_password(user)
-    profile_changeset = Accounts.change_user_profile(user) # <--- New
+    profile_changeset = Accounts.change_user_profile(user)
 
     socket =
       socket
@@ -16,7 +16,7 @@ defmodule ZchatWeb.UserSettingsLive do
       |> assign(:current_email, user.email)
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
-      |> assign(:profile_form, to_form(profile_changeset)) # <--- New
+      |> assign(:profile_form, to_form(profile_changeset))
       |> assign(:trigger_submit, false)
       |> allow_upload(:avatar, accept: ~w(.jpg .jpeg .png .webp), max_entries: 1, max_file_size: 5_000_000)
 
@@ -24,7 +24,8 @@ defmodule ZchatWeb.UserSettingsLive do
   end
 
   # --- PROFILE HANDLERS ---
-@impl true
+
+  @impl true
   def handle_event("validate_profile", %{"user" => user_params}, socket) do
     profile_form =
       socket.assigns.current_user
@@ -35,28 +36,23 @@ defmodule ZchatWeb.UserSettingsLive do
     {:noreply, assign(socket, profile_form: profile_form)}
   end
 
+  @impl true
   def handle_event("update_profile", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    # 1. Handle File Upload (if any)
+    # 1. Consume the upload to get the temp file path.
+    # We DO NOT copy the file manually anymore. We just get the path.
     uploaded_files =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
-        dest_dir = Path.join(["priv", "static", "uploads", "avatars"])
-        File.mkdir_p!(dest_dir)
-
-        filename = "#{user.id}-#{Path.basename(path)}"
-        dest = Path.join(dest_dir, filename)
-
-        File.cp!(path, dest)
-        {:ok, "/uploads/avatars/#{filename}"}
+        {:ok, path}
       end)
 
-    # 2. Update params with new avatar URL if a file was uploaded
+    # 2. If a file was uploaded, add the path to params.
+    # The Accounts context will handle uploading this path to Cloudinary.
     user_params =
-      if List.first(uploaded_files) do
-        Map.put(user_params, "avatar_url", List.first(uploaded_files))
-      else
-        user_params
+      case uploaded_files do
+        [path | _] -> Map.put(user_params, "avatar_url", path)
+        [] -> user_params
       end
 
     # 3. Save to Database
@@ -68,22 +64,83 @@ defmodule ZchatWeb.UserSettingsLive do
          |> put_flash(:info, info)
          |> assign(:current_user, updated_user)
          |> assign(:profile_form, to_form(Accounts.change_user_profile(updated_user)))
-         |> push_navigate(to: ~p"/users/#{updated_user.username}")}
-
+         # Redirect ensures the header/sidebar avatar updates immediately
+         |> push_navigate(to: ~p"/users/settings")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :profile_form, to_form(changeset))}
     end
   end
 
-  # ... (Keep your existing email/password handlers below) ...
-  # Note: You can delete the old `save_avatar` handler since we merged it.
+  # --- EMAIL & PASSWORD HANDLERS (Unchanged) ---
 
-  # KEEP: handle_event("validate_email"...)
-  # KEEP: handle_event("update_email"...)
-  # KEEP: handle_event("validate_password"...)
-  # KEEP: handle_event("update_password"...)
+  @impl true
+  def handle_event("validate_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
 
+    email_form =
+      socket.assigns.current_user
+      |> Accounts.change_user_email(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, email_form: email_form, email_form_current_password: password)}
+  end
+
+  @impl true
+  def handle_event("update_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.apply_user_email(user, password, user_params) do
+      {:ok, applied_user} ->
+        Accounts.deliver_user_update_email_instructions(
+          applied_user,
+          user.email,
+          &url(~p"/users/settings/confirm_email/#{&1}")
+        )
+
+        info = "A link to confirm your email change has been sent to the new address."
+        {:noreply, socket |> put_flash(:info, info) |> assign(email_form_current_password: nil)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  @impl true
+  def handle_event("validate_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    password_form =
+      socket.assigns.current_user
+      |> Accounts.change_user_password(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, password_form: password_form, current_password: password)}
+  end
+
+  @impl true
+  def handle_event("update_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_user_password(user, password, user_params) do
+      {:ok, user} ->
+        password_form =
+          user
+          |> Accounts.change_user_password(user_params)
+          |> to_form()
+
+        {:noreply, assign(socket, trigger_submit: true, password_form: password_form)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, password_form: to_form(changeset))}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <.header class="text-center">
@@ -206,8 +263,6 @@ defmodule ZchatWeb.UserSettingsLive do
     """
   end
 
-  # ... existing code ...
-
   defp error_to_string(:too_large), do: "Image too large"
   defp error_to_string(:too_many_files), do: "You have selected too many files"
   defp error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
@@ -215,9 +270,6 @@ defmodule ZchatWeb.UserSettingsLive do
 
   @impl true
   def handle_info(:update_notifications, socket) do
-    # Handle notification updates - typically this would refresh notification counts
-    # For now, just acknowledge the message to suppress the warning
     {:noreply, socket}
   end
-
 end

@@ -18,9 +18,9 @@ defmodule ZchatWeb.CreatePost do
      |> assign(:changeset, changeset)
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
-       max_entries: 20,
+       max_entries: 5, # Limit to 5 files to prevent timeouts
        max_file_size: 10_000_000,
-       auto_upload: true
+       auto_upload: false
      )}
   end
 
@@ -39,8 +39,8 @@ defmodule ZchatWeb.CreatePost do
      )}
   end
 
-  # ✅ Add tags dynamically
- @impl true
+  # Add tags dynamically
+  @impl true
   def handle_event("add_tag", params, socket) do
     # Get tag from button click OR enter key input
     tag = params["tag"] || params["value"] || ""
@@ -62,7 +62,7 @@ defmodule ZchatWeb.CreatePost do
     end
   end
 
-  # ✅ Remove tags
+  # Remove tags
   @impl true
   def handle_event("remove_tag", %{"tag" => tag}, socket) do
     changeset = socket.assigns.changeset
@@ -72,89 +72,50 @@ defmodule ZchatWeb.CreatePost do
     {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
   end
 
-
-
-  # Save the post (handles upload)
+  # Save the post (Handles Cloudinary upload via Context)
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
     current_user = socket.assigns.current_user
 
-    # Debug: Check if there are any entries
-    IO.inspect(socket.assigns.uploads.media.entries, label: "Upload entries")
-
-    # Process uploaded files (if any)
-    IO.inspect("About to consume uploaded entries", label: "Debug")
-    uploaded_files =
-      try do
-        consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-          IO.inspect(path, label: "Temp file path")
-          IO.inspect(entry.client_name, label: "Original filename")
-
-          # Save file permanently to /priv/static/uploads/
-          dest = Path.join(["priv/static/uploads", Path.basename(path)])
-          IO.inspect(dest, label: "Destination path")
-
-          case File.cp(path, dest) do
-            :ok -> IO.inspect("File copied successfully")
-            {:error, reason} -> IO.inspect(reason, label: "File copy error")
-          end
-
-        # Determine type
-        type =
-          cond do
-            String.starts_with?(entry.client_type, "image/") -> "image"
-            String.starts_with?(entry.client_type, "video/") -> "video"
-            true -> nil
-          end
-
-        result = %{"url" => "/uploads/#{Path.basename(dest)}", "type" => type}
-        IO.inspect(result, label: "File result")
-        {:ok, result}
+    # 1. Consume uploads to get the temp file paths.
+    # We do NOT upload to Cloudinary here. We just pass the paths to the Context.
+    file_paths =
+      consume_uploaded_entries(socket, :media, fn %{path: path}, _entry ->
+        {:ok, path}
       end)
-      rescue
-        e ->
-          IO.inspect(e, label: "Error consuming uploads")
-          []
-      end
 
-    IO.inspect(uploaded_files, label: "Consumed files")
-
-    # Add upload details (if present)
+    # 2. Add the list of paths to the params
+    # The Posts.create_post function will take this list, upload them,
+    # and format them correctly for the database.
     post_params =
-      if uploaded_files != [] do
-        IO.inspect("Adding media_files to post_params", label: "Upload status")
-        Map.put(post_params, "media_files", uploaded_files)
+      if file_paths != [] do
+        Map.put(post_params, "media_files", file_paths)
       else
-        IO.inspect("No uploaded files found", label: "Upload status")
         post_params
       end
 
-    IO.inspect(post_params, label: "Final post_params")
-
-    # Save the post
-    IO.inspect("About to create post", label: "Debug")
+    # 3. Create the post
     case Posts.create_post(current_user, post_params) do
-      {:ok, post} ->
-        IO.inspect(post, label: "Post created successfully")
+      {:ok, _post} ->
         {:noreply,
          socket
          |> put_flash(:info, "Post created successfully!")
          |> push_navigate(to: ~p"/feed")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        IO.inspect(changeset.errors, label: "Post creation errors")
         {:noreply, assign(socket, form: to_form(changeset, as: :post))}
     end
   end
-  @impl true
-def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-  {:noreply, cancel_upload(socket, :media, ref)}
-end
 
-@impl true
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :media, ref)}
+  end
+
+  @impl true
   def handle_info(_, socket), do: {:noreply, socket}
 
-def error_to_string(:too_large), do: "Too large"
+  def error_to_string(:too_large), do: "Too large"
   def error_to_string(:too_many_files), do: "You have selected too many files"
   def error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
 end

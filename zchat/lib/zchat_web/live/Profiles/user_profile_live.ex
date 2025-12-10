@@ -125,4 +125,10 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     {:noreply, socket}
   end
+    @impl true
+  def handle_info({:update_sidebar, _message}, socket) do
+    {:noreply, socket}
+  end
+  @impl true
+  def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
 end

@@ -20,6 +20,14 @@ if System.get_env("PHX_SERVER") do
   config :zchat, ZchatWeb.Endpoint, server: true
 end
 
+#media upload to cloudinary
+if config_env() == :prod do
+  config :cloudex,
+    api_key: System.fetch_env!("CLOUDINARY_API_KEY"),
+    secret: System.fetch_env!("CLOUDINARY_SECRET"),
+    cloud_name: System.fetch_env!("CLOUDINARY_CLOUD_NAME")
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

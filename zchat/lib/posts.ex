@@ -9,9 +9,6 @@ defmodule Zchat.Posts do
 
   # --- TRENDING ---
 
-  @doc """
-  Returns a list of trending posts from the last 24 hours.
-  """
   def list_trending_posts(limit \\ 5)
 
   def list_trending_posts(limit) when is_integer(limit) and limit > 0 do
@@ -36,18 +33,16 @@ defmodule Zchat.Posts do
 
   # --- MAIN FEED ---
 
-  @doc """
-  Returns a paginated list of posts with optional filtering.
-  """
   def list_posts(opts \\ []) do
     page = opts[:page] || 1
-    per_page = opts[:per_page] || opts[:limit] || 10 # Support 'limit' from profile    search_term = opts[:search]
+    per_page = opts[:per_page] || opts[:limit] || 10
+    search_term = opts[:search]
     category = opts[:category]
     user_id = opts[:user_id]
-    search_term = opts[:search]
+
     base_query =
       Post
-      |> join(:inner, [p], u in assoc(p, :user)) # Join User table
+      |> join(:inner, [p], u in assoc(p, :user))
       |> order_by([p], desc: p.inserted_at)
 
     base_query
@@ -59,18 +54,13 @@ defmodule Zchat.Posts do
     |> Repo.preload(opts[:preload] || [])
   end
 
-  # --- DROPDOWN SEARCH ---
+  # --- SEARCH & FILTERS ---
 
-  @doc """
-  Searches posts by title and content, returns up to 5 results.
-  Used for the live search dropdown logic.
-  """
   def search_posts(query) do
     pattern = "%#{query}%"
 
     from(p in Post,
       join: u in assoc(p, :user),
-      # Searching Title or Content (using 'content' column)
       where: ilike(p.title, ^pattern) or ilike(p.content, ^pattern),
       preload: [:user],
       order_by: [desc: p.inserted_at],
@@ -78,8 +68,6 @@ defmodule Zchat.Posts do
     )
     |> Repo.all()
   end
-
-  # --- FILTER LOGIC ---
 
   defp apply_filters(query, search_term, category) do
     query
@@ -96,8 +84,6 @@ defmodule Zchat.Posts do
   defp filter_by_search(query, ""), do: query
   defp filter_by_search(query, term) do
     pattern = "%#{term}%"
-
-    # Search: Title OR Content OR Username
     from [p, u] in query,
       where: ilike(p.title, ^pattern) or
              ilike(p.content, ^pattern) or
@@ -107,15 +93,11 @@ defmodule Zchat.Posts do
   defp filter_by_category(query, nil), do: query
   defp filter_by_category(query, ""), do: query
   defp filter_by_category(query, category) do
-    # FIX: Use ilike so "Tech" matches "tech"
     from [p, u] in query, where: ilike(p.category, ^category)
   end
 
   # --- GETTING POSTS ---
 
-  @doc """
-  Gets a single post and increments its view count.
-  """
   def get_post_with_views!(id) do
     post =
       Post
@@ -123,12 +105,12 @@ defmodule Zchat.Posts do
       |> Repo.preload([:user, :likes, comments: :user])
       |> Post.ensure_media_files()
 
-    # Increment view count
     from(p in Post, where: p.id == ^id)
     |> Repo.update_all(inc: [view_count: 1])
 
     post
   end
+
   def list_fresh_random_posts(limit \\ 20, days_ago \\ 5) do
     cutoff_date =  DateTime.add(DateTime.utc_now(), -days_ago, :day)
 
@@ -141,9 +123,6 @@ defmodule Zchat.Posts do
           |> Repo.all()
   end
 
-  @doc """
-  Gets a single post with preloaded associations.
-  """
   def get_post!(id, opts \\ []) do
     preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
 
@@ -153,16 +132,10 @@ defmodule Zchat.Posts do
     |> Post.ensure_media_files()
   end
 
-  @doc """
-  Gets all categories.
-  """
   def categories do
     ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
   end
 
-  @doc """
-  Gets a post with its associated data.
-  """
   def get_post_with_associations(id) do
     Post
     |> Repo.get(id)
@@ -173,9 +146,13 @@ defmodule Zchat.Posts do
   # --- POST CRUD ---
 
   @doc """
-  Creates a post, associating it with the user and broadcasting the event.
+  Creates a post.
+  Handles Cloudinary upload for the :media_files list before inserting.
   """
   def create_post(user, attrs) do
+    # 1. Process uploads
+    attrs = handle_media_files(attrs)
+
     user
     |> Ecto.build_assoc(:posts)
     |> Post.changeset(attrs)
@@ -183,7 +160,6 @@ defmodule Zchat.Posts do
     |> case do
       {:ok, post} ->
         post = Repo.preload(post, :user)
-        # Notify followers of new post
         Notifications.notify_followers_of_new_post(post)
         Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:new_post, post})
         Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_created, post})
@@ -194,32 +170,28 @@ defmodule Zchat.Posts do
 
   @doc """
   Updates a post.
+  Handles Cloudinary upload for :media_files if new ones are provided.
   """
   def update_post(%Post{} = post, attrs) do
+    # 1. Process uploads
+    attrs = handle_media_files(attrs)
+
     post
     |> Post.changeset(attrs)
     |> Repo.update()
   end
 
-  @doc """
-  Deletes a post.
-  """
   def delete_post(%Post{} = post) do
     Repo.delete(post)
     |> case do
       {:ok, post} ->
-        # This triggers the update in FeedLive
         Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_deleted, post})
-        # This triggers the update in Admin Dashboard
         Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_deleted, post})
         {:ok, post}
       error -> error
     end
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking post changes.
-  """
   def change_post(%Post{} = post, attrs \\ %{}) do
     Post.changeset(post, attrs)
   end
@@ -227,20 +199,11 @@ defmodule Zchat.Posts do
 
   # --- COMMENTS ---
 
-  @doc """
-  Gets a single comment.
-  """
   def get_comment!(id, opts \\ []) do
     preload = Keyword.get(opts, :preload, [:user, :likes])
-
-    Comment
-    |> Repo.get!(id)
-    |> Repo.preload(preload)
+    Comment |> Repo.get!(id) |> Repo.preload(preload)
   end
 
-  @doc """
-  Lists comments with optional filtering.
-  """
   def list_comments(opts \\ []) do
     post_id = Keyword.get(opts, :post_id)
     parent_id = Keyword.get(opts, :parent_id)
@@ -256,9 +219,6 @@ defmodule Zchat.Posts do
     |> Repo.all()
   end
 
-  @doc """
-  Creates a new comment and broadcasts the event.
-  """
   def create_comment(attrs \\ %{}) do
     %Comment{}
     |> Comment.changeset(attrs)
@@ -266,7 +226,6 @@ defmodule Zchat.Posts do
     |> case do
       {:ok, comment} ->
         comment = Repo.preload(comment, :user)
-        # This broadcast is what triggers handle_info in SinglePostLive
         Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
         Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:comment_created, comment})
 
@@ -285,34 +244,23 @@ defmodule Zchat.Posts do
     end
   end
 
-  @doc """
-  Updates a comment.
-  """
   def update_comment(%Comment{} = comment, attrs) do
     comment
     |> Comment.changeset(attrs)
     |> Repo.update()
     |> handle_comment_update()
-
   end
 
-  @doc """
-  Deletes a comment.
-  """
   def delete_comment(%Comment{} = comment) do
     Repo.delete(comment)
   end
 
-  #broadcast the edit comment
   defp handle_comment_update({:ok, comment}) do
-  Phoenix.PubSub.broadcast(Zchat.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
-  {:ok, comment}
-end
-defp handle_comment_update({:error, changeset}), do: {:error, changeset}
+    Phoenix.PubSub.broadcast(Zchat.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
+    {:ok, comment}
+  end
+  defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
-  @doc """
-  Returns a comment changeset.
-  """
   def change_comment(%Comment{} = comment, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
   end
@@ -320,9 +268,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   # --- LIKES ---
 
-  @doc """
-  Creates a like for a post or comment and broadcasts the event.
-  """
   def create_like(attrs \\ %{}) do
     %Like{}
     |> Like.changeset(attrs)
@@ -330,7 +275,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
     |> case do
       {:ok, like} ->
         update_like_count(like)
-
         like = Repo.preload(like, :user)
 
         unless like.likeable_type == "Post" and Repo.get(Post, like.likeable_id) |> Map.get(:user_id) == like.user_id do
@@ -358,15 +302,11 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
     end
   end
 
-  @doc """
-  Removes a like.
-  """
   def delete_like(%Like{} = like) do
     Repo.delete(like)
     |> case do
       {:ok, like} ->
         update_like_count(like)
-
         like = Repo.preload(like, :user)
 
         cond do
@@ -385,16 +325,10 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
     end
   end
 
-  @doc """
-  Gets a like by user and target (post or comment).
-  """
   def get_like_by_user_and_target(user_id, target_type, target_id) do
     Repo.get_by(Like, user_id: user_id, likeable_type: target_type, likeable_id: target_id)
   end
 
-  @doc """
-  Toggles a like for a post or comment.
-  """
   def toggle_like(user_id, likeable_type, likeable_id) do
     case get_like_by_user_and_target(user_id, likeable_type, likeable_id) do
       nil ->
@@ -403,7 +337,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
           likeable_type: likeable_type,
           likeable_id: likeable_id
         })
-
       like ->
         delete_like(like)
     end
@@ -412,9 +345,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   # --- ANALYTICS / STATS ---
 
-  @doc """
-  Returns a list of tuples: {category_name, count}
-  """
   def count_posts_by_category do
     from(p in Post,
       where: not is_nil(p.category),
@@ -425,9 +355,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
     |> Repo.all()
   end
 
-  @doc """
-  Returns a list of tuples: {tag_name, count}
-  """
   def count_top_tags(limit \\ 10) do
     from(p in Post,
       select: {fragment("unnest(?)", p.tags), count(p.id)},
@@ -438,9 +365,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
     |> Repo.all()
   end
 
-  @doc """
-  Get high-level counts for the top of the dashboard.
-  """
   def get_system_stats do
     %{
       total_posts: Repo.aggregate(Post, :count),
@@ -452,14 +376,12 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   # --- PRIVATE HELPERS ---
 
-  # Updates the likes_count on a Post
   defp update_like_count(%Like{likeable_type: "Post", likeable_id: post_id}) do
     count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^post_id and l.likeable_type == "Post"), :count)
     from(p in Post, where: p.id == ^post_id) |> Repo.update_all(set: [likes_count: count])
     :ok
   end
 
-  # Updates the likes_count on a Comment
   defp update_like_count(%Like{likeable_type: "Comment", likeable_id: comment_id}) do
     count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^comment_id and l.likeable_type == "Comment"), :count)
     from(c in Comment, where: c.id == ^comment_id) |> Repo.update_all(set: [likes_count: count])
@@ -468,7 +390,6 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   defp update_like_count(_), do: :ok
 
-  # View tracking functions
   def track_view(post_id, user_id) do
     case Repo.get(Post, post_id) do
       nil -> :ok
@@ -479,6 +400,58 @@ defp handle_comment_update({:error, changeset}), do: {:error, changeset}
         else
           :ok
         end
+    end
+  end
+
+  # =================================================================
+  # CLOUDINARY MEDIA HELPER
+  # =================================================================
+
+  defp handle_media_files(attrs) do
+    # 1. Grab the media_files input (could be atom or string key)
+    # The LiveView upload typically sends a list of upload structs.
+    raw_files = attrs["media_files"] || attrs[:media_files]
+
+    case raw_files do
+      # 1. List of files (from LiveView multi-upload)
+      files when is_list(files) and files != [] ->
+        processed_media =
+          Enum.map(files, fn
+            # A: It's a Plug.Upload struct (Standard)
+            %Plug.Upload{path: path} ->
+              upload_and_format(path)
+
+            # B: It's a path string (LiveView temp file)
+            path when is_binary(path) ->
+              if File.exists?(path), do: upload_and_format(path), else: nil
+
+            # C: Already processed map (e.g. edit form keeping old images)
+            %{"url" => _url, "type" => _type} = item -> item
+
+            # D: Catch-all for garbage
+            _ -> nil
+          end)
+          |> Enum.reject(&is_nil/1) # Remove failed uploads
+
+        # Replace original list with processed list of maps
+        Map.put(attrs, "media_files", processed_media)
+
+      # 2. No files, or empty list -> return attrs untouched
+      _ -> attrs
+    end
+  end
+
+  defp upload_and_format(path) do
+    case Cloudex.upload(path) do
+      {:ok, result} ->
+        # Create the Map structure required by your Post schema
+        %{
+          "url" => result.secure_url,
+          # Basic type detection based on extension (Cloudinary usually gives resource_type)
+          "type" => result.resource_type || "image"
+        }
+      {:error, _} ->
+        nil
     end
   end
 end

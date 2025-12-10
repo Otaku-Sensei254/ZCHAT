@@ -27,12 +27,15 @@ defmodule Zchat.Accounts do
 
   def get_user!(id) do
     Repo.get!(User, id)
-    |> Repo.preload(roles: :permissions) # Preload deep permissions
+    |> Repo.preload(roles: :permissions)
   end
 
   ## User registration
 
   def register_user(attrs) do
+    # UPDATED: Handle avatar upload before changeset
+    attrs = handle_image_upload(attrs, "avatar_url")
+
     %User{}
     |> User.registration_changeset(attrs)
     |> Repo.insert()
@@ -113,6 +116,9 @@ defmodule Zchat.Accounts do
   end
 
   def update_user_profile(%User{} = user, attrs) do
+    # UPDATED: Handle avatar upload before changeset
+    attrs = handle_image_upload(attrs, "avatar_url")
+
     user
     |> User.profile_changeset(attrs)
     |> Repo.update()
@@ -129,7 +135,7 @@ defmodule Zchat.Accounts do
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
-    |> Repo.preload(roles: :permissions) # Needed for Canada checks on every request
+    |> Repo.preload(roles: :permissions)
   end
 
   def delete_user_session_token(token) do
@@ -205,9 +211,6 @@ defmodule Zchat.Accounts do
 
   def get_role_by_name(name), do: Repo.get_by(Role, name: name)
 
-  @doc """
-  Checks if a user has a specific role.
-  """
   def user_has_role?(%User{} = user, role_name) do
     user = Repo.preload(user, :roles)
     Enum.any?(user.roles, fn role -> role.name == role_name end)
@@ -218,22 +221,13 @@ defmodule Zchat.Accounts do
     user_has_role?(user, role_name)
   end
 
-  @doc """
-  Checks if a user has a specific permission.
-  FIXED: Deep check using nested association (User -> Roles -> Permissions)
-  """
   def has_permission?(%User{} = user, permission_slug) do
-    # 1. Ensure everything is loaded. Permissions are inside roles.
     user = Repo.preload(user, [roles: :permissions])
-
-    # 2. Check every role
     Enum.any?(user.roles, fn role ->
-      # 3. Check every permission inside the role
       Enum.any?(role.permissions, fn p -> p.slug == permission_slug end)
     end)
   end
 
-  # Alias for compatibility if you used this name elsewhere
   def user_has_permission?(user, perm), do: has_permission?(user, perm)
 
   def update_user_roles(%User{} = user, role_ids) do
@@ -246,16 +240,11 @@ defmodule Zchat.Accounts do
     |> Repo.update()
   end
 
-  #adding roles and putting permissions
-
   def list_permissions do
     Repo.all(Permission)
   end
 
-  #create role fun
-
   def create_role(attrs, permission_ids \\ []) do
-    #get permissions
     permissions = (from p in Permission , where: p.id in ^permission_ids)
     |> Repo.all()
 
@@ -291,7 +280,6 @@ defmodule Zchat.Accounts do
   end
 
   def remove_role_from_user(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
-    # Direct deletion from join table
     from(ur in "user_roles",
       where: ur.user_id == ^user_id and ur.role_id == ^role_id)
     |> Repo.delete_all()
@@ -307,13 +295,11 @@ defmodule Zchat.Accounts do
         if Repo.exists?(query) do
           Repo.delete_all(query)
           {:ok, :removed}
-
         else
           Repo.insert_all("user_roles", [[user_id: user_id, role_id: role_id, inserted_at: DateTime.utc_now(), updated_at: DateTime.utc_now()]])
           {:ok, :added}
         end
   end
-
 
   def remove_role_from_user(%User{} = user, %Role{} = role) do
     remove_role_from_user(user.id, role.id)
@@ -367,4 +353,41 @@ defmodule Zchat.Accounts do
     user_has_role?(user, "admin")
   end
 
-end # <--- Correct module closing
+  # =================================================================
+  # CLOUDINARY HELPER 
+  # =================================================================
+
+  defp handle_image_upload(attrs, field_name) do
+    # Get the value from attrs (supports string keys "avatar_url" or atom keys :avatar_url)
+    value = attrs[field_name] || attrs[String.to_atom(field_name)]
+
+    case value do
+      # 1. If it's a Plug.Upload struct (from a standard form submission)
+      %Plug.Upload{path: path} ->
+        upload_to_cloudinary(path, attrs, field_name)
+
+      # 2. If it's just a file path string (sometimes from LiveView temp files)
+      path when is_binary(path) and byte_size(path) < 255 ->
+        # Simple check to see if it looks like a local file path
+        if File.exists?(path) do
+           upload_to_cloudinary(path, attrs, field_name)
+        else
+           attrs
+        end
+
+      _ ->
+        attrs
+    end
+  end
+
+  defp upload_to_cloudinary(path, attrs, field_name) do
+    case Cloudex.upload(path) do
+      {:ok, result} ->
+        # Replace the file struct/path with the Cloudinary URL string
+        Map.put(attrs, field_name, result.secure_url)
+      {:error, _reason} ->
+        # If upload fails, return attrs as-is (Changeset will likely fail validation if string expected)
+        attrs
+    end
+  end
+end

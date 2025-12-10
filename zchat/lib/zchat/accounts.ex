@@ -354,7 +354,7 @@ defmodule Zchat.Accounts do
   end
 
   # =================================================================
-  # CLOUDINARY HELPER 
+  # CLOUDINARY HELPER
   # =================================================================
 
   defp handle_image_upload(attrs, field_name) do
@@ -380,13 +380,14 @@ defmodule Zchat.Accounts do
     end
   end
 
-  defp upload_to_cloudinary(path, attrs, field_name) do
-    case Cloudex.upload(path) do
+ defp upload_to_cloudinary(path, attrs, field_name) do
+    opts = [resource_type: :auto]
+
+    case Cloudex.upload(path, opts) do
       {:ok, result} ->
-        # Replace the file struct/path with the Cloudinary URL string
         Map.put(attrs, field_name, result.secure_url)
-      {:error, _reason} ->
-        # If upload fails, return attrs as-is (Changeset will likely fail validation if string expected)
+      {:error, reason} ->
+        IO.inspect(reason, label: "CLOUDINARY UPLOAD ERROR")
         attrs
     end
   end

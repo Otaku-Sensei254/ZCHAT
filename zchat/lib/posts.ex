@@ -441,16 +441,19 @@ defmodule Zchat.Posts do
     end
   end
 
-  defp upload_and_format(path) do
-    case Cloudex.upload(path) do
+defp upload_and_format(path) do
+
+    opts = [resource_type: :auto]
+
+    case Cloudex.upload(path, opts) do
       {:ok, result} ->
-        # Create the Map structure required by your Post schema
         %{
           "url" => result.secure_url,
-          # Basic type detection based on extension (Cloudinary usually gives resource_type)
           "type" => result.resource_type || "image"
         }
-      {:error, _} ->
+      {:error, reason} ->
+        # Log the error so we can see it in Fly logs if it fails again
+        IO.inspect(reason, label: "CLOUDINARY UPLOAD ERROR")
         nil
     end
   end

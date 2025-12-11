@@ -20,22 +20,26 @@ if config_env() == :prod do
     socket_options: maybe_ipv6
 
  # --- 2. Endpoint (Web Server) ---
-  config :zchat, ZchatWeb.Endpoint, server: true
+# --- 2. Endpoint (Web Server) ---
+config :zchat, ZchatWeb.Endpoint, server: true
 
-  host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
+host = System.get_env("PHX_HOST") || "example.com"
+port = String.to_integer(System.get_env("PORT") || "8080")
 
-  # Hardcoded secret from before (Keep this for now!)
-  hardcoded_secret = "a+Very+Long+Random+String+That+Is+At+Least+64+Bytes+Long+For+Security+Purposes+Just+To+Get+It+Working+Now+123456"
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    raise """
+    environment variable SECRET_KEY_BASE is missing.
+    You can generate one by calling: mix phx.gen.secret
+    """
 
-  config :zchat, ZchatWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
-    http: [
-      # CHANGE THIS: Use 4 zeros for IPv4
-      ip: {0, 0, 0, 0},
-      port: port
-    ],
-    secret_key_base: hardcoded_secret
+config :zchat, ZchatWeb.Endpoint,
+  url: [host: host, port: 443, scheme: "https"],
+  http: [
+    ip: {0, 0, 0, 0},
+    port: port
+  ],
+  secret_key_base: secret_key_base
 
   # --- 3. Cloudinary ---
   config :zchat, :cloudinary,

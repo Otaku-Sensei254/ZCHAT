@@ -1,2 +1,2 @@
-release: mix run --no-halt ecto.migrate
+release: mix ecto.migrate
 web: mix phx.server

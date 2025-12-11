@@ -1,2 +1,2 @@
-release: $BINOVERRIDE eval "Zchat.Release.migrate()"
-web: $BINOVERRIDE start
+release: $BINOVERRIDE eval "Zchat.Release.migrate"
+web: $BINOVERRIDE star

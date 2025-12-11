@@ -1,2 +1,2 @@
-release: $BINOVERRIDE rpc "Zchat.Release.migrate"
-web: $BINOVERRIDE start
+release: mix run --no-halt ecto.migrate
+web: mix phx.server

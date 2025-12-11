@@ -23,7 +23,7 @@ primary_region = "ord"
   processes = ["app"]
 
 [deploy]
-  release_command = "/app/bin/zchat eval Zchat.Release.migrate"
+  release_command = "/app/bin/migrate"
 
 [[vm]]
   memory = "1gb"

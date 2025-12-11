@@ -1,2 +1,2 @@
-release: bin/zchat eval "Zchat.Release.migrate"
-web: bin/zchat start
+release: $BINOVERRIDE eval "Zchat.Release.migrate"
+web: $BINOVERRIDE start

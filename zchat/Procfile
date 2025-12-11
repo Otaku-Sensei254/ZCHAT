@@ -1,2 +1,2 @@
-release: _build/prod/rel/zchat/bin/zchat eval "Zchat.Release.migrate"
-web: _build/prod/rel/zchat/bin/zchat start
+release: bin/zchat eval "Zchat.Release.migrate"
+web: bin/zchat start

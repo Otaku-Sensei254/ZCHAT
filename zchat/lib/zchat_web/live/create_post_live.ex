@@ -73,29 +73,42 @@ defmodule ZchatWeb.CreatePost do
   end
 
   # Save the post (Handles Cloudinary upload via Context)
+# Replace your current handle_event("save", ...) with this:
+
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
-    current_user = socket.assigns.current_user
-
-    # 1. Consume uploads to get the temp file paths.
-    # We do NOT upload to Cloudinary here. We just pass the paths to the Context.
-    file_paths =
+    # 1. UPLOAD HAPPENS HERE
+    # We iterate over the temp files, upload them to Cloudinary immediately.
+    uploaded_files =
       consume_uploaded_entries(socket, :media, fn %{path: path}, _entry ->
-        {:ok, path}
+        # Call the Helper
+        case Zchat.Infrastructure.UploadCloudinary.upload_file(path) do
+          {:ok, result} ->
+             # Cloudinary returns atoms or specific keys.
+             # We must convert this to the map structure your Schema expects (String keys).
+             formatted_media = %{
+               "url" => result.url,
+               "type" => result.resource_type # "image" or "video"
+             }
+             {:ok, formatted_media}
+
+          {:error, reason} ->
+            # Log the error if needed
+            {:postpone, reason}
+        end
       end)
 
-    # 2. Add the list of paths to the params
-    # The Posts.create_post function will take this list, upload them,
-    # and format them correctly for the database.
+    # 2. Add the uploaded results to the params
+    # Your Schema expects "media_files" to be a list of maps.
     post_params =
-      if file_paths != [] do
-        Map.put(post_params, "media_files", file_paths)
+      if uploaded_files != [] do
+        Map.put(post_params, "media_files", uploaded_files)
       else
         post_params
       end
 
-    # 3. Create the post
-    case Posts.create_post(current_user, post_params) do
+    # 3. Save to Context
+    case Posts.create_post(socket.assigns.current_user, post_params) do
       {:ok, _post} ->
         {:noreply,
          socket

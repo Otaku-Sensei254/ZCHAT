@@ -57,7 +57,8 @@ defmodule Zchat.MixProject do
       {:timex, "~> 3.0"},
       {:scrivener_ecto, "~> 2.0"},
       {:canada, "~> 2.0"},
-      {:cloudex, "~> 1.4"}
+      {:cloudex, "~> 1.4"},
+      {:httpoison, "~> 1.6"}
 
     ]
   end

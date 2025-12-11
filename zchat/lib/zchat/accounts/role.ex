@@ -14,6 +14,8 @@ defmodule Zchat.Accounts.Role do
     :manage_conversations
   ]
 
+  def permission_types, do: @permission_types
+
   schema "roles" do
     field :name, :string
 

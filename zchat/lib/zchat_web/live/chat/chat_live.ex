@@ -2,11 +2,9 @@ defmodule ZchatWeb.Chat.ChatLive do
   use ZchatWeb, :live_view
 
   alias Zchat.Chat
-  alias Zchat.Accounts
-  alias Zchat.Chat.Message
   alias Zchat.Chat.Conversation
-  alias ZchatWeb.Presence
   alias Zchat.Search
+  alias ZchatWeb.Presence
 
   @impl true
   def mount(_params, _session, socket) do

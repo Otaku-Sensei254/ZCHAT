@@ -46,6 +46,10 @@ defmodule ZchatWeb.Components.NotificationsModal do
     {:noreply, socket}
   end
 
+  def handle_info(%{event: "notification_updated"}, socket) do
+    {:noreply, assign_notifications(socket)}
+  end
+
   # --- VIEW HELPERS ---
   def notification_link(%{type: "shared_post", conversation_id: conv_id}) when is_integer(conv_id) do
     ~p"/chat/#{conv_id}"

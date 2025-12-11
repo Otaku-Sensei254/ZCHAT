@@ -107,7 +107,8 @@ defmodule Zchat.Socials do
     |> Enum.map(& &1.follower)
   end
 
-  def share(post_id, user_id) do
-    target_post = Posts.get_post!()
+  def share(post_id, _user_id) do
+    _target_post = Posts.get_post!(post_id)
+    # TODO: Implement sharing logic
   end
 end

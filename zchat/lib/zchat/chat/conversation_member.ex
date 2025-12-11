@@ -2,9 +2,6 @@ defmodule Zchat.Chat.ConversationMember do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Zchat.Accounts.User
-  alias Zchat.Chat.Conversation
-
   schema "conversation_members" do
     belongs_to :conversation, Zchat.Chat.Conversation
     belongs_to :user, Zchat.Accounts.User

@@ -1,0 +1,2 @@
+release: Zchat.Release.migrate
+web: _build/prod/rel/zchat/bin/zchat start

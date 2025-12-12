@@ -7,6 +7,12 @@ primary_region = "ord"
 [env]
   PHX_HOST = "zchat2-0.fly.dev"
   PORT = "8080"
+  DATABASE_URL="postgres://zchat_hidden_breeze_4567:E3gd2mpwNgGpA2z@thezchat.flycast:5432/zchat_hidden_breeze_4567?sslmode=disable"
+  SECRET_KEY_BASE = "rhUFPNl6OeSu1J7kgkI11QgJoitEfxTfNIrYOH50qTXwY244h6O9KyaOWJ+bjgC8"
+  CLOUDINARY_API_KEY = "576125769822254"
+  CLOUDINARY_SECRET = "yNxdsd0kWa_OtysW-x5ve8LGyEOw"
+  CLOUDINARY_CLOUD_NAME = "dahpsrzjh"
+  CLOUDINARY_PRESET = "zchat_uploads"
 
 [http_service]
   internal_port = 8080

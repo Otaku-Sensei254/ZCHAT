@@ -3,8 +3,8 @@ defmodule Zchat.Chat do
   alias Zchat.Repo
   alias Zchat.Chat.{Message, Conversation, ConversationMember}
   alias Zchat.Accounts.User
-  alias Zchat.Posts
   alias Zchat.Notifications
+  alias Zchat.Posts
   # --- CONVERSATIONS ---
 
   def get_conversation!(id) do

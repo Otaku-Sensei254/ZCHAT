@@ -248,7 +248,7 @@ defmodule Zchat.Accounts do
     permissions = (from p in Permission , where: p.id in ^permission_ids)
     |> Repo.all()
 
-    %Role{}
+    %Zchat.Accounts.Role{}
     |> Role.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:permissions, permissions)
     |> Repo.insert()
@@ -275,7 +275,7 @@ defmodule Zchat.Accounts do
     |> Repo.update()
   end
 
-  def assign_role_to_user(%User{} = user, %Role{} = role) do
+  def assign_role_to_user(%User{} = user, %Zchat.Accounts.Role{} = role) do
     assign_role_to_user(user.id, role.id)
   end
 
@@ -289,31 +289,8 @@ defmodule Zchat.Accounts do
     end
   end
 
-  def toggle_user_role(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
-    query = from ur in "user_roles",
-      where: ur.user_id == ^user_id and ur.role_id == ^role_id
-        if Repo.exists?(query) do
-          Repo.delete_all(query)
-          {:ok, :removed}
-        else
-          Repo.insert_all("user_roles", [[user_id: user_id, role_id: role_id, inserted_at: DateTime.utc_now(), updated_at: DateTime.utc_now()]])
-          {:ok, :added}
-        end
-  end
-
-  def remove_role_from_user(%User{} = user, %Role{} = role) do
+  def remove_role_from_user(%User{} = user, %Zchat.Accounts.Role{} = role) do
     remove_role_from_user(user.id, role.id)
-  end
-
-  def make_user_admin(user_id) when is_integer(user_id) do
-    case get_role_by_name("admin") do
-      nil -> {:error, "Admin role not found"}
-      admin_role -> assign_role_to_user(user_id, admin_role.id)
-    end
-  end
-
-  def make_user_admin(%User{} = user) do
-    make_user_admin(user.id)
   end
 
   def remove_admin_role(user_id) when is_integer(user_id) do
@@ -383,7 +360,7 @@ defmodule Zchat.Accounts do
  defp upload_to_cloudinary(path, attrs, field_name) do
     opts = [resource_type: :auto]
 
-    case Cloudex.upload(path, opts) do
+    case Zchat.Infrastructure.UploadCloudinary.upload(path, opts) do
       {:ok, result} ->
         Map.put(attrs, field_name, result.secure_url)
       {:error, reason} ->

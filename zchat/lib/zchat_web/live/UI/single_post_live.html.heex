@@ -165,7 +165,7 @@
               <%= if @editing_comment_id == comment.id do %>
                 
                 <%!-- EDIT FORM --%>
-                <.form :let={f} for={%{}} as={:comment} phx-submit="save_comment_edit" class="w-full">
+                <.form :let={_f} for={%{}} as={:comment} phx-submit="save_comment_edit" class="w-full">
                   <input type="hidden" name="id" value={comment.id} />
                   
                   <div class="flex gap-3">

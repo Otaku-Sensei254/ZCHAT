@@ -1,6 +1,5 @@
 defmodule ZchatWeb.ChatChannelChannel do
   use ZchatWeb, :channel
-  alias Zchat.Chat
   alias Zchat.Accounts.User
 
   @impl true

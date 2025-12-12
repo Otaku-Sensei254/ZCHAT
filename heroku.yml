@@ -1,0 +1,6 @@
+build:
+  languages:
+    - elixir
+
+run:
+  web: mix phx.server

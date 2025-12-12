@@ -360,7 +360,7 @@ defmodule Zchat.Accounts do
  defp upload_to_cloudinary(path, attrs, field_name) do
     opts = [resource_type: :auto]
 
-    case Cloudex.upload(path, opts) do
+    case Zchat.Infrastructure.UploadCloudinary.upload(path, opts) do
       {:ok, result} ->
         Map.put(attrs, field_name, result.secure_url)
       {:error, reason} ->

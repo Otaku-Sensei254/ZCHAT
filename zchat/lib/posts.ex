@@ -445,7 +445,7 @@ defp upload_and_format(path) do
 
     opts = [resource_type: :auto]
 
-    case Cloudex.upload(path, opts) do
+    case Zchat.Infrastructure.UploadCloudinary.upload(path, opts) do
       {:ok, result} ->
         %{
           "url" => result.secure_url,

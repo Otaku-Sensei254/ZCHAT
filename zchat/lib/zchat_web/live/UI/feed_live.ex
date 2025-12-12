@@ -258,7 +258,7 @@ defmodule ZchatWeb.UI.FeedLive do
     post_id = socket.assigns.post_to_share
 
     # Call the chat context to send the link
-    case Zchat.Chat.share_post_to_user(current_user_id, recipient_id, post_id) do
+    case Zchat.Chat.share_post_to_friend(current_user_id, recipient_id, post_id) do
       {:ok, _msg} ->
         {:noreply,
          socket

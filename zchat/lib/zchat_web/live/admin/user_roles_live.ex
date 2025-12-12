@@ -3,6 +3,7 @@ defmodule ZchatWeb.Admin.UserRolesLive do
   alias Zchat.Repo
   alias Zchat.Accounts
   alias Zchat.Accounts.User
+  alias Zchat.Notifications
 
   @impl true
   def mount(%{"user_id" => user_id}, _session, socket) do
@@ -23,7 +24,7 @@ defmodule ZchatWeb.Admin.UserRolesLive do
     role_id = String.to_integer(r_id)
     currentUser = socket.assigns.current_user
 
-    case Accounts.toggle_user_role(user_id, role_id) do
+    case Accounts.update_user_role(user_id, role_id) do
       {:ok, :added} ->
         # 1. Logic for when role was GRANTED
         Notifications.create_notification(%{

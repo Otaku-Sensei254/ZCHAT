@@ -32,7 +32,7 @@ if config_env() == :prod do
     secret_key_base: secret_key_base
 
   # --- Cloudinary ---
-  config :zchat, :cloudinary,
+  config :cloudex,
     api_key: System.fetch_env!("CLOUDINARY_API_KEY"),
     api_secret: System.fetch_env!("CLOUDINARY_SECRET"),
     cloud_name: System.fetch_env!("CLOUDINARY_CLOUD_NAME"),

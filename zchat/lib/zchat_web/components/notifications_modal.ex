@@ -66,6 +66,9 @@ defmodule ZchatWeb.Components.NotificationsModal do
 
     ~p"/users/#{username}"
   end
+    def notification_link(_unknown) do
+    ~p"/"
+  end
 
 
   def format_text(n) do

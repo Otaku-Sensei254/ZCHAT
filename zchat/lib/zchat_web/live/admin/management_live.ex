@@ -50,38 +50,46 @@ def handle_event("remove_role",%{"user_id"=> user_id, "role_id"=> role_id}, sock
       }
   end
 end
-  @impl true
- def handle_event("toggle_user_role", %{"user_id" => u_id, "role_id" => r_id}, socket) do
-    user_id = String.to_integer(u_id)
-    role_id = String.to_integer(r_id)
+@impl true
+  def handle_event("update_user_roles", %{"user_id" => u_id, "role_id" => r_id}, socket) do
+    # 1. Setup variables
+    target_user_id = String.to_integer(u_id)
+    target_role_id = String.to_integer(r_id)
     currentUser = socket.assigns.current_user
 
-    case Accounts.toggle_user_role(user_id, role_id) do
-      {:ok, :added} ->
-        # 1. Logic for when role was GRANTED
+    # 2. Get the User Struct first (Required for your context function)
+    user = Accounts.get_user!(target_user_id) |> Zchat.Repo.preload(:roles)
+
+    # 3. Calculate the NEW list of role IDs (Toggle logic)
+    current_role_ids = Enum.map(user.roles, & &1.id)
+
+    # Check if we are adding or removing
+    {new_role_ids, action} =
+      if target_role_id in current_role_ids do
+        {List.delete(current_role_ids, target_role_id), :removed}
+      else
+        {[target_role_id | current_role_ids], :added}
+      end
+
+    # 4. Call the function with the correct arguments: (%User{}, [List])
+    case Accounts.update_user_roles(user, new_role_ids) do
+      {:ok, _updated_user} ->
+        # Create Notification
         Notifications.create_notification(%{
-          user_id: user_id,
+          user_id: user.id,
           actor_id: currentUser.id,
           type: "role_change"
         })
 
-        # Refresh Data
+        # Refresh Data for the UI
         users = Accounts.list_users() |> Zchat.Repo.preload(:roles)
-        {:noreply, socket |> assign(:users, users) |> put_flash(:info, "Role granted.")}
 
-      {:ok, :removed} ->
-        # 2. Logic for when role was REVOKED
-        Notifications.create_notification(%{
-          user_id: user_id,
-          actor_id: currentUser.id,
-          type: "role_change"
-        })
+        # Determine message based on action
+        msg = if action == :added, do: "Role granted.", else: "Role removed."
 
-        # Refresh Data
-        users = Accounts.list_users() |> Zchat.Repo.preload(:roles)
-        {:noreply, socket |> assign(:users, users) |> put_flash(:info, "Role removed.")}
+        {:noreply, socket |> assign(:users, users) |> put_flash(:info, msg)}
 
-      _ ->
+      {:error, _} ->
         {:noreply, put_flash(socket, :error, "Operation failed.")}
     end
   end

@@ -17,10 +17,16 @@ defmodule Zchat.Posts do
     from(p in Post,
       where: p.inserted_at >= ^one_day_ago,
       left_join: l in assoc(p, :likes),
-      group_by: p.id,
-      order_by: [desc: count(l.id), desc: p.inserted_at],
+      left_join: c in assoc(p, :comments),
+      join: u in assoc(p, :user),
+      group_by: [p.id, u.id],
+      order_by: [desc: count(l.id, :distinct), desc: p.inserted_at],
       limit: ^limit,
-      preload: [:user, :likes]
+      select_merge: %{
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      },
+      preload: [:user, :likes, comments: :user]
     )
     |> Repo.all()
   end
@@ -41,17 +47,30 @@ defmodule Zchat.Posts do
     user_id = opts[:user_id]
 
     base_query =
-      Post
-      |> join(:inner, [p], u in assoc(p, :user))
-      |> order_by([p], desc: p.inserted_at)
+      from(p in Post,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        group_by: [p.id, u.id],
+        order_by: [desc: p.inserted_at],
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        }
+      )
 
-    base_query
-    |> apply_filters(search_term, category)
-    |> filter_by_user(user_id)
-    |> limit(^per_page)
-    |> offset(^((page - 1) * per_page))
-    |> Repo.all()
-    |> Repo.preload(opts[:preload] || [])
+    query =
+      base_query
+      |> apply_filters(search_term, category)
+      |> filter_by_user(user_id)
+      |> limit(^per_page)
+      |> offset(^((page - 1) * per_page))
+
+    posts = Repo.all(query)
+
+    # Preload associations efficiently
+    posts
+    |> Repo.preload([:user, :likes, comments: :user])
   end
 
   # --- SEARCH & FILTERS ---
@@ -445,7 +464,7 @@ defp upload_and_format(path) do
 
     opts = [resource_type: :auto]
 
-    case Zchat.Infrastructure.UploadCloudinary.upload(path, opts) do
+    case Zchat.Infrastructure.UploadCloudinary.upload_file(path, opts) do
       {:ok, result} ->
         %{
           "url" => result.secure_url,

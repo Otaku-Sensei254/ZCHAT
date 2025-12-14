@@ -26,6 +26,7 @@ defmodule Zchat.Posts.Post do
           category: String.t() | nil,
           reposts_count: integer(),
           likes_count: integer(),
+          comments_count: integer(),
           user_id: integer() | nil,
           user: any(),
           comments: [any()],
@@ -44,6 +45,7 @@ defmodule Zchat.Posts.Post do
     field :category, :string
     field :reposts_count, :integer, default: 0
     field :likes_count, :integer, default: 0
+    field :comments_count, :integer, virtual: true, default: 0
     field :is_featured, :boolean, virtual: true, default: false
     field :media_files, {:array, :map}, default: []  # JSON array of media files
     # Keep old fields for backward compatibility
@@ -92,7 +94,8 @@ defmodule Zchat.Posts.Post do
       :category,
       :user_id,
       :likes_count,
-      :reposts_count
+      :reposts_count,
+      :comments_count
     ])
     |> validate_required([:title, :content, :user_id])
     |> validate_length(:title, min: 3, max: 200)

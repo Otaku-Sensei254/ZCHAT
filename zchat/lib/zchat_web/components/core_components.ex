@@ -13,6 +13,28 @@ defmodule ZchatWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
 
+  @doc """
+  Renders a [Heroicon](https://heroicons.com).
+
+  ## Examples
+
+      <.icon name="hero-x-mark" class="w-4 h-4" />
+  """
+  attr :name, :string, required: true
+  attr :class, :string, default: nil
+
+  def icon(%{name: "hero-x-mark"} = assigns) do
+    ~H"""
+    <Heroicons.x_mark solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-photo"} = assigns) do
+    ~H"""
+    <Heroicons.photo solid class={@class} />
+    """
+  end
+
 
   @doc """
   Renders a modal.

@@ -24,7 +24,7 @@ defmodule ZchatWeb.Router do
       on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, ZchatWeb.UserActivityHook] do
       live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
-      live "/posts/new", CreatePost, :new
+      live "/posts/new", CreatePostLive, :new
       live "/posts/:id", UI.SinglePostLive, :show
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
@@ -169,7 +169,7 @@ end
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive
-      live "/posts/:id/edit", CreatePost, :edit
+      live "/posts/:id/edit", CreatePostLive, :edit
     end
 
     live_session :chat,

@@ -15,26 +15,19 @@ defmodule ZchatWeb.UI.PostComponent do
 
   @impl true
   def update(assigns, socket) do
-    # 1. Check if the current user has liked this post
+    # 1. Check if the current user has liked this post (from preloaded data)
     current_like =
-      if assigns[:current_user] do
-        Repo.one(
-          from l in Like,
-          where: l.user_id == ^assigns.current_user.id
-          and l.likeable_type == "Post"
-          and l.likeable_id == ^assigns.post.id
-        )
+      if assigns[:current_user] && assigns.post.likes do
+        Enum.find(assigns.post.likes, fn like ->
+          like.user_id == assigns.current_user.id && like.likeable_type == "Post"
+        end)
       else
         nil
       end
 
-    # 2. Get Counts
-    like_count = assigns.post.likes_count || 0
-    comment_count =
-      Repo.aggregate(
-        from(c in Comment, where: c.post_id == ^assigns.post.id),
-        :count
-      ) || 0
+    # 2. Get Counts from preloaded data
+    like_count = assigns.post.likes_count || length(assigns.post.likes || [])
+    comment_count = assigns.post.comments_count || length(assigns.post.comments || [])
 
     {:ok,
      socket

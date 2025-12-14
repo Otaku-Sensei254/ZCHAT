@@ -131,4 +131,9 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
   end
   @impl true
   def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
+
+    @impl true
+    def handle_info({:new_notification,_}, socket) do
+      {:noreply, socket}
+    end
 end

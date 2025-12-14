@@ -15,6 +15,8 @@ if config_env() == :prod do
     ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    ssl: [verify: :verify_none],
+
     socket_options: maybe_ipv6
 
   # --- Endpoint ---
@@ -37,4 +39,13 @@ if config_env() == :prod do
     api_secret: System.fetch_env!("CLOUDINARY_SECRET"),
     cloud_name: System.fetch_env!("CLOUDINARY_CLOUD_NAME"),
     upload_preset: System.fetch_env!("CLOUDINARY_PRESET")
+end
+
+# If we are in Dev mode but have a Cloud URL, use the Cloud!
+if config_env() == :dev and System.get_env("DATABASE_URL") do
+  config :zchat, Zchat.Repo,
+    url: System.get_env("DATABASE_URL"),
+    # Neon needs SSL, so we force it here
+    ssl: [verify: :verify_none],
+    pool_size: 10
 end

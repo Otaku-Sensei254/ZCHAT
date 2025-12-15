@@ -36,7 +36,7 @@ if config_env() == :prod do
   # --- Cloudinary ---
   config :cloudex,
     api_key: System.fetch_env!("CLOUDINARY_API_KEY"),
-    api_secret: System.fetch_env!("CLOUDINARY_SECRET"),
+    api_secret: System.fetch_env!("CLOUDINARY_API_SECRET"),
     cloud_name: System.fetch_env!("CLOUDINARY_CLOUD_NAME"),
     upload_preset: System.fetch_env!("CLOUDINARY_PRESET")
 end

@@ -14,6 +14,9 @@ defmodule Zchat.Accounts.User do
     field :confirmed_at, :naive_datetime
     has_many :posts, Post
     many_to_many :roles, Zchat.Accounts.Role, join_through: "user_roles", on_replace: :delete
+    many_to_many :following, Zchat.Accounts.User,
+    join_through: "follows",
+    join_keys: [follower_id: :id, following_id: :id]
     has_many :reposts, Zchat.Posts.Repost
     has_many :likes, Zchat.Posts.Like
 

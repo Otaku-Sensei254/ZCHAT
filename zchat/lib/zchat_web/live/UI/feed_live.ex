@@ -71,13 +71,12 @@ defmodule ZchatWeb.UI.FeedLive do
 
   # --- SHARE HANDLERS (NEW) ---
 
-  @impl true
-  def handle_event("open_share_modal", %{"post_id" => post_id}, socket) do
-    # Fetch friends/following only when modal opens
-    current_user = socket.assigns.current_user
-    # Assuming you have a list_following/1 function. If not, use list_users() or similar.
-    friends = Accounts.list_following(current_user.id)
+@impl true
+  def handle_info({:open_share_modal, post_id}, socket) do
+    # 1. Fetch the user's friends list (needed for the share modal)
+    friends = Zchat.Accounts.list_friends(socket.assigns.current_user)
 
+    # 2. Update the socket to show the modal and store the post ID
     {:noreply,
      socket
      |> assign(:show_share_modal, true)
@@ -97,13 +96,13 @@ defmodule ZchatWeb.UI.FeedLive do
     recipient_int_id = String.to_integer(recipient_id)
 
     # Call the context function we created earlier
-    case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
-      {:ok, _msg} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Sent to chat!")
-         |> assign(:show_share_modal, false)} # Close modal on success
-      {:error, _} ->
+    with {:ok, _msg} <- Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Sent to chat!")
+       |> assign(:show_share_modal, false)} # Close modal on success
+    else
+      _ ->
         {:noreply, put_flash(socket, :error, "Could not send.")}
     end
   end
@@ -229,10 +228,6 @@ defmodule ZchatWeb.UI.FeedLive do
   @impl true
   def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
 
-#======================SHARE LIKE REELS ON IG============
-  @impl true
-  def handle_info({:open_share_modal, post_id}, socket) do
-    current_user = socket.assigns.current_user
 
     # Lazy Load: Get friends list only when clicking share
     # Ensure Zchat.Accounts.list_following/1 exists in your context!
@@ -310,4 +305,4 @@ defmodule ZchatWeb.UI.FeedLive do
     trending = Posts.list_trending_posts(5)
     stream(socket, :trending, trending, reset: true)
   end
-end
+

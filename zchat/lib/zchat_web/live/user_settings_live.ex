@@ -1,6 +1,6 @@
 defmodule ZchatWeb.UserSettingsLive do
   use ZchatWeb, :live_view
-
+  alias Zchat.Infrastructure.UploadCloudinary
   alias Zchat.Accounts
 
   def mount(_params, _session, socket) do
@@ -40,18 +40,21 @@ defmodule ZchatWeb.UserSettingsLive do
   def handle_event("update_profile", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    # 1. Consume the upload to get the temp file path.
-    # We DO NOT copy the file manually anymore. We just get the path.
-    uploaded_files =
+    # 1. Consume the upload and upload to Cloudinary inside the callback.
+    uploaded_urls =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
-        {:ok, path}
+        case UploadCloudinary.upload_file(path) do
+          {:ok, result} -> {:ok, result.url}
+          {:error, reason} ->
+            Logger.error("Failed to upload avatar: #{inspect(reason)}")
+            {:error, reason}
+        end
       end)
 
-    # 2. If a file was uploaded, add the path to params.
-    # The Accounts context will handle uploading this path to Cloudinary.
+    # 2. If a file was uploaded, add the URL to params.
     user_params =
-      case uploaded_files do
-        [path | _] -> Map.put(user_params, "avatar_url", path)
+      case uploaded_urls do
+        [url | _] -> Map.put(user_params, "avatar_url", url)
         [] -> user_params
       end
 
@@ -65,7 +68,7 @@ defmodule ZchatWeb.UserSettingsLive do
          |> assign(:current_user, updated_user)
          |> assign(:profile_form, to_form(Accounts.change_user_profile(updated_user)))
          # Redirect ensures the header/sidebar avatar updates immediately
-         |> push_navigate(to: ~p"/users/settings")}
+         |> push_navigate(to: ~p"/users/#{updated_user.username}")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :profile_form, to_form(changeset))}

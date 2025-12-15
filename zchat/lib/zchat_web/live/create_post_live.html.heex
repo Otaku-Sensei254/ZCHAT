@@ -100,13 +100,16 @@
                 </div>
                 <div class="flex flex-col justify-center flex-1 min-w-0">
                   <figcaption class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-full">
-                    <%= file["client_name"] %>
+                    <%= if is_map(file), do: file["client_name"], else: "Upload failed" %>
                   </figcaption>
                   <div class="flex items-center gap-3 mt-1">
                     <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                      <%= Decimal.round(Decimal.from_float(file["client_size"] / 1024)) %> KB
+                      <%= if is_map(file), do: "#{Decimal.round(Decimal.from_float(file["client_size"] / 1024))} KB", else: "Error" %>
                     </span>
-                    <span class="text-xs text-green-500 font-bold">Uploaded</span>
+                    <% status_class = if is_map(file), do: "text-green-500", else: "text-red-500" %>
+                    <span class={"text-xs #{status_class} font-bold"}>
+                      <%= if is_map(file), do: "Uploaded", else: "Failed" %>
+                    </span>
                   </div>
                 </div>
               </div>

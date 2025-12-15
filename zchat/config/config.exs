@@ -63,10 +63,3 @@ config :phoenix, :json_library, Jason
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
 
-# uploads to cloudinary
-
-config :zchat, :cloudinary,
-  api_key:  "576125769822254",
-  api_secret: "yNxdsd0kWa_OtysW-x5ve8LGyEOw",
-  cloud_name: "dahpsrzjh",
-  upload_preset: "zchat_uploads"

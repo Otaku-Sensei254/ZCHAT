@@ -4,7 +4,7 @@ defmodule ZchatWeb.UI.FeedLive do
   alias Zchat.Posts.Post
   alias Zchat.Notifications
   alias Zchat.Socials
-  alias Zchat.Accounts # Added for listing friends
+  alias Zchat.Accounts
 
   @impl true
   def mount(_params, _session, socket) do
@@ -69,11 +69,12 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, socket}
   end
 
-  # --- SHARE HANDLERS (NEW) ---
+  # --- SHARE HANDLERS ---
 
-@impl true
+  @impl true
   def handle_info({:open_share_modal, post_id}, socket) do
     # 1. Fetch the user's friends list (needed for the share modal)
+    # Using Accounts.list_friends as established in your Accounts context
     friends = Zchat.Accounts.list_friends(socket.assigns.current_user)
 
     # 2. Update the socket to show the modal and store the post ID
@@ -95,14 +96,16 @@ defmodule ZchatWeb.UI.FeedLive do
     post_id = socket.assigns.post_to_share
     recipient_int_id = String.to_integer(recipient_id)
 
-    # Call the context function we created earlier
-    with {:ok, _msg} <- Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
-      {:noreply,
-       socket
-       |> put_flash(:info, "Sent to chat!")
-       |> assign(:show_share_modal, false)} # Close modal on success
-    else
-      _ ->
+    # Call the chat context to send the link
+    # Make sure Zchat.Chat.share_posts_to_friend/3 exists in your Chat context
+    # If your function is named share_post_to_friend (singular), change it here.
+    case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
+      {:ok, _msg} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Sent to chat!")
+         |> assign(:show_share_modal, false)} # Close modal on success
+      {:error, _} ->
         {:noreply, put_flash(socket, :error, "Could not send.")}
     end
   end
@@ -225,45 +228,9 @@ defmodule ZchatWeb.UI.FeedLive do
   def handle_info({:update_sidebar, _message}, socket) do
     {:noreply, socket}
   end
+
   @impl true
   def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
-
-
-    # Lazy Load: Get friends list only when clicking share
-    # Ensure Zchat.Accounts.list_following/1 exists in your context!
-    friends = Socials.list_following(current_user.id)
-
-    {:noreply,
-     socket
-     |> assign(:show_share_modal, true)
-     |> assign(:post_to_share, post_id)
-     |> assign(:friends_list, friends)}
-  end
-
-  # 2. Close Modal
-  @impl true
-  def handle_event("close_share_modal", _, socket) do
-    {:noreply, assign(socket, :show_share_modal, false)}
-  end
-
-  # 3. Confirm Send (Clicked inside the Modal)
-  @impl true
-  def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
-    current_user_id = socket.assigns.current_user.id
-    post_id = socket.assigns.post_to_share
-
-    # Call the chat context to send the link
-    case Zchat.Chat.share_post_to_friend(current_user_id, recipient_id, post_id) do
-      {:ok, _msg} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Sent to chat!")
-         |> assign(:show_share_modal, false)} # Close modal immediately
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Could not send.")}
-    end
-  end
-
 
   # --- CORE HELPERS ---
 
@@ -305,4 +272,4 @@ defmodule ZchatWeb.UI.FeedLive do
     trending = Posts.list_trending_posts(5)
     stream(socket, :trending, trending, reset: true)
   end
-
+end

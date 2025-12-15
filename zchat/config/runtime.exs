@@ -1,7 +1,8 @@
 import Config
 
-# 1. FORCE SERVER TO START
-config :zchat, ZchatWeb.Endpoint, server: true
+if System.get_env("PHX_SERVER") do
+  config :zchat, ZchatWeb.Endpoint, server: true
+end
 
 if config_env() == :prod do
   # --- Database ---
@@ -12,7 +13,6 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :zchat, Zchat.Repo,
-    ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     ssl: [verify: :verify_none],

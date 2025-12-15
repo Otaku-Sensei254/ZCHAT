@@ -2,12 +2,15 @@ defmodule Zchat.Infrastructure.UploadCloudinary do
   @moduledoc """
   Handles uploading media (images/video) to Cloudinary via the "Auto" endpoint.
   """
+  require Logger
 
   # 1. We take the temporary file path from the LiveView upload
   def upload_file(file_path) do
     # Get config (defined in config.exs)
     cloud_name = config()[:cloud_name]
     upload_preset = config()[:upload_preset]
+
+    Logger.info("Uploading to Cloudinary with cloud_name: #{cloud_name}, upload_preset: #{upload_preset}")
 
     # 2. Use the "auto" endpoint so Cloudinary detects if it's video or image
     url = "https://api.cloudinary.com/v1_1/#{cloud_name}/auto/upload"
@@ -33,14 +36,19 @@ defmodule Zchat.Infrastructure.UploadCloudinary do
         }}
 
       {:ok, %{body: error_body}} ->
+        Logger.error("Cloudinary upload error: #{inspect(error_body)}")
         {:error, "Cloudinary Error: #{inspect(error_body)}"}
 
       {:error, reason} ->
+        Logger.error("HTTPoison network error: #{inspect(reason)}")
         {:error, "Network Error: #{inspect(reason)}"}
     end
   end
 
   defp config do
-    Application.get_env(:zchat, :cloudinary)
+    %{
+      cloud_name: Application.get_env(:cloudex, :cloud_name) || "dahpsrzjh",
+      upload_preset: Application.get_env(:cloudex, :upload_preset) || "default"
+    }
   end
 end

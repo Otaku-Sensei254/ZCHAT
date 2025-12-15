@@ -460,11 +460,8 @@ defmodule Zchat.Posts do
     end
   end
 
-defp upload_and_format(path) do
-
-    opts = [resource_type: :auto]
-
-    case Zchat.Infrastructure.UploadCloudinary.upload_file(path, opts) do
+  defp upload_and_format(path) do
+    case Zchat.Infrastructure.UploadCloudinary.upload_file(path) do
       {:ok, result} ->
         %{
           "url" => result.secure_url,

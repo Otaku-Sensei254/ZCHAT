@@ -6,7 +6,7 @@ defmodule Zchat.Accounts do
   import Ecto.Query, warn: false
   alias Zchat.Repo
   alias Zchat.Accounts.{User, UserToken, UserNotifier, Role, Permission}
-
+  alias Zchat.Infrastructure.UploadCloudinary
   ## Database getters
 
   def get_user_by_email(email) when is_binary(email) do
@@ -203,13 +203,13 @@ defmodule Zchat.Accounts do
   # ROLE & PERMISSION MANAGEMENT
   # =================================================================
 
-  def get_roles, do: Repo.all(Role)
+  def get_roles, do: Repo.all(Role) |> Repo.preload(:permissions) |> Repo.preload(:permissions)
 
   def get_user_with_roles!(id) do
     Repo.get!(User, id) |> Repo.preload(:roles)
   end
 
-  def get_role_by_name(name), do: Repo.get_by(Role, name: name)
+  def get_role_by_name(name), do: Repo.get_by(Role, name: name) |> Repo.preload(:permissions)
 
   def user_has_role?(%User{} = user, role_name) do
     user = Repo.preload(user, :roles)
@@ -347,6 +347,7 @@ defmodule Zchat.Accounts do
       path when is_binary(path) and byte_size(path) < 255 ->
         # Simple check to see if it looks like a local file path
         if File.exists?(path) do
+          IO.puts("-> File exists on disk. Attempting upload...")
            upload_to_cloudinary(path, attrs, field_name)
         else
            attrs
@@ -357,15 +358,33 @@ defmodule Zchat.Accounts do
     end
   end
 
- defp upload_to_cloudinary(path, attrs, field_name) do
-    opts = [resource_type: :auto]
-
-    case Zchat.Infrastructure.UploadCloudinary.upload_file(path, opts) do
+defp upload_to_cloudinary(path, attrs, field_name) do
+    # FIX: We removed 'opts' because your uploader doesn't support it.
+    # We simply pass the path.
+    case Zchat.Infrastructure.UploadCloudinary.upload_file(path) do
       {:ok, result} ->
+        IO.puts("-> SUCCESS: Cloudinary returned URL: #{result.secure_url}")
         Map.put(attrs, field_name, result.secure_url)
+
       {:error, reason} ->
-        IO.inspect(reason, label: "CLOUDINARY UPLOAD ERROR")
-        attrs
+        IO.inspect(reason, label: "-> FAILURE: Cloudinary Error")
+        # If it fails, remove the temp path so we don't save a broken link
+        Map.delete(attrs, field_name)
     end
+  end
+
+  #get friends
+  def list_friends(%User{}= user) do
+    user
+    |> Repo.preload(:following)
+    |> Map.get(:following)
+
+  end
+  def follow_user(user_a, user_b) do
+    user_a
+    |> Repo.preload(:following)
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_assoc(:following, [user_b | user_a.following])
+    |> Repo.update()
   end
 end

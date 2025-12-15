@@ -7,6 +7,12 @@ defmodule Zchat.Application do
 
   @impl true
   def start(_type, _args) do
+    # --- DEBUG: Print Repo Config ---
+    IO.puts("========================================")
+    IO.puts("DATABASE CONFIGURATION")
+    IO.inspect(Application.get_env(:zchat, Zchat.Repo, []), label: "Repo Config")
+    IO.puts("========================================")
+
     children = [
       # Start the Telemetry supervisor
       ZchatWeb.Telemetry,

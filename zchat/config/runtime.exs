@@ -16,7 +16,6 @@ if config_env() == :prod do
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     ssl: [verify: :verify_none],
-
     socket_options: maybe_ipv6
 
   # --- Endpoint ---
@@ -35,9 +34,9 @@ if config_env() == :prod do
 
   # --- Cloudinary ---
   config :cloudex,
-    api_key: System.fetch_env!("CLOUDINARY_API_KEY"),
-    api_secret: System.fetch_env!("CLOUDINARY_API_SECRET"),
-    cloud_name: System.fetch_env!("CLOUDINARY_CLOUD_NAME"),
+    api_key: System.fetch_env!("CLOUDEX_API_KEY"),
+    api_secret: System.fetch_env!("CLOUDEX_SECRET"),
+    cloud_name: System.fetch_env!("CLOUDEX_CLOUD_NAME"),
     upload_preset: System.fetch_env!("CLOUDINARY_PRESET")
 end
 

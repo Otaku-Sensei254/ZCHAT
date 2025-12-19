@@ -9,9 +9,12 @@ defmodule Zchat.Accounts do
   alias Zchat.Infrastructure.UploadCloudinary
   ## Database getters
 
-  def get_user_by_email(email) when is_binary(email) do
-    Repo.get_by(User, email: email)
-  end
+ def get_user_by_email(email) when is_binary(email) do
+     with user when not is_nil(user) <- Repo.get_by(User, email: email) do
+       Repo.preload(user, roles: :permissions)
+     end
+   end
+
 
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do

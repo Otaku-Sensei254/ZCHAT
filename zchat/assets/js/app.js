@@ -13,84 +13,113 @@ import userSocket from "./user_socket";
 
 // Define Hooks object
 let Hooks = {};
-
-// In your app.js - replace the entire ChatHook with this:
-
-Hooks.ChatHook = {
+Hooks.ChatInput = {
   mounted() {
-    // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
-    const form = this.el.querySelector("form");
-    const input = this.el.querySelector("input[name='message[content]']");
-    const conversationId = this.el.dataset.conversationId;
-
-    if (!conversationId) return;
-
-    // 2. CONNECT TO CHANNEL
-    this.channel = userSocket.channel(`conversation:${conversationId}`, {});
-
-    // 3. LISTEN FOR EVENTS (Server -> Client)
-    
-    // Message received
-    this.channel.on("new_message", (payload) => {
-      this.pushEvent("display_new_message", payload);
+    // Handle Enter key to submit
+    this.el.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault(); 
+        this.el.form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+      }
+      this.pushTyping();
     });
 
-    // Typing indicator received
-    this.channel.on("typing", (payload) => {
-      this.pushEvent("update_typing_indicator", {
-        user_id: payload.user.id,
-        username: payload.user.username,
-        is_typing: payload.typing
-      });
-    });
-
-    // Join the channel
-    this.channel.join()
-      .receive("ok", resp => console.log("Joined conversation successfully", resp))
-      .receive("error", resp => console.error("Unable to join conversation", resp));
-
-    // 4. HANDLE INPUT (Client -> Server)
-    
-  if (input) {
-      let typingTimer;
-      input.addEventListener("input", () => {
-        clearTimeout(typingTimer);
-        this.channel.push("typing", { typing: true });
-        typingTimer = setTimeout(() => {
-          this.channel.push("typing", { typing: false });
-        }, 2000);
-      });
-    }
-
-    // 5. HANDLE SUBMIT
-    if (form && input) {
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const content = input.value.trim();
-
-        if (content) {
-          // Push to channel
-          this.channel.push("new_message", { content: content })
-          
-            .receive("ok", () => {
-              console.log("Message sent");
-              input.value = ""; // Clear input
-              
-              // Stop typing indicator immediately upon send
-              this.channel.push("typing", { typing: false });
-            })
-            .receive("error", (err) => console.error("Failed to send", err));
-        }
-      });
-    }
+    this.handleEvent("clear-input", () => { this.el.value = ""; });
   },
 
-  destroyed() {
-    if (this.channel) {
-      this.channel.leave();
+  typingTimer: null,
+  pushTyping() {
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+    } else {
+      // Send "true" immediately
+      this.pushEvent("update_typing_indicator", {is_typing: true});
     }
+
+    // Wait 2 seconds of silence before sending "false"
+    this.typingTimer = setTimeout(() => {
+      this.pushEvent("update_typing_indicator", {is_typing: false});
+      this.typingTimer = null;
+    }, 2000);
   }
-};
+}
+// In your app.js - replace the entire ChatHook with this:
+
+// Hooks.ChatHook = {
+//   mounted() {
+//     // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
+//     const form = this.el.querySelector("form");
+//     const input = this.el.querySelector("input[name='message[content]']");
+//     const conversationId = this.el.dataset.conversationId;
+
+//     if (!conversationId) return;
+
+//     // 2. CONNECT TO CHANNEL
+//     this.channel = userSocket.channel(`conversation:${conversationId}`, {});
+
+//     // 3. LISTEN FOR EVENTS (Server -> Client)
+    
+//     // Message received
+//     this.channel.on("new_message", (payload) => {
+//       this.pushEvent("display_new_message", payload);
+//     });
+
+//     // Typing indicator received
+//     this.channel.on("typing", (payload) => {
+//       this.pushEvent("update_typing_indicator", {
+//         user_id: payload.user.id,
+//         username: payload.user.username,
+//         is_typing: payload.typing
+//       });
+//     });
+
+//     // Join the channel
+//     this.channel.join()
+//       .receive("ok", resp => console.log("Joined conversation successfully", resp))
+//       .receive("error", resp => console.error("Unable to join conversation", resp));
+
+//     // 4. HANDLE INPUT (Client -> Server)
+    
+//   if (input) {
+//       let typingTimer;
+//       input.addEventListener("input", () => {
+//         clearTimeout(typingTimer);
+//         this.channel.push("typing", { typing: true });
+//         typingTimer = setTimeout(() => {
+//           this.channel.push("typing", { typing: false });
+//         }, 2000);
+//       });
+//     }
+
+//     // 5. HANDLE SUBMIT
+//     if (form && input) {
+//       form.addEventListener("submit", (e) => {
+//         e.preventDefault();
+//         const content = input.value.trim();
+
+//         if (content) {
+//           // Push to channel
+//           this.channel.push("new_message", { content: content })
+          
+//             .receive("ok", () => {
+//               console.log("Message sent");
+//               input.value = ""; // Clear input
+              
+//               // Stop typing indicator immediately upon send
+//               this.channel.push("typing", { typing: false });
+//             })
+//             .receive("error", (err) => console.error("Failed to send", err));
+//         }
+//       });
+//     }
+//   },
+
+//   destroyed() {
+//     if (this.channel) {
+//       this.channel.leave();
+//     }
+//   }
+// };
 
 // Hooks.ChatChannel = {
 //   mounted() {

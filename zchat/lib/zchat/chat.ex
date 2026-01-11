@@ -17,17 +17,20 @@ defmodule Zchat.Chat do
 
   def list_user_conversations(user_id) do
     # Define query first to avoid compilation errors
-    query = from(c in Conversation,
-      join: convom in assoc(c, :conversation_members),
-      where: convom.user_id == ^user_id,
-      left_join: m in assoc(c, :messages),
-      # Count unread messages (newer than last_read_at, not from self)
-      on: m.conversation_id == c.id and m.inserted_at > convom.last_read_at and m.user_id != ^user_id,
-      preload: [conversation_members: :user],
-      group_by: [c.id, convom.id],
-      order_by: [desc: c.updated_at],
-      select: %{c | unread_count: count(m.id)}
-    )
+    query =
+      from(c in Conversation,
+        join: convom in assoc(c, :conversation_members),
+        where: convom.user_id == ^user_id,
+        left_join: m in assoc(c, :messages),
+        # Count unread messages (newer than last_read_at, not from self)
+        on:
+          m.conversation_id == c.id and m.inserted_at > convom.last_read_at and
+            m.user_id != ^user_id,
+        preload: [conversation_members: :user],
+        group_by: [c.id, convom.id],
+        order_by: [desc: c.updated_at],
+        select: %{c | unread_count: count(m.id)}
+      )
 
     Repo.all(query)
   end
@@ -49,11 +52,13 @@ defmodule Zchat.Chat do
   end
 
   defp find_private_conversation(u1, u2) do
-    query = from cm in ConversationMember,
-      where: cm.user_id in [^u1, ^u2],
-      group_by: cm.conversation_id,
-      having: count(cm.user_id) == 2,
-      select: cm.conversation_id
+    query =
+      from(cm in ConversationMember,
+        where: cm.user_id in [^u1, ^u2],
+        group_by: cm.conversation_id,
+        having: count(cm.user_id) == 2,
+        select: cm.conversation_id
+      )
 
     case Repo.one(query) do
       nil -> nil
@@ -67,16 +72,22 @@ defmodule Zchat.Chat do
 
   # --- MESSAGES ---
 
-  def list_messages(conversation_id) when is_binary(conversation_id) or is_integer(conversation_id) do
+  def get_message!(id) do
+    Repo.get!(Message, id)
+    |> Repo.preload([:user])
+  end
+
+  def list_messages(conversation_id)
+      when is_binary(conversation_id) or is_integer(conversation_id) do
     from(m in Message,
       where: m.conversation_id == ^conversation_id,
       order_by: [asc: m.inserted_at],
-      preload: [:user, shared_post: :user]
+      preload: [:user, shared_post: :user, reply_to: :user]
     )
     |> Repo.all()
   end
-  def list_messages(%Conversation{} = conversation), do: list_messages(conversation.id)
 
+  def list_messages(%Conversation{} = conversation), do: list_messages(conversation.id)
 
   def create_message(attrs) do
     result =
@@ -97,6 +108,18 @@ defmodule Zchat.Chat do
     end
   end
 
+  # [NEW] Added Delete Functionality
+  def delete_message(message) do
+    # 1. Delete from DB
+    Repo.delete(message)
+
+    # 2. Broadcast to LiveView so it disappears instantly
+    Phoenix.PubSub.broadcast(
+      Zchat.PubSub,
+      "conversation:#{message.conversation_id}",
+      {:message_deleted, message}
+    )
+  end
 
   defp notify_sidebar_members(conversation_id, message) do
     members =
@@ -107,11 +130,11 @@ defmodule Zchat.Chat do
       |> Repo.all()
 
     Enum.each(members, fn user_id ->
-
       Phoenix.PubSub.broadcast(
         Zchat.PubSub,
-         "user_sidebar:#{user_id}",
-          {:update_sidebar, message})
+        "user_sidebar:#{user_id}",
+        {:update_sidebar, message}
+      )
     end)
   end
 
@@ -122,7 +145,7 @@ defmodule Zchat.Chat do
 
   def broadcast_message(conversation, message) do
     # Preload user so the LiveView can display avatar/username immediately
-    message = Repo.preload(message, [:user,shared_post: :user])
+    message = Repo.preload(message, [:user, shared_post: :user, reply_to: :user])
 
     Phoenix.PubSub.broadcast(
       Zchat.PubSub,
@@ -130,14 +153,18 @@ defmodule Zchat.Chat do
       {:new_message, message}
     )
   end
-def mark_message_as_read(message_id) do
+
+  def mark_message_as_read(message_id) do
     Repo.get(Message, message_id)
     |> Ecto.Changeset.change(read_at: DateTime.utc_now())
     |> Repo.update()
   end
+
   def member_of_conversation?(user, conversation_id) do
-    query = from convom in ConversationMember,
-      where: convom.user_id == ^user.id and convom.conversation_id == ^conversation_id
+    query =
+      from(convom in ConversationMember,
+        where: convom.user_id == ^user.id and convom.conversation_id == ^conversation_id
+      )
 
     Repo.exists?(query)
   end
@@ -148,7 +175,9 @@ def mark_message_as_read(message_id) do
     )
     |> Repo.one()
     |> case do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       member ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -158,36 +187,42 @@ def mark_message_as_read(message_id) do
           |> Repo.update()
 
         Phoenix.PubSub.broadcast(
-          Zchat.PubSub, "conversation:#{conversation_id}",
-          {:message_read, %{user_id: user_id, conversation_id: conversation_id, last_read_at: now}}
+          Zchat.PubSub,
+          "conversation:#{conversation_id}",
+          {:message_read,
+           %{user_id: user_id, conversation_id: conversation_id, last_read_at: now}}
         )
-          Phoenix.PubSub.broadcast(
-            Zchat.PubSub, "user_sidebar:#{user_id}",
-            :update_sidebar
-          )
+
+        Phoenix.PubSub.broadcast(
+          Zchat.PubSub,
+          "user_sidebar:#{user_id}",
+          :update_sidebar
+        )
 
         {:ok, updated_member}
     end
   end
 
-  #check for unread convos
+  # check for unread convos
   def count_unread_conversations(user_id) do
     from(convo in Conversation,
-        join: convom in assoc(convo, :conversation_members),
-        join: messo in assoc(convo, :messages),
-        where: convom.user_id == ^user_id,
-        where: messo.inserted_at > convom.last_read_at and messo.user_id != ^user_id,
-        select: count(convo.id, :distinct)
-        )
-        |> Repo.one() || 0
+      join: convom in assoc(convo, :conversation_members),
+      join: messo in assoc(convo, :messages),
+      where: convom.user_id == ^user_id,
+      where: messo.inserted_at > convom.last_read_at and messo.user_id != ^user_id,
+      select: count(convo.id, :distinct)
+    )
+    |> Repo.one() || 0
   end
 
-  #sharing reels/posts
+  # sharing reels/posts
   def share_posts_to_friend(sender_id, friend_id, post_id) do
     {:ok, conversation} = get_or_create_private_conversation(sender_id, friend_id)
-    #now get the post
-    post = Repo.get!(Zchat.Posts.Post, post_id)
-     |> Repo.preload(:user)
+    # now get the post
+    post =
+      Repo.get!(Zchat.Posts.Post, post_id)
+      |> Repo.preload(:user)
+
     content = "Shared a post"
 
     {:ok, message} =
@@ -198,15 +233,14 @@ def mark_message_as_read(message_id) do
         shared_post_id: post_id
       })
 
-      Notifications.create_notification(%{
-        user_id: friend_id,
-        actor_id: sender_id,
-        type: "shared_post",
-        post_id: post_id,
-        conversation_id: conversation.id
-      })
+    Notifications.create_notification(%{
+      user_id: friend_id,
+      actor_id: sender_id,
+      type: "shared_post",
+      post_id: post_id,
+      conversation_id: conversation.id
+    })
 
-        {:ok, message}
+    {:ok, message}
   end
-
 end

@@ -288,8 +288,11 @@ Hooks.ScrollToBottom = {
 }
 // Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
+  longPollFallbacksMs: 2500,
   params: { _csrf_token: csrfToken },
   hooks: Hooks, 
+  heartbeatIntervalMs: 30000,
+  timeout: 120000,
 });
 
 // Show progress bar on live navigation and form submits

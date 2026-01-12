@@ -39,8 +39,9 @@ defmodule ZchatWeb.Chat.ChatLive do
      |> assign(:replying_to, nil)
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
-       max_entries: 1,
-       max_file_size: 20_000_000
+       max_entries: 3,
+       chunk_size: 64_000,
+       max_file_size: 50_000_000
      )}
   end
 

@@ -41,7 +41,8 @@ defmodule ZchatWeb.Chat.ChatLive do
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
        max_entries: 3,
        chunk_size: 64_000,
-       max_file_size: 50_000_000
+       max_file_size: 50_000_000,
+       auto_upload: true
      )}
   end
 

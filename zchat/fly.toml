@@ -21,6 +21,14 @@ primary_region = "ord"
   auto_start_machines = true
   min_machines_running = 1
   processes = ["app"]
+  client_timeout = "300s" #chill for 5mins
+  idle_timeout = "300s" #chill for 5mins
+
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 1000
 
 [deploy]
   release_command = "/app/bin/migrate"

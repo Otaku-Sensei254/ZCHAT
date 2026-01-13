@@ -31,13 +31,14 @@ defmodule ZchatWeb.Profiles.UserProfileLive do
             false
           end
 
-        {:ok,
-         socket
-         |> assign(:page_title, "#{user.username}'s Profile")
-         |> assign(:user, user)
-         |> assign(:posts, posts)
-         |> assign(:follow_stats, follow_stats)
-         |> assign(:is_following, is_following)}
+  {:ok,
+   socket
+   |> assign(:page_title, "#{user.username}'s Profile")
+   |> assign(:user, user)
+   |> assign(:posts, posts)
+   |> assign(:follow_stats, follow_stats)
+   |> assign(:is_following, is_following)
+   |> assign(:hide_bottom_nav, true)}
     end
   end
 

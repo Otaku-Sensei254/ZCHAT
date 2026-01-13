@@ -303,4 +303,91 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
+// Add a small helper to mark the document when we're on the feed page.
+// This allows CSS to show a stronger message badge when the user hovers
+// the feed area (matching the behavior you asked for).
+function setOnFeedClass() {
+  try {
+    const path = window.location.pathname || "";
+    if (path.startsWith("/feed")) {
+      document.documentElement.classList.add('on-feed');
+    } else {
+      document.documentElement.classList.remove('on-feed');
+    }
+  } catch (e) {
+    // noop
+  }
+}
+
+setOnFeedClass();
+window.addEventListener('popstate', setOnFeedClass);
+window.addEventListener('phx:page-loading-stop', setOnFeedClass);
+
+// Control mobile bottom nav visibility for index vs conversation routes.
+function setBottomNavVisibility() {
+  try {
+    const el = document.getElementById('mobile-bottom-nav');
+    if (!el) return;
+    const path = window.location.pathname || '';
+    // Show on /chat (index). Hide on /chat/:id (conversation detail).
+    if (path === '/chat' || path === '/chat/') {
+      el.classList.remove('hidden');
+    } else if (path.startsWith('/chat/')) {
+      el.classList.add('hidden');
+    } else {
+      // leave default (rendered by server), just ensure no hidden class
+      el.classList.remove('hidden');
+    }
+  } catch (e) {
+    // noop
+  }
+}
+
+setBottomNavVisibility();
+window.addEventListener('popstate', setBottomNavVisibility);
+window.addEventListener('phx:page-loading-stop', setBottomNavVisibility);
+
+// Subtle hide-on-scroll behavior: move nav slightly down when scrolling down,
+// and slide it back up when scrolling up. Uses rAF for performance.
+(() => {
+  let lastY = window.scrollY || 0;
+  let ticking = false;
+  const THRESHOLD = 8; // px
+
+  function onScrollTick() {
+    const el = document.getElementById('mobile-bottom-nav');
+    if (!el) { ticking = false; lastY = window.scrollY || 0; return; }
+    // if server hid the nav, don't animate
+    if (el.classList.contains('hidden')) { ticking = false; lastY = window.scrollY || 0; return; }
+
+    const currentY = window.scrollY || 0;
+    if (currentY > lastY + THRESHOLD) {
+      // scrolled down
+      el.classList.add('mobile-nav-hidden');
+    } else if (currentY < lastY - THRESHOLD) {
+      // scrolled up
+      el.classList.remove('mobile-nav-hidden');
+    }
+
+    lastY = currentY;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(onScrollTick);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // Reset state after navigation (so nav is visible by default)
+  window.addEventListener('phx:page-loading-stop', () => {
+    const el = document.getElementById('mobile-bottom-nav');
+    if (el) {
+      el.classList.remove('mobile-nav-hidden');
+    }
+    setBottomNavVisibility();
+  });
+})();
+
 window.liveSocket = liveSocket

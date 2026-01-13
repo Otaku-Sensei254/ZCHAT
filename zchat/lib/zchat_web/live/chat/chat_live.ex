@@ -35,15 +35,18 @@ defmodule ZchatWeb.Chat.ChatLive do
      |> assign(:other_last_read_at, nil)
      |> assign(:user_search_query, "")
      |> assign(:user_search_results, [])
-     |> stream(:messages, [])
      |> assign(:replying_to, nil)
+     |> assign(:preview_entry, nil)
+     |> assign(:zoomed_image, nil)
+     |> stream(:messages, [])
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
        max_entries: 3,
        chunk_size: 64_000,
        max_file_size: 50_000_000,
        auto_upload: true
-     )}
+     )
+    }
   end
 
   # ===========================================================================
@@ -75,19 +78,20 @@ defmodule ZchatWeb.Chat.ChatLive do
     other_last_read_at = if other_member, do: other_member.last_read_at, else: nil
     messages = Chat.list_messages(conversation)
 
-    {:noreply,
-     socket
-     |> assign(:conversations, conversations)
-     |> assign(:conversation, conversation)
-     |> assign(:other_last_read_at, other_last_read_at)
-     |> assign(:replying_to, nil)
-     |> assign(:typing_users, %{}) # Reset typing when switching chats
-     |> stream(:messages, messages, reset: true)}
+  {:noreply,
+   socket
+   |> assign(:conversations, conversations)
+   |> assign(:conversation, conversation)
+   |> assign(:other_last_read_at, other_last_read_at)
+   |> assign(:replying_to, nil)
+   |> assign(:typing_users, %{}) # Reset typing when switching chats
+   |> stream(:messages, messages, reset: true)
+   |> assign(:hide_bottom_nav, true)}
   end
 
   @impl true
   def handle_params(_params, _uri, socket) do
-    {:noreply, socket}
+    {:noreply, assign(socket, :hide_bottom_nav, false)}
   end
 
   # ===========================================================================
@@ -180,6 +184,12 @@ end
 
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    socket =
+    if socket.assigns.preview_entry && socket.assigns.preview_entry.ref == ref do
+      assign(socket, preview_entry: nil)
+    else
+      socket
+    end
     {:noreply, cancel_upload(socket, :media_file, ref)}
   end
 
@@ -224,6 +234,32 @@ end
   @impl true
   def handle_event("display_new_message", _, socket), do: {:noreply, socket}
 
+
+  @impl true
+  #======to check out the media shared=====
+    def handle_event("preview_entry", %{"ref" => ref}, socket) do
+      check =
+        socket.assigns.uploads.media_file.entries
+        |> Enum.find(fn ck -> ck.ref == ref end)
+        {:noreply, assign(socket, preview_entry: check)}
+    end
+
+    #close the preview modal
+     def handle_event("close_preview", _params, socket) do
+      {:noreply, assign(socket, preview_entry: nil)}
+     end
+
+     # Handle clicking an image in the chat history
+  @impl true
+  def handle_event("zoom_image", %{"url" => url}, socket) do
+    {:noreply, assign(socket, zoomed_image: url)}
+  end
+
+  # Handle closing the full-screen view
+  @impl true
+  def handle_event("close_zoom", _params, socket) do
+    {:noreply, assign(socket, zoomed_image: nil)}
+  end
   # ===========================================================================
   # HANDLE INFO - All grouped together
   # ===========================================================================
@@ -259,8 +295,17 @@ end
       else
         # We are NOT in the chat:
         if message.user_id != current_user_id do
+          # Safely determine username even if message.user wasn't preloaded
+          message_user =
+            case message.user do
+              %Zchat.Accounts.User{} = u -> u
+              _ -> Zchat.Repo.get(Zchat.Accounts.User, message.user_id)
+            end
+
+          username = message_user && message_user.username || "Someone"
+
           # 1. Show flash notification (ONLY here)
-          put_flash(socket, :info, "New message from #{message.user.username}")
+          put_flash(socket, :info, "New message from #{username}")
         else
           socket
         end

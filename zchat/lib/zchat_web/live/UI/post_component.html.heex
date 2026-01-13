@@ -75,28 +75,7 @@
         <% end %>
       </div>
     <% end %>
-
-    <%!-- 
-      ✨ CLICKABLE CONTENT AREA ✨
-      Clicking title or text goes to /posts/:id 
-    --%>
-    <.link navigate={~p"/posts/#{@post.id}"} class="block group">
-      <div class="mt-5 cursor-pointer">
-        <%= if @post.title do %>
-          <h3 class="text-3xl font-extrabold text-gray-900 dark:text-gray-200 leading-snug mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            <%= @post.title %>
-          </h3>
-        <% end %>
-        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-300 leading-relaxed">
-          <%= content_cut(@post.content, 200) %>
-          <%= if String.length(@post.content) > 200 do %>
-            <span class="text-blue-600 dark:text-blue-400 hover:underline">Read more</span>
-          <% end %>
-        </div>
-      </div>
-    </.link>
-
-    <%!-- MEDIA SLIDER --%>
+<%!-- MEDIA SLIDER --%>
     <%= if @post.media_files && @post.media_files != [] do %>
       <div class="my-6 relative group/slider">
         <div class="overflow-hidden rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm bg-black/5 dark:bg-black/20">
@@ -184,6 +163,27 @@
         </div>
       </div>
     <% end %>
+    <%!-- 
+      ✨ CLICKABLE CONTENT AREA ✨
+      Clicking title or text goes to /posts/:id 
+    --%>
+    <.link navigate={~p"/posts/#{@post.id}"} class="block group">
+      <div class="mt-5 cursor-pointer">
+        <%= if @post.title do %>
+          <h3 class="text-3xl font-extrabold text-gray-900 dark:text-gray-200 leading-snug mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <%= @post.title %>
+          </h3>
+        <% end %>
+        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-300 leading-relaxed">
+          <%= content_cut(@post.content, 200) %>
+          <%= if String.length(@post.content) > 200 do %>
+            <span class="text-blue-600 dark:text-blue-400 hover:underline">Read more</span>
+          <% end %>
+        </div>
+      </div>
+    </.link>
+
+    
   </div>
 
   <%!-- INTERACTIONS --%>

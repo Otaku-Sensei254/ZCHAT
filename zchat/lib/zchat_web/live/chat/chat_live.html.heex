@@ -197,7 +197,7 @@
                   <.link navigate={~p"/posts/#{post.id}"} class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}>
                     <%= if media do %>
                       <%= if media["type"] == "video" do %>
-                        <video src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
+                        <video phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
                         <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" type="button" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
                           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
                         </button>
@@ -251,13 +251,13 @@
                    <%= if media["type"] == "image" do %>
                      <img phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" src={media["url"]} class="rounded-lg w-full h-auto object-cover max-h-64 cursor-zoom-in" loading="lazy" />
                    <% end %>
-                   <%= if media["type"] == "video" do %>
-                     <div class="relative">
-                      <video src={media["url"]} controls class="rounded-lg w-full max-h-64"></video>
-                      <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" type="button" class="absolute top-2 right-2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
-                      </button>
-                     </div>
+                            <%= if media["type"] == "video" do %>
+                               <div class="relative">
+                                 <video phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" src={media["url"]} controls class="rounded-lg w-full max-h-64"></video>
+                                 <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" type="button" class="absolute top-2 right-2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
+                                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
+                                 </button>
+                               </div>
                    <% end %>
                  <% end %>
                 </div>
@@ -468,7 +468,7 @@
         </button>
 
         <%= if type == "video" do %>
-          <video src={url} controls autoplay class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl" />
+          <video src={url} controls autoplay class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl"></video>
         <% else %>
           <img src={url} class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl object-contain" />
         <% end %>

@@ -17,6 +17,12 @@ defmodule ZchatWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/api", ZchatWeb do
+    pipe_through :api
+
+    get "/unread_chats_count", Api.UnreadController, :show
+  end
+
   scope "/", ZchatWeb do
     pipe_through :browser
 
@@ -70,9 +76,10 @@ defmodule ZchatWeb.Router do
     live_session :moderator,
       layout: {ZchatWeb.Layouts, :sidepanel},
       on_mount: [
-        {ZchatWeb.UserAuth, :mount_current_user},
-        {ZchatWeb.ModeratorAuthLive, :ensure_moderator},
-        {ZchatWeb.AdminLayoutHook, :default}
+          {ZchatWeb.UserAuth, :mount_current_user},
+          {ZchatWeb.ModeratorAuthLive, :ensure_moderator},
+          {ZchatWeb.AdminLayoutHook, :default},
+          ZchatWeb.UserActivityHook
       ] do
       live "/dashboard", DashboardLive, :index
       live "/reports", ReportsLive, :index
@@ -97,7 +104,8 @@ scope "/sales-executive", ZchatWeb.Sales do
     on_mount: [
       {ZchatWeb.UserAuth, :mount_current_user},
       {ZchatWeb.SalesAuthLive, :ensure_sales_executive},
-      {ZchatWeb.AdminLayoutHook, :default}
+      {ZchatWeb.AdminLayoutHook, :default},
+      ZchatWeb.UserActivityHook
     ] do
     live "/dashboard", DashboardLive, :index
     live "/ads-request", AdsRequestLive, :index
@@ -126,7 +134,8 @@ scope "/admin", ZchatWeb.Admin do
     on_mount: [
       {ZchatWeb.UserAuth, :mount_current_user},
       {ZchatWeb.AdminAuthLive, :ensure_admin},
-      {ZchatWeb.AdminLayoutHook, :default}
+      {ZchatWeb.AdminLayoutHook, :default},
+      ZchatWeb.UserActivityHook
     ] do
     live "/dashboard", DashboardLive, :index
     live "/users", ManagementLive, :index
@@ -164,7 +173,7 @@ end
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}] do
+      on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}, ZchatWeb.UserActivityHook] do
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
@@ -174,7 +183,7 @@ end
 
     live_session :chat,
       on_mount: [{ZchatWeb.UserAuth, :mount_current_user},
-      {ZchatWeb.ChatAuthHook, :require_member }] do
+      {ZchatWeb.ChatAuthHook, :require_member }, ZchatWeb.UserActivityHook] do
       live "/chat", Chat.ChatLive, :index
       live "/chat/:id", Chat.ChatLive, :index
     end
@@ -186,7 +195,7 @@ end
     delete "/users/log_out", UserSessionController, :delete
 
     live_session :current_user,
-      on_mount: [{ZchatWeb.UserAuth, :mount_current_user}] do
+      on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, ZchatWeb.UserActivityHook] do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end

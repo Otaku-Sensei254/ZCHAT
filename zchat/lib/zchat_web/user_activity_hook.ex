@@ -4,6 +4,8 @@ defmodule ZchatWeb.UserActivityHook do
   alias ZchatWeb.Presence
   alias Zchat.Chat
   alias Zchat.Notifications
+  alias Zchat.Repo
+  alias Zchat.Accounts.User
 
   def on_mount(:default, _params, _session, socket) do
     if socket.assigns[:current_user] do
@@ -58,17 +60,33 @@ defmodule ZchatWeb.UserActivityHook do
       new_count = Chat.count_unread_conversations(current_user_id)
 
       # 2. Determine Text (Is it text or a shared post?)
-      popup_text =
-        if message.shared_post_id do
-          "#{message.user.username} shared a post with you 🚀"
-        else
-          "Message from #{message.user.username}: #{truncate(message.content)}"
+      # Ensure we have a username available even if message.user wasn't preloaded
+      message_user =
+        case message.user do
+          %User{} = u -> u
+          _ -> Repo.get(User, message.user_id)
         end
 
-      {:cont,
-       socket
-       |> assign(:unread_chats_count, new_count)
-       |> put_flash(:info, popup_text)} # <--- THIS MAKES IT POP ON SCREEN
+      username = message_user && message_user.username || "Someone"
+
+      popup_text =
+        if message.shared_post_id do
+          "#{username} shared a post with you 🚀"
+        else
+          "Message from #{username}: #{truncate(message.content)}"
+        end
+
+      # If the user is currently viewing the conversation, just update the don't push flash
+      # unread count silently (the Chat LiveView will handle inserting the
+      # message). Otherwise, show the popup.
+      if socket.assigns[:conversation] && to_string(socket.assigns.conversation.id) == to_string(message.conversation_id) do
+        {:cont, assign(socket, :unread_chats_count, new_count)}
+      else
+        {:cont,
+         socket
+         |> assign(:unread_chats_count, new_count)
+         |> put_flash(:info, popup_text)}
+      end
     else
       {:cont, socket}
     end

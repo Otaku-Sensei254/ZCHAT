@@ -128,12 +128,19 @@ defmodule Zchat.Chat do
         select: convom.user_id
       )
       |> Repo.all()
+    # Ensure the message has its associations preloaded (user, shared_post, reply_to)
+    preloaded_message =
+      Repo.get(Message, message.id)
+      |> Repo.preload([:user, shared_post: :user, reply_to: :user])
 
     Enum.each(members, fn user_id ->
+      # Broadcast a "new_sidebar_message" event so the universal
+      # UserActivityHook can show a popup AND refresh the unread count
+      # regardless of which LiveView/page the recipient is on.
       Phoenix.PubSub.broadcast(
         Zchat.PubSub,
         "user_sidebar:#{user_id}",
-        {:update_sidebar, message}
+        {:new_sidebar_message, preloaded_message}
       )
     end)
   end

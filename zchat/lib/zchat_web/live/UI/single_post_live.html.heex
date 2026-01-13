@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto lg:px-4 lg:py-6 h-full">
+<div class="max-w-7xl mx-auto lg:px-4 lg:py-6 h-full pb-24 lg:pb-0">
   
   <%!-- Back Button (Desktop Only) --%>
   <.link navigate={~p"/feed"} class="hidden lg:inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6">
@@ -17,8 +17,15 @@
          MOBILE IMMERSIVE VIEW 
          (Visible only on small screens < lg)
       --%>
-      <div class="lg:hidden relative h-[85vh] w-full bg-black overflow-hidden">
+      <div class="lg:hidden relative h-[calc(100dvh-4rem)] w-full bg-black overflow-hidden">
         
+        <%!-- NEW: Mobile Back Button (Floating Top Left) --%>
+        <.link navigate={~p"/feed"} class="absolute top-4 left-4 z-50 p-2 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition-all border border-white/10 group">
+          <svg class="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </.link>
+
         <%!-- 1. Full Screen Media Container --%>
         <div class="absolute inset-0 z-0 flex items-center justify-center bg-zinc-900">
           <%= if @post.media_files && @post.media_files != [] do %>
@@ -26,17 +33,14 @@
             
             <%= cond do %>
               <% current_media["type"] == "image" -> %>
-                <%!-- Image handling: Blurred background + Contained foreground --%>
+                <%!-- Blurred Background --%>
                 <div class="absolute inset-0 w-full h-full">
-                  <img src={current_media["url"]} class="w-full h-full object-cover blur-xl opacity-40 scale-110" />
+                  <img src={current_media["url"]} class="w-full h-full object-cover blur-2xl opacity-30 scale-110" />
                 </div>
-                <img src={current_media["url"]} class="relative z-10 max-w-full max-h-full w-auto h-auto object-contain shadow-2xl" />
+                <%!-- Main Image --%>
+                <img src={current_media["url"]} class="relative z-10 w-full h-full object-contain" />
               
               <% current_media["type"] == "video" -> %>
-                <%!-- 
-                    VIDEO HANDLING WITH SOUND TOGGLE 
-                    We wrap this relative so the button is positioned relative to the video container
-                --%>
                 <div class="relative w-full h-full bg-black flex items-center justify-center">
                   <video 
                     id={"mobile-video-#{@post.id}"}
@@ -46,7 +50,7 @@
                     class="w-full h-full object-contain"
                   ></video>
 
-                  <%!-- CUSTOM MUTE/UNMUTE BUTTON --%>
+                  <%!-- Mute Toggle --%>
                   <button 
                     onclick={"
                       var v = document.getElementById('mobile-video-#{@post.id}');
@@ -54,16 +58,10 @@
                       document.getElementById('icon-muted-#{@post.id}').classList.toggle('hidden');
                       document.getElementById('icon-unmuted-#{@post.id}').classList.toggle('hidden');
                     "}
-                    class="absolute top-6 right-6 z-50 p-2.5 bg-black/40 backdrop-blur-md rounded-full text-white/90 hover:bg-black/60 transition-all border border-white/10 shadow-lg"
+                    class="absolute top-4 right-4 z-50 p-2 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition-all border border-white/10"
                   >
-                    <%!-- Muted Icon (Default Visible) --%>
-                    <svg id={"icon-muted-#{@post.id}"} class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-                    </svg>
-                    <%!-- Unmuted Icon (Default Hidden) --%>
-                    <svg id={"icon-unmuted-#{@post.id}"} class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                    </svg>
+                    <svg id={"icon-muted-#{@post.id}"} class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                    <svg id={"icon-unmuted-#{@post.id}"} class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                   </button>
                 </div>
               
@@ -71,77 +69,79 @@
                 <div class="text-white p-10 text-center relative z-10">Media format not supported</div>
             <% end %>
 
-            <%!-- Mobile Navigation (Tap areas) --%>
+            <%!-- Tap Navigation Overlay --%>
             <%= if length(@post.media_files) > 1 do %>
               <div class="absolute inset-0 flex z-20 pointer-events-none">
-                <%!-- We use pointer-events-auto only on the tap zones so we don't block the mute button --%>
                 <div phx-click="prev_media" phx-value-post-id={@post.id} class="flex-1 h-full pointer-events-auto"></div>
                 <div phx-click="next_media" phx-value-post-id={@post.id} class="flex-1 h-full pointer-events-auto"></div>
               </div>
-              <%!-- Dots --%>
-              <div class="absolute top-4 left-1/2 -translate-x-1/2 flex space-x-1 z-20">
+              
+              <%!-- Pagination Dots --%>
+              <div class="absolute top-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-20">
                 <%= for {_media, index} <- Enum.with_index(@post.media_files) do %>
-                  <div class={"h-1 rounded-full transition-all duration-300 #{if index == @current_media_index, do: "w-6 bg-white", else: "w-1.5 bg-white/50"}"}></div>
+                  <div class={"h-1.5 rounded-full transition-all duration-300 shadow-sm #{if index == @current_media_index, do: "w-6 bg-white", else: "w-1.5 bg-white/40"}"}></div>
                 <% end %>
               </div>
             <% end %>
           <% end %>
         </div>
 
-        <%!-- 2. Gradient Overlay --%>
-        <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/90 pointer-events-none z-10"></div>
+        <%!-- 2. Enhanced Gradient Overlay --%>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent via-60% to-black/90 pointer-events-none z-10"></div>
 
         <%!-- 3. Right Side Actions --%>
-        <div class="absolute bottom-4 right-4 z-30 flex flex-col items-center gap-6 pb-4">
-            <%!-- Like Button --%>
-            <div class="flex flex-col items-center gap-1">
+        <div class="absolute bottom-16 right-3 z-30 flex flex-col items-center gap-5">
+            <%!-- Like --%>
+            <div class="flex flex-col items-center gap-0.5">
               <button 
                 phx-click="toggle_like" 
                 phx-throttle="500"
-                class={"transition-transform active:scale-75 #{if @current_like, do: "text-red-500", else: "text-white"}"}
+                class={"transition-transform active:scale-75 p-2 rounded-full bg-black/20 backdrop-blur-sm #{if @current_like, do: "text-red-500", else: "text-white"}"}
               >
-                <svg class="w-8 h-8 drop-shadow-lg" fill={if @current_like, do: "currentColor", else: "currentColor"} stroke="none" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 drop-shadow-md" fill={if @current_like, do: "currentColor", else: "currentColor"} stroke="none" viewBox="0 0 24 24">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
               </button>
-              <span class="text-white text-xs font-medium drop-shadow-md"><%= @like_count %></span>
+              <span class="text-white text-xs font-bold drop-shadow-md"><%= @like_count %></span>
             </div>
 
-            <%!-- Comment Button --%>
-            <button onclick="document.getElementById('comments-section').scrollIntoView({behavior: 'smooth'})" class="flex flex-col items-center gap-1">
-              <svg class="w-8 h-8 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
-                 <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/>
-              </svg>
-              <span class="text-white text-xs font-medium drop-shadow-md"><%= length(@streams.comments.inserts) %></span>
+            <%!-- Comment Anchor --%>
+            <button onclick="document.getElementById('mobile-comments-anchor').scrollIntoView({behavior: 'smooth'})" class="flex flex-col items-center gap-0.5">
+              <div class="p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                <svg class="w-7 h-7 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                   <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/>
+                </svg>
+              </div>
+              <span class="text-white text-xs font-bold drop-shadow-md"><%= length(@streams.comments.inserts) %></span>
             </button>
 
              <%!-- Share --%>
-             <div class="flex flex-col items-center gap-1">
-               <button class="transform -rotate-12">
-                  <svg class="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+             <div class="flex flex-col items-center gap-0.5">
+               <button class="p-2 rounded-full bg-black/20 backdrop-blur-sm transform -rotate-12">
+                  <svg class="w-7 h-7 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                </button>
-                <span class="text-white text-xs font-medium drop-shadow-md">Share</span>
+                <span class="text-white text-xs font-bold drop-shadow-md">Share</span>
              </div>
         </div>
 
-        <%!-- 4. Bottom Info --%>
-        <div class="absolute bottom-0 left-0 w-3/4 p-4 pb-8 z-20 text-white">
-           <div class="flex items-center gap-3 mb-3">
+        <%!-- 4. Bottom Info Area --%>
+        <div class="absolute bottom-0 left-0 right-14 p-4 pb-6 z-20 text-white">
+           <div class="flex items-center gap-3 mb-2">
               <.link navigate={~p"/users/#{@post.user.username}"} class="flex items-center gap-2 group">
-                <img src={@post.user.avatar_url} class="w-9 h-9 rounded-full border-2 border-white object-cover">
-                <span class="font-bold text-sm tracking-wide shadow-black drop-shadow-md group-hover:underline"><%= @post.user.username %></span>
+                <img src={@post.user.avatar_url} class="w-8 h-8 rounded-full border border-white/50 object-cover">
+                <span class="font-bold text-sm tracking-wide shadow-black drop-shadow-sm group-hover:underline"><%= @post.user.username %></span>
               </.link>
-              <button class="border border-white/50 rounded-lg px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm">Follow</button>
+              <button class="border border-white/50 rounded-md px-2 py-0.5 text-[10px] font-semibold backdrop-blur-md bg-white/10">Follow</button>
            </div>
 
-           <div class="prose prose-invert prose-p:text-white prose-p:text-sm prose-p:leading-snug max-h-20 overflow-y-auto custom-scrollbar opacity-90">
-              <p class="line-clamp-3"><%= @post.content %></p>
+           <div class="prose prose-invert prose-p:text-white prose-p:text-sm prose-p:leading-snug max-h-24 overflow-y-auto custom-scrollbar opacity-95">
+              <p class="line-clamp-3 mb-0"><%= @post.content %></p>
            </div>
            
            <%= if @post.tags && @post.tags != [] do %>
               <div class="flex flex-wrap gap-2 mt-2">
                  <%= for tag <- @post.tags do %>
-                    <span class="text-xs font-bold text-white/80">#<%= tag %></span>
+                    <span class="text-[11px] font-bold text-white/80">#<%= tag %></span>
                  <% end %>
               </div>
            <% end %>
@@ -222,33 +222,40 @@
     <%!-- 
          COMMENTS SECTION 
     --%>
-    <aside class="lg:col-span-1 lg:h-full min-h-[500px]" id="comments-section">
-      <div class="bg-white dark:bg-zinc-900 lg:rounded-2xl shadow-lg border-t lg:border border-gray-100 dark:border-zinc-800 h-full flex flex-col overflow-hidden">
+    <aside class="lg:col-span-1 lg:h-full lg:min-h-[500px]" id="comments-section">
+      <div id="mobile-comments-anchor" class="scroll-mt-20"></div> 
+      <div class="bg-white dark:bg-zinc-900 lg:rounded-2xl shadow-sm lg:shadow-lg border-t lg:border border-gray-100 dark:border-zinc-800 h-full flex flex-col overflow-hidden">
         <div class="p-4 border-b border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-800/50">
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-200">Comments</h3>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar max-h-[500px] lg:max-h-none" id="comments-list" phx-update="stream">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar lg:max-h-none" id="comments-list" phx-update="stream">
           <%= for {dom_id, comment} <- @streams.comments do %>
              <div id={dom_id} class="group p-3 rounded-xl border transition-all hover:shadow-sm bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800">
                 <div class="flex space-x-3">
-                   <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                     <%= String.at(comment.user.username, 0) %>
+                   <div class="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-bold border border-orange-200 dark:border-orange-800">
+                     <%= String.at(comment.user.username, 0) |> String.upcase() %>
                    </div>
                    <div class="flex-1">
-                      <div class="flex justify-between">
+                      <div class="flex justify-between items-start">
                         <span class="font-semibold text-sm dark:text-white"><%= comment.user.username %></span>
-                        <span class="text-xs text-gray-500"><%= Timex.from_now(comment.inserted_at) %></span>
+                        <span class="text-[10px] text-gray-400"><%= Timex.from_now(comment.inserted_at) %></span>
                       </div>
-                      <p class="text-sm text-gray-700 dark:text-gray-300 mt-1"><%= comment.content %></p>
+                      <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 leading-relaxed"><%= comment.content %></p>
                    </div>
                 </div>
+             </div>
+          <% end %>
+          
+          <%= if Enum.empty?(@streams.comments.inserts) do %>
+             <div class="text-center py-10 text-gray-500 text-sm">
+                No comments yet. Be the first!
              </div>
           <% end %>
         </div>
 
         <%!-- COMMENT INPUT FORM --%>
-        <div class="p-4 border-t border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 z-10">
+        <div class="p-4 border-t border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 z-10 sticky bottom-0 lg:static">
           <.form :let={f} for={@comment_form} phx-change="validate" phx-submit="add_comment" class="relative">
             <input type="hidden" name="post_id" value={@post.id} />
             <input type="hidden" name="parent_id" value={@replying_to} />
@@ -257,10 +264,10 @@
               field={f[:content]}
               type="textarea"
               placeholder="Add a comment..."
-              class="w-full bg-gray-50 dark:bg-zinc-800 border-0 rounded-xl p-3 text-sm pr-12 resize-none focus:ring-2 focus:ring-blue-500"
+              class="w-full bg-gray-50 dark:bg-zinc-800 border-0 rounded-full py-3 px-4 text-sm pr-12 resize-none focus:ring-2 focus:ring-orange-500 focus:bg-white dark:focus:bg-zinc-800 transition-all"
               rows="1"
             />
-            <button type="submit" class="absolute right-2 bottom-2 p-1.5 rounded-full bg-blue-600 text-white">
+            <button type="submit" class="absolute right-2 bottom-[5px] p-1.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-md">
               <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
             </button>
           </.form>

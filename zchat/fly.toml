@@ -6,7 +6,7 @@ primary_region = "ord"
 
 [env]
   PHX_HOST = "zchat2-0.fly.dev"
-  PORT = "8080"
+  PORT = "4004"
   DATABASE_URL="postgresql://neondb_owner:npg_jPagN0IJ8dMX@ep-dawn-star-a4b5sxja-pooler.us-east-1.aws.neon.tech/ZCHAT"
   SECRET_KEY_BASE = "rhUFPNl6OeSu1J7kgkI11QgJoitEfxTfNIrYOH50qTXwY244h6O9KyaOWJ+bjgC8"
   CLOUDEX_API_KEY = "576125769822254"
@@ -15,7 +15,7 @@ primary_region = "ord"
   CLOUDINARY_PRESET = "zchat_uploads"
 
 [http_service]
-  internal_port = 8080
+  internal_port = 4004
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
@@ -31,7 +31,7 @@ primary_region = "ord"
     soft_limit = 1000
 
 [deploy]
-  release_command = "/app/bin/migrate"
+  #release_command = "/app/bin/migrate"
 
 [[vm]]
   memory = "1gb"

@@ -29,11 +29,10 @@ defmodule ZchatWeb.UserAuth do
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
 
-  defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
+defp maybe_write_remember_me_cookie(conn, token, _params) do
     encoded_token = Base.url_encode64(token)
     put_resp_cookie(conn, @remember_me_cookie, encoded_token, @remember_me_options)
   end
-  defp maybe_write_remember_me_cookie(conn, _token, _params), do: conn
 
   defp renew_session(conn) do
     delete_csrf_token()

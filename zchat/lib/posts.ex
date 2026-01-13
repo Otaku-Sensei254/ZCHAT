@@ -152,7 +152,7 @@ defmodule Zchat.Posts do
   end
 
   def categories do
-    ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
+    ["Tech", "Drama", "Action", "Fiction", "Music","Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
   end
 
   def get_post_with_associations(id) do

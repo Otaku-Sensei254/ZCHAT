@@ -15,7 +15,7 @@
                 All Categories
               </.link>
             </li>
-            <%= for category <-["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]do %>
+            <%= for category <-["Tech", "Drama", "Action", "Fiction","Music", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]do %>
               <li>
                 <.link patch={~p"/feed?category=#{category}"} class={[
                   "block px-3 py-2 rounded transition-colors",
@@ -106,7 +106,7 @@
             ]}>
               All
             </.link>
-            <%= for category <- ["Tech", "Drama", "Action", "Fiction", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"] do %>
+            <%= for category <- ["Tech", "Drama", "Action", "Fiction", "Fitness", "Music", "Sports", "Thrills", "Science", "Fashion","Beauty","Gossip", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"] do %>
               <.link patch={~p"/feed?category=#{category}"} class={[
                 "shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors",
                 @category == category && "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500",

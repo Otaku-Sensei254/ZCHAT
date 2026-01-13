@@ -143,124 +143,184 @@ defmodule ZchatWeb.UserSettingsLive do
     end
   end
 
-  @impl true
+@impl true
   def render(assigns) do
     ~H"""
-    <.header class="text-center">
-      Account Settings
-      <:subtitle>Manage your profile and security preferences</:subtitle>
-    </.header>
+    <div class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+          Account Settings
+        </h1>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Manage your profile information and security preferences.
+        </p>
+      </div>
 
-    <div class="max-w-2xl mx-auto space-y-12 divide-y divide-gray-100 mt-8">
+      <div class="space-y-8">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Public Profile</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">This information will be displayed publicly so be careful what you share.</p>
 
-      <div class="pt-4">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Public Profile</h2>
-
-        <.simple_form
-          for={@profile_form}
-          id="profile_form"
-          phx-change="validate_profile"
-          phx-submit="update_profile"
-        >
-          <div class="flex items-center gap-6 mb-4">
-            <div class="relative">
-              <%= if @uploads.avatar.entries != [] do %>
-                <%= for entry <- @uploads.avatar.entries do %>
-                  <.live_img_preview entry={entry} class="h-24 w-24 rounded-full object-cover border-2 border-gray-200" />
-                <% end %>
-              <% else %>
-                <%= if @current_user.avatar_url do %>
-                  <img src={@current_user.avatar_url} class="h-24 w-24 rounded-full object-cover border-2 border-gray-200" />
-                <% else %>
-                  <div class="h-24 w-24 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-3xl font-bold border-2 border-white shadow-sm">
-                    <%= String.first(@current_user.username || "?") |> String.upcase() %>
+              <.simple_form
+                for={@profile_form}
+                id="profile_form"
+                phx-change="validate_profile"
+                phx-submit="update_profile"
+                class="mt-6 space-y-6"
+              >
+                <div class="flex items-center gap-x-8">
+                  <div class="relative group">
+                    <%= if @uploads.avatar.entries != [] do %>
+                      <%= for entry <- @uploads.avatar.entries do %>
+                        <.live_img_preview entry={entry} class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700" />
+                      <% end %>
+                    <% else %>
+                      <%= if @current_user.avatar_url do %>
+                        <img src={@current_user.avatar_url} class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700" />
+                      <% else %>
+                        <div class="h-24 w-24 flex-none rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-500 flex items-center justify-center text-3xl font-bold ring-2 ring-gray-200 dark:ring-zinc-700">
+                          <%= String.first(@current_user.username || "?") |> String.upcase() %>
+                        </div>
+                      <% end %>
+                    <% end %>
                   </div>
-                <% end %>
-              <% end %>
-            </div>
 
-            <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
-              <.live_file_input upload={@uploads.avatar} class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
-              <p class="text-xs text-gray-500 mt-1">JPG or PNG. Max 5MB.</p>
+                  <div>
+                    <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Profile photo</label>
+                    <div class="mt-2 flex items-center gap-x-3">
+                      <div class="relative">
+                        <.live_file_input
+                          upload={@uploads.avatar}
+                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <button type="button" class="rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700 relative pointer-events-none">
+                          Change
+                        </button>
+                      </div>
+                      <p class="text-[11px] text-gray-500 dark:text-gray-400">JPG/PNG, max 5MB</p>
+                    </div>
+                    <%= for entry <- @uploads.avatar.entries do %>
+                      <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+                        <p class="text-red-500 text-xs mt-1"><%= error_to_string(err) %></p>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
 
-              <%= for entry <- @uploads.avatar.entries do %>
-                <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-                  <p class="text-red-500 text-xs mt-1"><%= error_to_string(err) %></p>
-                <% end %>
-              <% end %>
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <.input field={@profile_form[:username]} type="text" label="Username" required />
+                  </div>
+
+                  <div class="col-span-full">
+                    <.input field={@profile_form[:bio]} type="textarea" label="Bio" rows="3" placeholder="Tell us a little about yourself..." />
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Brief description for your profile.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Saving..." class="bg-orange-600 hover:bg-orange-500">Save Profile</.button>
+                </div>
+              </.simple_form>
             </div>
           </div>
+        </section>
 
-          <.input field={@profile_form[:username]} type="text" label="Username" required />
-          <.input field={@profile_form[:bio]} type="textarea" label="Bio" rows="3" placeholder="Tell us a little about yourself..." />
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Email Address</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Update the email associated with your account.</p>
 
-          <:actions>
-            <.button phx-disable-with="Saving...">Save Profile</.button>
-          </:actions>
-        </.simple_form>
-      </div>
+              <.simple_form
+                for={@email_form}
+                id="email_form"
+                phx-submit="update_email"
+                phx-change="validate_email"
+                class="mt-6 space-y-6"
+              >
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <.input field={@email_form[:email]} type="email" label="New Email" required />
+                  </div>
 
-      <div class="pt-10">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Email Address</h2>
-        <.simple_form
-          for={@email_form}
-          id="email_form"
-          phx-submit="update_email"
-          phx-change="validate_email"
-        >
-          <.input field={@email_form[:email]} type="email" label="Email" required />
-          <.input
-            field={@email_form[:current_password]}
-            name="current_password"
-            id="current_password_for_email"
-            type="password"
-            label="Current password"
-            value={@email_form_current_password}
-            required
-          />
-          <:actions>
-            <.button phx-disable-with="Changing...">Change Email</.button>
-          </:actions>
-        </.simple_form>
-      </div>
+                  <div class="sm:col-span-4">
+                    <.input
+                      field={@email_form[:current_password]}
+                      name="current_password"
+                      id="current_password_for_email"
+                      type="password"
+                      label="Current password"
+                      value={@email_form_current_password}
+                      required
+                    />
+                  </div>
+                </div>
 
-      <div class="pt-10 pb-10">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
-        <.simple_form
-          for={@password_form}
-          id="password_form"
-          action={~p"/users/log_in?_action=password_updated"}
-          method="post"
-          phx-change="validate_password"
-          phx-submit="update_password"
-          phx-trigger-action={@trigger_submit}
-        >
-          <input
-            name={@password_form[:email].name}
-            type="hidden"
-            id="hidden_user_email"
-            value={@current_email}
-          />
-          <.input field={@password_form[:password]} type="password" label="New password" required />
-          <.input
-            field={@password_form[:password_confirmation]}
-            type="password"
-            label="Confirm new password"
-          />
-          <.input
-            field={@password_form[:current_password]}
-            name="current_password"
-            type="password"
-            label="Current password"
-            id="current_password_for_password"
-            value={@current_password}
-            required
-          />
-          <:actions>
-            <.button phx-disable-with="Changing...">Change Password</.button>
-          </:actions>
-        </.simple_form>
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Changing..." class="bg-orange-600 hover:bg-orange-500">Update Email</.button>
+                </div>
+              </.simple_form>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Change Password</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Ensure your account is using a long, random password to stay secure.</p>
+
+              <.simple_form
+                for={@password_form}
+                id="password_form"
+                action={~p"/users/log_in?_action=password_updated"}
+                method="post"
+                phx-change="validate_password"
+                phx-submit="update_password"
+                phx-trigger-action={@trigger_submit}
+                class="mt-6 space-y-6"
+              >
+                <input
+                  name={@password_form[:email].name}
+                  type="hidden"
+                  id="hidden_user_email"
+                  value={@current_email}
+                />
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-3">
+                    <.input field={@password_form[:password]} type="password" label="New password" required />
+                  </div>
+                  <div class="sm:col-span-3">
+                    <.input
+                      field={@password_form[:password_confirmation]}
+                      type="password"
+                      label="Confirm new password"
+                    />
+                  </div>
+                  <div class="sm:col-span-6">
+                    <.input
+                      field={@password_form[:current_password]}
+                      name="current_password"
+                      type="password"
+                      label="Current password"
+                      id="current_password_for_password"
+                      value={@current_password}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Changing..." class="bg-orange-600 hover:bg-orange-500">Update Password</.button>
+                </div>
+              </.simple_form>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     """

@@ -34,7 +34,8 @@ defmodule ZchatWeb.UserActivityHook do
             {:ok, _meta} ->
               ZchatWeb.Endpoint.subscribe(topic)
             other ->
-              Logger.warn("Presence.track returned: #{inspect(other)} for user=#{user.id}")
+              # Log non-fatal unexpected results; do not crash the LiveView
+              Logger.warning("Presence.track returned: #{inspect(other)} for user=#{user.id}")
           end
         rescue
           e ->
@@ -111,7 +112,7 @@ defmodule ZchatWeb.UserActivityHook do
   # --- HANDLER 2: NEW NOTIFICATION (Likes, Follows, etc) ---
   defp handle_global_event({:new_notification, notif}, socket) do
     try do
-      # Format the text like "Batman liked your post"
+      # Format the text like "Batman liked your post" (defensive)
       text = format_notification_text(notif)
 
       # We use :cont so the specific page (Feed/Chat) can also update its UI if needed
@@ -145,12 +146,12 @@ defmodule ZchatWeb.UserActivityHook do
   end
 
   defp format_notification_text(n) do
-    actor = n.actor.username
-    case n.type do
+    actor = get_in(n || %{}, [:actor, :username]) || "Someone"
+    case Map.get(n || %{}, :type, "notification") do
       "like" -> "#{actor} liked your post ❤️"
       "comment" -> "#{actor} commented on your post 💬"
       "follow" -> "#{actor} started following you 👤"
-      "shared_post" -> "#{actor} shared a post with you 🚀" # Fallback if chat logic misses
+      "shared_post" -> "#{actor} shared a post with you 🚀"
       _ -> "You have a new notification 🔔"
     end
   end

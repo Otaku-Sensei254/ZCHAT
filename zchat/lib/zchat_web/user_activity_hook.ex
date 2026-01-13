@@ -25,12 +25,21 @@ defmodule ZchatWeb.UserActivityHook do
       # 3. Track Presence
       if !socket.assigns[:presenced_tracked] do
         topic = "users:online"
-        {:ok, _} = Presence.track(self(), topic, user.id, %{
-          online_at: inspect(System.system_time(:second)),
-          username: user.username,
-          avatar: user.avatar_url
-        })
-        ZchatWeb.Endpoint.subscribe(topic)
+        try do
+          case Presence.track(self(), topic, user.id, %{
+                 online_at: inspect(System.system_time(:second)),
+                 username: user.username,
+                 avatar: user.avatar_url
+               }) do
+            {:ok, _meta} ->
+              ZchatWeb.Endpoint.subscribe(topic)
+            other ->
+              Logger.warn("Presence.track returned: #{inspect(other)} for user=#{user.id}")
+          end
+        rescue
+          e ->
+            Logger.error("Failed to track presence for user=#{user.id}: #{inspect(e)}")
+        end
       end
 
       unread_chats_count = Chat.count_unread_conversations(user.id)

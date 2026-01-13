@@ -2,6 +2,7 @@ defmodule ZchatWeb.UserSettingsLive do
   use ZchatWeb, :live_view
   alias Zchat.Infrastructure.UploadCloudinary
   alias Zchat.Accounts
+  require Logger
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user

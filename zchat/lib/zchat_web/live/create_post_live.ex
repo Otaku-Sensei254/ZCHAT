@@ -26,7 +26,7 @@ defmodule ZchatWeb.CreatePostLive do
      |> assign(:uploaded_files, [])
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
-       max_entries: 5,
+       max_entries: 20,
        max_file_size: 20_000_000,
        auto_upload: true,
        progress: &handle_progress/3

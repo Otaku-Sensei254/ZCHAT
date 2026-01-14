@@ -267,6 +267,75 @@ Hooks.InfiniteScroll = {
   }
 };
 
+//diva camera use for waves "stories" on the zchat
+
+Hooks.CameraCapture = {
+  mounted() {
+    this.video = this.el.querySelector("#camera-feed");
+    this.canvas = document.createElement("canvas");
+    this.facingMode = "user"; // Start with Front Camera
+
+    this.startCamera();
+
+    // Event: Capture Photo
+    this.handleEvent("trigger-capture", () => this.captureImage());
+    
+    // Event: Switch Camera
+    this.handleEvent("switch-camera-mode", () => {
+      this.facingMode = this.facingMode === "user" ? "environment" : "user";
+      this.startCamera();
+    });
+  },
+
+  destroyed() {
+    this.stopCamera();
+  },
+
+  stopCamera() {
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+    }
+  },
+
+  startCamera() {
+    this.stopCamera(); // Stop existing before starting new
+    
+    const constraints = { 
+      video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
+      audio: false 
+    };
+
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(stream => {
+        this.stream = stream;
+        this.video.srcObject = stream;
+        this.video.play();
+        // Mirror effect only for front camera
+        this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
+      })
+      .catch(err => console.error("Camera Error:", err));
+  },
+
+  captureImage() {
+    this.canvas.width = this.video.videoWidth;
+    this.canvas.height = this.video.videoHeight;
+    const ctx = this.canvas.getContext("2d");
+    
+    // Apply mirror if front camera
+    if (this.facingMode === "user") {
+      ctx.translate(this.canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    
+    ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+
+    this.canvas.toBlob((blob) => {
+      // Magic: Upload blob to the LiveView binding named 'media'
+      this.upload("media", [blob]); 
+    }, "image/jpeg", 0.9);
+  }
+};
+
 
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {

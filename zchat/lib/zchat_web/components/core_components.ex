@@ -35,7 +35,25 @@ defmodule ZchatWeb.CoreComponents do
     """
   end
 
+
+  def icon(%{name: "hero-plus"} = assigns) do
+    ~H"""
+    <Heroicons.plus solid class={@class} />
+    """
+  end
+
   
+  def icon(%{name: "hero-camera"} = assigns) do
+    ~H"""
+    <Heroicons.camera solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-musical-note"} = assigns) do
+    ~H"""
+    <Heroicons.musical_note solid class={@class} />
+    """
+  end
 
   @doc """
   Renders a modal.

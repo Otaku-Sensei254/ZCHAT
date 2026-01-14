@@ -20,6 +20,7 @@ defmodule ZchatWeb.UI.FeedLive do
       socket
       |> stream_configure(:posts, dom_id: &"post-#{&1.id}")
       |> stream_configure(:trending, dom_id: &"trending-#{&1.id}")
+      |> assign(:show_waves_modal, false)
       |> assign(
         page: 1,
         per_page: 10,
@@ -110,6 +111,22 @@ defmodule ZchatWeb.UI.FeedLive do
     end
   end
 
+    #waves "story" handlers
+def handle_event("open_create_waves", _params, socket) do
+  {:noreply, assign(socket, show_waves_modal: true)}
+end
+
+# This handles the "X" close button inside the modal
+def handle_event("close_waves_modal", _params, socket) do
+  {:noreply, assign(socket, show_waves_modal: false)}
+end
+
+def handle_info(:waves_created, socket) do
+  {:noreply,
+   socket
+   |> assign(show_waves_modal: false)
+   |> put_flash(:info, "Wave shared successfully!")}
+end
   # --- INFINITE SCROLL EVENT ---
 
   @impl true

@@ -1,6 +1,6 @@
 defmodule ZchatWeb.Waves.Waves do
   use ZchatWeb, :live_component
-  alias Zchat.Stories
+  alias Zchat.Waves
 
   @impl true
   def mount(socket) do
@@ -18,7 +18,7 @@ defmodule ZchatWeb.Waves.Waves do
 @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed inset-0 z-50 bg-black flex flex-col animate-in fade-in duration-200">
+    <div id="waves-modal" phx-hook="WavesModal" class="fixed inset-0 z-50 bg-black flex flex-col animate-in fade-in duration-200">
 
       <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-gradient-to-b from-black/80 to-transparent">
         <button phx-click="close_waves_modal" class="text-white drop-shadow-md hover:scale-110 transition">
@@ -235,7 +235,7 @@ defmodule ZchatWeb.Waves.Waves do
     end
 
     # D. Save to DB
-    case Stories.create_story(attrs) do
+    case Waves.create_wave(attrs) do
       {:ok, _} ->
         send(self(), :waves_created) # Close modal from parent
         {:noreply, socket}

@@ -355,6 +355,30 @@ Hooks.ScrollToBottom = {
     this.el.scrollTop = this.el.scrollHeight;
   }
 }
+// Hide mobile bottom nav while the Waves modal is mounted.
+Hooks.WavesModal = {
+  mounted() {
+    try {
+      const nav = document.getElementById('mobile-bottom-nav');
+      if (nav) {
+        // Use the existing hide class used by scroll logic so behavior is consistent
+        nav.classList.add('mobile-nav-hidden');
+        // also add an explicit hidden to ensure Tailwind hides it immediately
+        nav.classList.add('hidden');
+      }
+    } catch (e) { /* noop */ }
+  },
+  destroyed() {
+    try {
+      const nav = document.getElementById('mobile-bottom-nav');
+      if (nav) {
+        nav.classList.remove('mobile-nav-hidden');
+        nav.classList.remove('hidden');
+      }
+    } catch (e) { /* noop */ }
+  }
+}
+
 // Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbacksMs: 2500,

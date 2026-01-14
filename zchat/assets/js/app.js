@@ -274,13 +274,31 @@ Hooks.CameraCapture = {
     this.video = this.el.querySelector("#camera-feed");
     this.canvas = document.createElement("canvas");
     this.facingMode = "user"; // Start with Front Camera
+    this.recording = false;
+    this.mediaRecorder = null;
+    this.recordingChunks = [];
 
+    // Start camera (video-only). We'll request audio when starting a recording to avoid blocking on mic permission.
     this.startCamera();
 
-    // Event: Capture Photo
+    // Hook up UI buttons if present
+    const snapBtn = this.el.querySelector("#btn-snap");
+    if (snapBtn) snapBtn.addEventListener("click", (e) => { e.preventDefault(); this.captureImage(); });
+
+    const recordBtn = this.el.querySelector("#btn-record");
+    if (recordBtn) recordBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!this.recording) {
+        await this.startRecording(recordBtn);
+      } else {
+        this.stopRecording(recordBtn);
+      }
+    });
+
+    // Event: Capture Photo (from server)
     this.handleEvent("trigger-capture", () => this.captureImage());
     
-    // Event: Switch Camera
+    // Event: Switch Camera (from server)
     this.handleEvent("switch-camera-mode", () => {
       this.facingMode = this.facingMode === "user" ? "environment" : "user";
       this.startCamera();
@@ -293,7 +311,9 @@ Hooks.CameraCapture = {
 
   stopCamera() {
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      try {
+        this.stream.getTracks().forEach(track => track.stop());
+      } catch (e) { /* noop */ }
     }
   },
 
@@ -309,14 +329,102 @@ Hooks.CameraCapture = {
       .then(stream => {
         this.stream = stream;
         this.video.srcObject = stream;
-        this.video.play();
+        // Wait for metadata before playing to ensure dimensions are available
+        this.video.onloadedmetadata = () => this.video.play().catch(()=>{});
         // Mirror effect only for front camera
         this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
       })
-      .catch(err => console.error("Camera Error:", err));
+      .catch(err => {
+        console.error("Camera Error:", err);
+        try { this.pushEvent("camera-error", {reason: err && err.name ? err.name : String(err)}); } catch(e){}
+      });
+  },
+
+  async ensureAudioForRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return this.stream;
+
+    try {
+      // If stream already has audio track, nothing to do
+      if (this.stream && this.stream.getAudioTracks && this.stream.getAudioTracks().length > 0) {
+        return this.stream;
+      }
+
+      // Try to obtain an audio-only stream and attach audio tracks to the existing stream (if possible)
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      if (this.stream && this.stream.addTrack) {
+        audioStream.getAudioTracks().forEach(t => this.stream.addTrack(t));
+        return this.stream;
+      }
+
+      return audioStream;
+    } catch (err) {
+      // If user denies mic, we still allow video-only recording
+      console.warn('Could not get audio for recording:', err);
+      return this.stream;
+    }
+  },
+
+  async startRecording(btn) {
+    if (!this.stream) return;
+    this.recordingChunks = [];
+
+    // Try to attach audio track if possible (won't throw if user denies)
+    await this.ensureAudioForRecording();
+
+    // Choose a mime type
+    let options = { mimeType: 'video/webm' };
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+      options.mimeType = 'video/webm;codecs=vp9';
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      options.mimeType = 'video/mp4';
+    }
+
+    try {
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+    } catch (err) {
+      console.error('MediaRecorder failed:', err);
+      try { this.pushEvent('camera-error', {reason: 'mediarecorder_failed'}); } catch(e){}
+      return;
+    }
+
+    this.mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) this.recordingChunks.push(e.data);
+    };
+
+    this.mediaRecorder.onstop = () => {
+      const blob = new Blob(this.recordingChunks, { type: this.recordingChunks[0]?.type || 'video/webm' });
+      // Upload blob to LiveView upload named 'media'
+      try { this.upload('media', [blob]); } catch(e){ console.error('Upload failed', e); }
+      this.recording = false;
+      // Reset UI
+      try {
+        btn.classList.remove('animate-pulse', 'ring-4', 'ring-red-900');
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>`;
+      } catch (e) {}
+    };
+
+    this.mediaRecorder.start();
+    this.recording = true;
+    // Update UI
+    try {
+      btn.classList.add('animate-pulse', 'ring-4', 'ring-red-900');
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z" /></svg>`;
+    } catch (e) {}
+  },
+
+  stopRecording() {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
   },
 
   captureImage() {
+    // If video metadata isn't available yet, don't try to capture
+    if (!this.video || !this.video.videoWidth || !this.video.videoHeight) {
+      try { this.pushEvent('camera-error', {reason: 'video-not-ready'}); } catch(e){}
+      return;
+    }
+
     this.canvas.width = this.video.videoWidth;
     this.canvas.height = this.video.videoHeight;
     const ctx = this.canvas.getContext("2d");
@@ -330,8 +438,7 @@ Hooks.CameraCapture = {
     ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
     this.canvas.toBlob((blob) => {
-      // Magic: Upload blob to the LiveView binding named 'media'
-      this.upload("media", [blob]); 
+      try { this.upload("media", [blob]); } catch(e) { console.error('Upload failed', e); }
     }, "image/jpeg", 0.9);
   }
 };

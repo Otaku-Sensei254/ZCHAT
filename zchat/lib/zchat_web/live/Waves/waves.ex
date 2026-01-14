@@ -32,7 +32,8 @@ defmodule ZchatWeb.Waves.Waves do
              <%= if @step == 2, do: "Pick a Song", else: "Preview" %>
            </h2>
         <% end %>
-        <div class="w-8"></div> </div>
+        <div class="w-8"></div>
+      </div>
 
       <div class="flex-1 relative bg-zinc-900 flex items-center justify-center overflow-hidden">
 
@@ -45,7 +46,7 @@ defmodule ZchatWeb.Waves.Waves do
               <% end %>
 
               <div class="absolute bottom-10 right-6 z-50">
-                <button phx-click="next_step" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
+                <button phx-click="next_step" phx-target={@myself} class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
                   Next
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -53,7 +54,7 @@ defmodule ZchatWeb.Waves.Waves do
                 </button>
               </div>
 
-              <button phx-click="cancel_upload" class="absolute top-20 left-6 z-50 bg-black/50 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 text-sm">
+              <button phx-click="cancel_upload" phx-target={@myself} class="absolute top-20 left-6 z-50 bg-black/50 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 text-sm">
                  Retake
               </button>
             </div>
@@ -64,15 +65,15 @@ defmodule ZchatWeb.Waves.Waves do
                 <video id="camera-feed" class="w-full h-full object-cover" autoplay playsinline muted></video>
 
                 <div class="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/90 to-transparent flex justify-center items-center gap-10 z-40">
-                   <button phx-click="set_mode" phx-value-mode="upload" class="p-4 rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20">
+                   <button phx-click="set_mode" phx-value-mode="upload" phx-target={@myself} class="p-4 rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20">
                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                      </svg>
                    </button>
 
-                   <button phx-click={JS.push("trigger-capture")} class="w-20 h-20 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-all active:scale-95 shadow-xl"></button>
+                   <button phx-click={JS.push("trigger-capture", target: @myself)} class="w-20 h-20 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-all active:scale-95 shadow-xl"></button>
 
-                   <button phx-click="switch_camera" class="p-4 rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20">
+                   <button phx-click="switch_camera" phx-target={@myself} class="p-4 rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20">
                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                      </svg>
@@ -89,7 +90,7 @@ defmodule ZchatWeb.Waves.Waves do
                   <p class="text-lg font-medium">Click to upload photo</p>
                   <.live_file_input upload={@uploads.media} class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"/>
                 </div>
-                <button phx-click="set_mode" phx-value-mode="camera" class="mt-8 text-blue-400 hover:text-blue-300 underline">Back to Camera</button>
+                <button phx-click="set_mode" phx-value-mode="camera" phx-target={@myself} class="mt-8 text-blue-400 hover:text-blue-300 underline">Back to Camera</button>
               </div>
             <% end %>
           <% end %>
@@ -97,7 +98,7 @@ defmodule ZchatWeb.Waves.Waves do
 
         <%= if @step == 2 do %>
           <div class="w-full max-w-md h-full flex flex-col p-4 pt-20">
-            <form phx-change="search_music" phx-submit="prevent_submit" class="mb-4">
+            <form phx-change="search_music" phx-submit="prevent_submit" phx-target={@myself} class="mb-4">
               <div class="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="absolute left-3 top-3.5 w-5 h-5 text-gray-400">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -107,12 +108,12 @@ defmodule ZchatWeb.Waves.Waves do
             </form>
 
             <div class="flex-1 overflow-y-auto space-y-2">
-              <button phx-click="skip_music" class="w-full p-4 text-left rounded-xl border border-dashed border-zinc-700 text-gray-400 hover:bg-zinc-800 hover:text-white transition">
+              <button phx-click="skip_music" phx-target={@myself} class="w-full p-4 text-left rounded-xl border border-dashed border-zinc-700 text-gray-400 hover:bg-zinc-800 hover:text-white transition">
                 No Music (Skip)
               </button>
 
               <%= for song <- @music_results do %>
-                <button phx-click="select_music" phx-value-id={song.track_id} class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-800 transition text-left group border border-transparent hover:border-zinc-700">
+                <button phx-click="select_music" phx-value-id={song.track_id} phx-target={@myself} class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-800 transition text-left group border border-transparent hover:border-zinc-700">
                   <img src={song.artwork_url} class="w-12 h-12 rounded-md object-cover" />
                   <div class="flex-1 min-w-0">
                     <p class="font-bold text-white truncate"><%= song.track_name %></p>
@@ -147,8 +148,8 @@ defmodule ZchatWeb.Waves.Waves do
             <% end %>
 
             <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-4 z-30 px-6">
-              <button phx-click="restart" class="bg-zinc-800 text-white px-6 py-3 rounded-full font-bold">Back</button>
-              <button phx-click="save_wave" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-full font-bold shadow-lg flex justify-center items-center gap-2">
+              <button phx-click="restart" phx-target={@myself} class="bg-zinc-800 text-white px-6 py-3 rounded-full font-bold">Back</button>
+              <button phx-click="save_wave" phx-target={@myself} class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-full font-bold shadow-lg flex justify-center items-center gap-2">
                 Share Wave 🚀
               </button>
             </div>

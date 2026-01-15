@@ -52,6 +52,7 @@ defmodule Zchat.Waves do
   def create_wave(attrs \\ %{}) do
     %Wave{}
     |> Wave.changeset(attrs)
+    |> IO.inspect(label: "Creating wave with attrs")
     |> Repo.insert()
   end
 

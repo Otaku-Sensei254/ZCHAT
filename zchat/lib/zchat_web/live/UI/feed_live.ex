@@ -35,7 +35,10 @@ defmodule ZchatWeb.UI.FeedLive do
         # --- SHARE MODAL STATE ---
         show_share_modal: false,
         post_to_share: nil,
-        friends_list: []
+  friends_list: [],
+  selected_friends: [],
+  friends_filter: "",
+  friends_list_filtered: nil
       )
 
     {:ok, socket}
@@ -83,7 +86,24 @@ defmodule ZchatWeb.UI.FeedLive do
      socket
      |> assign(:show_share_modal, true)
      |> assign(:post_to_share, post_id)
-     |> assign(:friends_list, friends)}
+     |> assign(:friends_list, friends)
+     |> assign(:selected_friends, [])
+     |> assign(:friends_list_filtered, friends)
+     |> assign(:friends_filter, "")}
+  end
+
+  @impl true
+  def handle_event("filter_friends", %{"friend_search" => query}, socket) do
+    q = String.trim(query || "")
+    filtered =
+      (socket.assigns.friends_list || [])
+      |> Enum.filter(fn f ->
+        username = to_string(f.username || "") |> String.downcase()
+        email = to_string(f.email || "") |> String.downcase()
+        String.contains?(username, String.downcase(q)) or String.contains?(email, String.downcase(q))
+      end)
+
+    {:noreply, assign(socket, friends_list_filtered: filtered, friends_filter: q)}
   end
 
   @impl true
@@ -92,22 +112,79 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
+  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket) when is_list(recipient_ids) do
     current_user_id = socket.assigns.current_user.id
     post_id = socket.assigns.post_to_share
-    recipient_int_id = String.to_integer(recipient_id)
 
-    # Call the chat context to send the link
-    # Make sure Zchat.Chat.share_posts_to_friend/3 exists in your Chat context
-    # If your function is named share_post_to_friend (singular), change it here.
-    case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
-      {:ok, _msg} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Sent to chat!")
-         |> assign(:show_share_modal, false)} # Close modal on success
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Could not send.")}
+    {oks, errs} =
+      recipient_ids
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.reduce({[], []}, fn recipient_int_id, {oks, errs} ->
+        case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
+          {:ok, _} -> {[recipient_int_id | oks], errs}
+          {:error, _} -> {oks, [recipient_int_id | errs]}
+        end
+      end)
+
+    msg = if length(errs) == 0, do: "Sent to chat!", else: "Sent to #{length(oks)} users, #{length(errs)} failed."
+
+    {:noreply,
+     socket
+     |> put_flash(:info, msg)
+     |> assign(:show_share_modal, false)
+     |> assign(:selected_friends, [])}
+  end
+
+  # Backwards-compatible single-recipient handler
+  def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
+    handle_event("confirm_share", %{"recipient_ids" => [recipient_id]}, socket)
+  end
+
+  # Update selected friends when the form changes (checkboxes)
+  def handle_event("update_selected_friends", params, socket) do
+    ids = params["recipient_ids"] || []
+    ids = if is_list(ids), do: Enum.map(ids, &String.to_integer/1), else: [String.to_integer(ids)]
+    {:noreply, assign(socket, :selected_friends, ids)}
+  end
+
+  # Select all friends shortcut
+  def handle_event("select_all_friends", _params, socket) do
+    ids = Enum.map(socket.assigns.friends_list || [], & &1.id)
+    {:noreply, assign(socket, :selected_friends, ids)}
+  end
+
+  # Toggle friend selection from avatar grid
+  def handle_event("toggle_friend", %{"id" => id}, socket) do
+    id_int = String.to_integer(id)
+    current = socket.assigns.selected_friends || []
+    new = if Enum.member?(current, id_int), do: List.delete(current, id_int), else: [id_int | current]
+    {:noreply, assign(socket, :selected_friends, new)}
+  end
+
+  # Submit when using avatar grid (no params) - use selected_friends assign
+  def handle_event("confirm_share", _params, socket) do
+    recipient_ids = socket.assigns.selected_friends || []
+    if recipient_ids == [] do
+      {:noreply, socket}
+    else
+      current_user_id = socket.assigns.current_user.id
+      post_id = socket.assigns.post_to_share
+
+      {oks, errs} =
+        Enum.reduce(recipient_ids, {[], []}, fn recipient_int_id, {oks, errs} ->
+          case Zchat.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
+            {:ok, _} -> {[recipient_int_id | oks], errs}
+            {:error, _} -> {oks, [recipient_int_id | errs]}
+          end
+        end)
+
+      msg = if length(errs) == 0, do: "Sent to chat!", else: "Sent to #{length(oks)} users, #{length(errs)} failed."
+
+      {:noreply,
+       socket
+       |> put_flash(:info, msg)
+       |> assign(:show_share_modal, false)
+       |> assign(:selected_friends, [])}
     end
   end
 

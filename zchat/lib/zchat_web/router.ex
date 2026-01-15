@@ -30,6 +30,7 @@ defmodule ZchatWeb.Router do
       on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, ZchatWeb.UserActivityHook] do
       live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
+  live "/waves", Waves.WavesLive, :index
       live "/posts/new", CreatePostLive, :new
       live "/posts/:id", UI.SinglePostLive, :show
       live "/users/confirm/:token", UserConfirmationLive, :edit

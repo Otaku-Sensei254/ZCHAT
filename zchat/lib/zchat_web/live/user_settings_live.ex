@@ -144,6 +144,11 @@ defmodule ZchatWeb.UserSettingsLive do
     end
   end
 
+  @impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    {:noreply, socket}
+  end
+
 @impl true
   def render(assigns) do
     ~H"""

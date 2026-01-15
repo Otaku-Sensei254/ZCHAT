@@ -52,9 +52,18 @@ defmodule Zchat.Waves do
   def create_wave(attrs \\ %{}) do
     %Wave{}
     |> Wave.changeset(attrs)
-    |> IO.inspect(label: "Creating wave with attrs")
     |> Repo.insert()
+    |> case do
+      {:ok, wave}->
+      wave = Repo.preload(wave, :user)
+      #Notifications.notify_followers_of_new_wave(wave)
+      {:ok, wave}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
+
 
   @doc """
   Updates a wave.

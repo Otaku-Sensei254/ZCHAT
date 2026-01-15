@@ -6,21 +6,26 @@ defmodule ZchatWeb.Waves.WavesLive do
 
   @impl true
   def mount(_params, _session, socket) do
-  {:ok,
-   socket
-   |> assign(:page_title, "Create Wave")
-   |> assign(:step, 1) # 1=Camera, 2=MusicPicker, 3=Review
-   |> assign(:caption, "")
-   |> assign(:music_results, [])
-   |> assign(:selected_music, nil)
-   |> assign(:search_query, "")
-   # Hide layout chrome on the Waves page so we have a full-bleed composer
-   |> assign(:hide_bottom_nav, true)
-   |> assign(:hide_header, true)
-   |> allow_upload(:media, accept: ~w(.jpg .jpeg .png .mp4 .mov .webm), max_entries: 1)}
+    {:ok,
+     socket
+     |> assign(:page_title, "Create Wave")
+     |> assign(:step, 1)
+     |> assign(:caption, "")
+     |> assign(:music_results, [])
+     |> assign(:selected_music, nil)
+     |> assign(:search_query, "")
+     |> assign(:hide_bottom_nav, true)
+     |> assign(:hide_header, true)
+     |> allow_upload(:media,
+       accept: ~w(.jpg .jpeg .png .mp4 .mov .webm),
+       max_entries: 1,
+       auto_upload: true,
+       max_file_size: 30_000_000,
+       progress: &UploadCloudinary.upload_progress/3
+     )}
   end
 
-@impl true
+  @impl true
   def render(assigns) do
     ~H"""
     <div
@@ -120,9 +125,25 @@ defmodule ZchatWeb.Waves.WavesLive do
                     class="w-full bg-white/10 border border-white/10 rounded-xl text-white placeholder-gray-300 px-4 py-3 backdrop-blur-md focus:ring-2 focus:ring-blue-500 focus:bg-black/40 transition outline-none" autocomplete="off" />
             </form>
 
-            <button phx-click="save_wave" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-lg shadow-xl shadow-blue-900/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
-               <%= if Enum.any?(@uploads.media.entries, &(!&1.done?)), do: "Uploading...", else: "Share to Feed 🚀" %>
-            </button>
+           <button phx-click="save_wave"
+        disabled={Enum.any?(@uploads.media.entries, & !&1.done?) or !Enum.empty?(@uploads.media.errors)}
+        class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-xl shadow-blue-900/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
+
+    <% entry = List.first(@uploads.media.entries) %>
+
+    <%= cond do %>
+    <% @uploads.media.errors != [] -> %>
+       ⚠️ Error: <%= Enum.map(@uploads.media.errors, fn {_, msg} -> msg end) |> Enum.join(", ") %>
+
+    <% entry && !entry.done? -> %>
+       <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+       Uploading <%= entry.progress %>%
+
+    <% true -> %>
+       Share to Feed 🚀
+    <% end %>
+
+    </button>
          </div>
       <% end %>
 
@@ -168,6 +189,7 @@ defmodule ZchatWeb.Waves.WavesLive do
     </div>
     """
   end
+
   # --- LOGIC ---
 
   @impl true
@@ -183,9 +205,11 @@ defmodule ZchatWeb.Waves.WavesLive do
 
   def handle_event("cancel_upload", _, socket) do
     # Cancel all uploads
-    socket = Enum.reduce(socket.assigns.uploads.media.entries, socket, fn entry, acc ->
-      cancel_upload(acc, :media, entry.ref)
-    end)
+    socket =
+      Enum.reduce(socket.assigns.uploads.media.entries, socket, fn entry, acc ->
+        cancel_upload(acc, :media, entry.ref)
+      end)
+
     {:noreply, assign(socket, step: 1, selected_music: nil, caption: "")}
   end
 
@@ -209,62 +233,63 @@ defmodule ZchatWeb.Waves.WavesLive do
 
   def handle_event("save_wave", _, socket) do
     entries = socket.assigns.uploads.media.entries
+
+    # Check if uploads are actually finished
     if Enum.any?(entries, &(!&1.done?)) do
       {:noreply, put_flash(socket, :info, "Please wait for upload to finish...")}
     else
-      # Consume the uploaded file(s), upload to Cloudinary, then persist a Wave record
-      results = consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-        # do Cloudinary upload first
-        case UploadCloudinary.upload_file(path) do
-          {:ok, %{url: url, resource_type: resource_type}} ->
-            # Cleanup the temporary file to folder
-            try do
+      results =
+        consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
+          ext = Path.extname(entry.client_name)
+          # If extension is video-like, label it video, otherwise image
+          fallback_type = if ext in ~w(.mp4 .mov .webm), do: "video", else: "image"
+
+          case UploadCloudinary.upload_file(path) do
+            {:ok, %{url: url, resource_type: resource_type}} ->
               File.rm(path)
-            rescue
-              _ -> :ok
-            end
-            {:ok, %{media_url: url, media_type: resource_type}}
+              {:ok, %{media_url: url, media_type: resource_type}}
 
-          {:error, _reason} ->
-            # Fallback: copy to priv/static/uploads and serve from app
-            ext = Path.extname(entry.client_name) || ".jpg"
-            filename = "#{System.unique_integer([:positive])}#{ext}"
-            dest = Path.join(["priv", "static", "uploads", filename])
-            File.mkdir_p!(Path.dirname(dest))
-            File.cp!(path, dest)
-            try do
+            {:error, _reason} ->
+              # Fallback to local storage
+              filename = "#{System.unique_integer([:positive])}#{ext}"
+              dest = Path.join(["priv", "static", "uploads", filename])
+              File.mkdir_p!(Path.dirname(dest))
+              File.cp!(path, dest)
               File.rm(path)
-            rescue
-              _ -> :ok
-            end
-            {:ok, %{media_url: "/uploads/#{filename}", media_type: "image"}}
-        end
-      end)
+              {:ok, %{media_url: "/uploads/#{filename}", media_type: fallback_type}}
+          end
+        end)
 
-      # Use the first uploaded result
-      [%{media_url: media_url, media_type: media_type} | _] = results
+      # SAFETY CHECK: Ensure we actually got a result back
+      case results do
+        [%{media_url: media_url, media_type: media_type} | _] ->
+          music = socket.assigns.selected_music
 
-      music = socket.assigns.selected_music
-      attrs = %{
-        media_url: media_url,
-        media_type: media_type,
-        caption: socket.assigns.caption,
-        user_id: socket.assigns.current_user && socket.assigns.current_user.id,
-        music_preview_url: music && music.preview_url,
-        music_title: music && music.track_name,
-        music_artist: music && music.artist_name,
-        music_cover_url: music && music.artwork_url
-      }
+          attrs = %{
+            media_url: media_url,
+            media_type: media_type,
+            caption: socket.assigns.caption,
+            # Ensure user exists before accessing ID
+            user_id: socket.assigns.current_user && socket.assigns.current_user.id,
+            music_preview_url: music && music.preview_url,
+            music_title: music && music.track_name,
+            music_artist: music && music.artist_name,
+            music_cover_url: music && music.artwork_url
+          }
 
-      case Waves.create_wave(attrs) do
-        {:ok, _wave} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, "Wave Shared!")
-           |> push_navigate(to: "/feed")}
+          case Waves.create_wave(attrs) do
+            {:ok, _wave} ->
+              {:noreply,
+               socket
+               |> put_flash(:info, "Wave Shared!")
+               |> push_navigate(to: "/feed")}
 
-        {:error, changeset} ->
-          {:noreply, put_flash(socket, :error, "Failed to save wave: #{inspect(changeset)}")}
+            {:error, changeset} ->
+              {:noreply, put_flash(socket, :error, "Error saving wave.")}
+          end
+
+        [] ->
+          {:noreply, put_flash(socket, :error, "No media found to save.")}
       end
     end
   end
@@ -282,13 +307,19 @@ defmodule ZchatWeb.Waves.WavesLive do
                 track_name: r["trackName"] || "Unknown",
                 artist_name: r["artistName"] || "Unknown",
                 artwork_url: r["artworkUrl100"],
-                preview_url: r["previewUrl"] # Essential for audio preview
+                # Essential for audio preview
+                preview_url: r["previewUrl"]
               }
             end)
-          _ -> []
+
+          _ ->
+            []
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
+
   defp search_itunes(_), do: []
 end

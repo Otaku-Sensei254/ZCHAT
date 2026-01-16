@@ -18,7 +18,10 @@ defmodule Zchat.Waves do
 
   """
   def list_waves do
-    Repo.all(Wave)
+    Wave
+      |> order_by(desc: :inserted_at)
+      |> Repo.all()
+      |> Repo.preload(:user)
   end
 
   @doc """

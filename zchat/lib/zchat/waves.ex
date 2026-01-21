@@ -56,16 +56,15 @@ defmodule Zchat.Waves do
     %Wave{}
     |> Wave.changeset(attrs)
     |> Repo.insert()
-    |> case do
-      {:ok, wave}->
-      wave = Repo.preload(wave, :user)
-      #Notifications.notify_followers_of_new_wave(wave)
-      {:ok, wave}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+    |> broadcast_wave()
   end
+
+  defp broadcast_wave({:ok, wave}) do
+    wave =  Repo.preload(wave, :user)
+    {:ok , wave}
+  end
+
+  defp broadcast_wave({:error, changeset}), do: {:error, changeset}
 
 
   @doc """

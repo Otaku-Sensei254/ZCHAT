@@ -222,10 +222,20 @@ Hooks.VideoAutoplay = {
         let entry = entries[0];
         if (entry.isIntersecting) {
           // Video is on screen
-          this.el.play().catch((error) => {
-            // Autoplay was prevented (browser restrictions)
-            console.log("Autoplay prevented: ", error);
-          });
+          try {
+            this.el.play().catch((error) => {
+              // Autoplay was prevented (browser restrictions)
+              // We catch this separately because it's a promise rejection
+              if (error.name !== "AbortError") {
+                console.log("Autoplay prevented: ", error);
+              }
+            });
+          } catch (error) {
+            // Catches other errors, like the one from the original report
+            if (error.name !== "AbortError") {
+              console.error("Error playing video:", error);
+            }
+          }
         } else {
           // Video is off screen
           this.el.pause();
@@ -365,6 +375,8 @@ Hooks.CameraCapture = {
     this.video = this.el.querySelector("#camera-feed");
     this.canvas = document.createElement("canvas");
     this.timerEl = this.el.querySelector("#recording-timer");
+    
+    // Initial State
     this.facingMode = "user"; 
     this.recording = false;
     this.mediaRecorder = null;
@@ -372,105 +384,29 @@ Hooks.CameraCapture = {
     this.timerInterval = null;
     this.secondsRecorded = 0;
     this.videoReady = false;
+    this.stream = null;
 
     this.startCamera();
+    this.setupButtons();
 
-    // -- BUTTON HANDLERS --
-    const snapBtn = this.el.querySelector("#btn-snap");
-    if (snapBtn) {
-      snapBtn.addEventListener("click", (e) => { 
-        e.preventDefault(); 
-        if (!this.videoReady) {
-          // Attempt to unlock audio/video if browser blocked autoplay
-          this.video.play().then(() => {
-            this.videoReady = true;
-            this.captureImage();
-          }).catch((err) => console.warn("Waiting for stream...", err));
-          return;
-        }
-        this.captureImage(); 
-      });
-    }
-
-    const recordBtn = this.el.querySelector("#btn-record");
-    if (recordBtn) {
-      recordBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        if (!this.videoReady) {
-          this.video.play().then(async () => {
-            this.videoReady = true;
-            if (!this.recording) await this.startRecording(recordBtn);
-            else this.stopRecording(recordBtn);
-          }).catch((err) => console.warn("Waiting for stream...", err));
-          return;
-        }
-        if (!this.recording) await this.startRecording(recordBtn);
-        else this.stopRecording(recordBtn);
-      });
-    }
-
-    // -- SERVER EVENTS --
     this.handleEvent("switch-camera-mode", () => {
-      this.facingMode = this.facingMode === "user" ? "environment" : "user";
+      this.facingMode = this.facingMode === "selfie" ? "environment" : "selfie";
       this.startCamera();
+      console.log("Switched camera to", this.facingMode); 
     });
   },
 
-  // Re-run when LiveView patches the DOM (e.g. after retake cancels upload)
   updated() {
-    try {
-      // Re-acquire the video element if it was replaced by a DOM patch
-      const newVideo = this.el.querySelector("#camera-feed");
-      if (newVideo && newVideo !== this.video) {
-        this.video = newVideo;
-        // Re-attach stream to the new video element
-        if (this.stream) {
-          try {
-            this.video.srcObject = this.stream;
-            this.video.play().catch(() => {});
-          } catch (e) { /* noop */ }
-        }
+    const newVideo = this.el.querySelector("#camera-feed");
+    if (newVideo && newVideo !== this.video) {
+      this.video = newVideo;
+      if (this.stream) {
+        this.video.srcObject = this.stream;
+        this.video.play().catch(e => console.log("Autoplay blocked on update", e));
       }
-
-      // Re-bind timer element
-      this.timerEl = this.el.querySelector("#recording-timer");
-
-      // Re-bind snap button listener if needed
-      const snapBtn = this.el.querySelector("#btn-snap");
-      if (snapBtn && snapBtn.dataset.listenerAttached !== "1") {
-        snapBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (!this.videoReady) {
-            this.video.play().then(() => {
-              this.videoReady = true;
-              this.captureImage();
-            }).catch((err) => console.warn("Waiting for stream...", err));
-            return;
-          }
-          this.captureImage();
-        });
-        snapBtn.dataset.listenerAttached = "1";
-      }
-
-      // Re-bind record button listener if needed
-      const recordBtn = this.el.querySelector("#btn-record");
-      if (recordBtn && recordBtn.dataset.listenerAttached !== "1") {
-        recordBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          if (!this.videoReady) {
-            this.video.play().then(async () => {
-              this.videoReady = true;
-              if (!this.recording) await this.startRecording(recordBtn);
-              else this.stopRecording(recordBtn);
-            }).catch((err) => console.warn("Waiting for stream...", err));
-            return;
-          }
-          if (!this.recording) await this.startRecording(recordBtn);
-          else this.stopRecording(recordBtn);
-        });
-        recordBtn.dataset.listenerAttached = "1";
-      }
-    } catch (e) { /* noop */ }
+    }
+    this.timerEl = this.el.querySelector("#recording-timer");
+    this.setupButtons();
   },
 
   destroyed() {
@@ -478,7 +414,41 @@ Hooks.CameraCapture = {
     this.stopTimer();
   },
 
-  // --- CAMERA LOGIC ---
+  setupButtons() {
+    const snapBtn = this.el.querySelector("#btn-snap");
+    if (snapBtn && snapBtn.dataset.listenerAttached !== "true") {
+      snapBtn.addEventListener("click", (e) => { 
+        e.preventDefault(); 
+        console.log("Snap button clicked");
+        if (!this.videoReady) {
+          this.forceVideoPlay().then(() => this.captureImage());
+        } else {
+          this.captureImage(); 
+        }
+      });
+      snapBtn.dataset.listenerAttached = "true";
+    }
+    
+    const recordBtn = this.el.querySelector("#btn-record");
+    if (recordBtn && recordBtn.dataset.listenerAttached !== "true") {
+      recordBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (!this.videoReady) {
+          this.forceVideoPlay().then(() => {
+            if (!this.recording) this.startRecording(recordBtn);
+            else this.stopRecording(recordBtn);
+          });
+          console.log("Camera record started" );
+        } else {
+          if (!this.recording) await this.startRecording(recordBtn);
+          else this.stopRecording(recordBtn);
+        }
+      });
+      recordBtn.dataset.listenerAttached = "true";
+    }
+    console.log("Camera record stopped" );
+  },
+
   stopCamera() {
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
@@ -487,7 +457,6 @@ Hooks.CameraCapture = {
 
   startCamera() {
     this.stopCamera();
-    
     const constraints = { 
       video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
       audio: false 
@@ -497,51 +466,51 @@ Hooks.CameraCapture = {
       .then(stream => {
         this.stream = stream;
         this.videoReady = false;
-        this.video.srcObject = stream;
-        
-        this.video.onloadedmetadata = () => {
-          this.video.play().catch((err) => console.warn("Autoplay blocked", err));
-        };
-
-        const onPlaying = () => {
-          this.videoReady = true;
-          this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
-          this.video.removeEventListener('playing', onPlaying);
-        };
-        this.video.addEventListener('playing', onPlaying);
-        // Fallback for some browsers
-        this.video.addEventListener('canplay', () => this.videoReady = true);
+        if (this.video) {
+          this.video.srcObject = stream;
+          this.video.muted = true;
+          this.video.play().then(() => {
+            this.videoReady = true;
+            this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
+          }).catch(err => console.warn("Waiting for interaction", err));
+        }
       })
       .catch(err => console.error("Camera Error:", err));
   },
 
-  // --- RECORDING LOGIC ---
+  forceVideoPlay() {
+    return this.video.play().then(() => {
+      this.videoReady = true;
+    }).catch(err => console.warn("Still blocked", err));
+  },
+
   async ensureAudioForRecording() {
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (this.stream) {
         audioStream.getAudioTracks().forEach(track => this.stream.addTrack(track));
       }
-      return this.stream;
     } catch (err) {
       console.warn("Mic access denied", err);
-      return this.stream; 
     }
   },
 
   async startRecording(btn) {
     if (!this.stream) return;
     this.recordingChunks = [];
-    
     await this.ensureAudioForRecording();
 
     let options = { mimeType: 'video/webm' };
-    if (MediaRecorder.isTypeSupported('video/mp4')) options.mimeType = 'video/mp4';
+    if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+      options = { mimeType: 'video/webm; codecs=vp9' };
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      options = { mimeType: 'video/mp4' };
+    }
 
     try {
       this.mediaRecorder = new MediaRecorder(this.stream, options);
     } catch (err) {
-      console.error("Recorder failed", err);
+      console.error("Failed to create MediaRecorder", err);
       return;
     }
 
@@ -552,24 +521,18 @@ Hooks.CameraCapture = {
     this.mediaRecorder.onstop = () => {
       const blob = new Blob(this.recordingChunks, { type: this.recordingChunks[0]?.type || 'video/webm' });
       
-      // *** CRITICAL UPDATE: Save Blob URL for the Preview Hook ***
       if (window.recordedVideoBlobURL) URL.revokeObjectURL(window.recordedVideoBlobURL);
       window.recordedVideoBlobURL = URL.createObjectURL(blob);
-      // **********************************************************
 
-      try {
-        const mime = blob.type || 'video/webm';
-        const ext = (mime.split('/').pop() || 'webm').split(';')[0];
-        const filename = `recording_${Date.now()}.${ext}`;
-        const file = new File([blob], filename, { type: mime });
-        this.upload("media", [file]);
-      } catch (err) {
-        this.upload("media", [blob]);
-      }
+      const mime = blob.type || 'video/webm';
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      const filename = `recording_${Date.now()}.${ext}`;
+      const file = new File([blob], filename, { type: mime });
+
+      this.upload("media", [file]);
       
       this.recording = false;
       this.stopTimer();
-      
       if (btn) {
         btn.classList.remove('animate-pulse', 'bg-red-700', 'scale-110');
         btn.innerHTML = `<div class="w-4 h-4 bg-white rounded-sm"></div>`;
@@ -592,7 +555,6 @@ Hooks.CameraCapture = {
     }
   },
 
-  // --- PHOTO LOGIC ---
   captureImage() {
     if (!this.video || !this.video.videoWidth) return;
 
@@ -608,17 +570,11 @@ Hooks.CameraCapture = {
     ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
     this.canvas.toBlob((blob) => {
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+      const filename = `photo_${Date.now()}.jpg`;
+      const file = new File([blob], filename, { type: "image/jpeg" });
 
-      // Expose a temporary object URL so the ImagePreview hook can show it immediately
-      try {
-        if (window.lastCapturedPhotoURL) URL.revokeObjectURL(window.lastCapturedPhotoURL);
-      } catch (e) { /* noop */ }
-      try {
-        window.lastCapturedPhotoURL = URL.createObjectURL(file);
-      } catch (e) {
-        window.lastCapturedPhotoURL = null;
-      }
+      if (window.recordedVideoBlobURL) URL.revokeObjectURL(window.recordedVideoBlobURL);
+      window.recordedVideoBlobURL = URL.createObjectURL(file); 
 
       this.upload("media", [file]);
     }, "image/jpeg", 0.9);

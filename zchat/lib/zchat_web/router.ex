@@ -30,7 +30,6 @@ defmodule ZchatWeb.Router do
       on_mount: [{ZchatWeb.UserAuth, :mount_current_user}, ZchatWeb.UserActivityHook] do
       live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
-  live "/waves", Waves.WavesLive, :index
       live "/posts/new", CreatePostLive, :new
       live "/posts/:id", UI.SinglePostLive, :show
       live "/users/confirm/:token", UserConfirmationLive, :edit
@@ -167,7 +166,7 @@ end
     post "/users/log_in", UserSessionController, :create
   end
 
-  # Public routes that don't require authentication
+  # Public routes that don't require authenticationP
 
   # Protected routes that require authentication
   scope "/", ZchatWeb do
@@ -176,6 +175,7 @@ end
     live_session :require_authenticated_user,
       on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}, ZchatWeb.UserActivityHook] do
       live "/users/settings", UserSettingsLive, :edit
+      live "/waves", Waves.WavesLive, :index
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive

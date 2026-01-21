@@ -34,7 +34,11 @@ defmodule ZchatWeb.CoreComponents do
     <Heroicons.photo solid class={@class} />
     """
   end
-
+def icon(%{name: "hero-user"} = assigns) do
+    ~H"""
+    <Heroicons.user solid class={@class} />
+    """
+  end
   # --- DELETE THE GENERIC BLOCK THAT WAS HERE ---
 
   def icon(%{name: "hero-arrow-right-end-on-rectangle"} = assigns) do

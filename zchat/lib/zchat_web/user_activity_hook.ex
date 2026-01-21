@@ -146,7 +146,12 @@ defmodule ZchatWeb.UserActivityHook do
   end
 
   defp format_notification_text(n) do
-    actor = get_in(n || %{}, [:actor, :username]) || "Someone"
+    # FIX: Use Map.get instead of get_in.
+    # get_in fails on Structs because they don't implement the Access behaviour.
+
+    actor_obj = Map.get(n || %{}, :actor)
+    actor = (actor_obj && Map.get(actor_obj, :username)) || "Someone"
+
     case Map.get(n || %{}, :type, "notification") do
       "like" -> "#{actor} liked your post ❤️"
       "comment" -> "#{actor} commented on your post 💬"

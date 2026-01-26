@@ -176,6 +176,7 @@ end
       on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}, ZchatWeb.UserActivityHook] do
       live "/users/settings", UserSettingsLive, :edit
       live "/waves", Waves.WavesLive, :index
+      live "/waves/view/:user_id", Waves.ViewWavesLive, :show
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive

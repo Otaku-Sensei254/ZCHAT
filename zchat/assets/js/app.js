@@ -600,6 +600,22 @@ Hooks.CameraCapture = {
   }
 };
 
+//waves checker HOok
+// Inside your existing Hooks object
+
+Hooks.WaveVideo = {
+  mounted() {
+    this.el.addEventListener("ended", () => {
+      this.pushEvent("video_ended", {})
+    })
+    // Attempt play, mute if blocked by browser policy
+    this.el.play().catch(e => {
+      this.el.muted = true
+      this.el.play()
+    })
+  }
+}
+
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {
   mounted() {

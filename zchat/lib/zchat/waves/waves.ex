@@ -7,18 +7,10 @@ defmodule Zchat.Waves.Wave do
     field :media_type, :string
     field :caption, :string
 
-    # Music Fields
-    field :music_track_id, :string
-    field :music_preview_url, :string
-    field :music_title, :string
-    field :music_artist, :string
-    field :music_cover_url, :string
-
-
-    
-    field :expires_at, :utc_datetime_usec
-
     belongs_to :user, Zchat.Accounts.User
+    belongs_to :music_track, Zchat.Music.MusicTrack, foreign_key: :music_track_id, type: :integer
+
+    field :expires_at, :utc_datetime_usec
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -31,10 +23,6 @@ defmodule Zchat.Waves.Wave do
       :media_type,
       :caption,
       :music_track_id,
-      :music_preview_url,
-      :music_title,
-      :music_artist,
-      :music_cover_url,
       :expires_at,
       :user_id
     ])

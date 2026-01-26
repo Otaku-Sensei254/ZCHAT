@@ -60,6 +60,20 @@
       <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
     <% end %>
 
+    <%= for wave_group <- @waves do %>
+      <.link navigate={~p"/waves/view/#{wave_group.user.id}"} class="flex flex-col items-center gap-1 cursor-pointer shrink-0">
+        <div class={[
+          "relative w-14 h-14 rounded-full p-0.5 flex items-center justify-center transition group",
+          wave_group.has_unseen && "bg-gradient-to-tr from-yellow-400 to-pink-600",
+          !wave_group.has_unseen && "border-2 border-gray-200 dark:border-zinc-700"
+        ]}>
+          <div class="bg-white dark:bg-zinc-900 rounded-full p-0.5">
+            <img src={wave_group.user.avatar_url} class="w-full h-full rounded-full object-cover" />
+          </div>
+        </div>
+        <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center"><%= wave_group.user.username %></span>
+      </.link>
+    <% end %>
     </div>
 </div>
 

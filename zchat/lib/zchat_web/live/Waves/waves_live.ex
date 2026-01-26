@@ -191,15 +191,31 @@ defmodule ZchatWeb.Waves.WavesLive do
             [media | _] ->
               Logger.info(">>> CLOUDINARY SUCCESS: #{inspect(media)} <<<")
 
+              music_track_id =
+                if socket.assigns.selected_music do
+                  music_attrs = %{
+                    title: socket.assigns.selected_music.track_name,
+                    artist: socket.assigns.selected_music.artist_name,
+                    audio_url: socket.assigns.selected_music.preview_url,
+                    cover_art: socket.assigns.selected_music.artwork_url,
+                    itunes_track_id: socket.assigns.selected_music.track_id,
+                    duration_ms: socket.assigns.selected_music.duration_ms
+                  }
+
+                  case Zchat.Music.get_or_create_music_track(music_attrs) do
+                    {:ok, music_track} -> music_track.id
+                    {:error, _} -> nil # Handle error or log it
+                  end
+                else
+                  nil
+                end
+
               attrs = %{
                 media_url: media.url,
                 media_type: media.resource_type,
                 caption: params["caption"],
                 user_id: socket.assigns.current_user.id,
-                music_preview_url: socket.assigns.selected_music && socket.assigns.selected_music.preview_url,
-                music_title: socket.assigns.selected_music && socket.assigns.selected_music.track_name,
-                music_artist: socket.assigns.selected_music && socket.assigns.selected_music.artist_name,
-                music_cover_url: socket.assigns.selected_music && socket.assigns.selected_music.artwork_url
+                music_track_id: music_track_id
               }
 
               case Zchat.Waves.create_wave(attrs) do
@@ -263,7 +279,7 @@ defmodule ZchatWeb.Waves.WavesLive do
     case Finch.build(:get, url) |> Finch.request(Zchat.Finch) do
       {:ok, %Finch.Response{status: 200, body: body}} ->
         case Jason.decode(body) do
-          {:ok, %{"results" => results}} -> Enum.map(results, fn r -> %{track_id: r["trackId"], track_name: r["trackName"], artist_name: r["artistName"], artwork_url: r["artworkUrl100"], preview_url: r["previewUrl"]} end)
+          {:ok, %{"results" => results}} -> Enum.map(results, fn r -> %{track_id: r["trackId"], track_name: r["trackName"], artist_name: r["artistName"], artwork_url: r["artworkUrl100"], preview_url: r["previewUrl"], duration_ms: r["trackTimeMillis"]} end)
           _ -> []
         end
       _ -> []

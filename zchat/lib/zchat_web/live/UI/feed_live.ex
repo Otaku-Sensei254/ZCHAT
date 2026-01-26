@@ -5,6 +5,7 @@ defmodule ZchatWeb.UI.FeedLive do
   alias Zchat.Notifications
   alias Zchat.Socials
   alias Zchat.Accounts
+  alias Zchat.Waves
 
   @impl true
   def mount(_params, _session, socket) do
@@ -32,13 +33,14 @@ defmodule ZchatWeb.UI.FeedLive do
         show_search: false,
         data_loaded: false,
         pending_posts: [],
+        waves: [],
         # --- SHARE MODAL STATE ---
         show_share_modal: false,
         post_to_share: nil,
-  friends_list: [],
-  selected_friends: [],
-  friends_filter: "",
-  friends_list_filtered: nil
+        friends_list: [],
+        selected_friends: [],
+        friends_filter: "",
+        friends_list_filtered: nil
       )
 
     {:ok, socket}
@@ -51,7 +53,7 @@ defmodule ZchatWeb.UI.FeedLive do
 
     filters_changed =
       new_search != socket.assigns.search_term or
-      new_category != socket.assigns.category
+        new_category != socket.assigns.category
 
     socket =
       socket
@@ -66,6 +68,7 @@ defmodule ZchatWeb.UI.FeedLive do
         |> stream(:posts, [], reset: true)
         |> load_posts()
         |> load_trending()
+        |> load_waves()
       else
         socket
       end
@@ -73,34 +76,20 @@ defmodule ZchatWeb.UI.FeedLive do
     {:noreply, socket}
   end
 
-  # --- SHARE HANDLERS ---
-
-  @impl true
-  def handle_info({:open_share_modal, post_id}, socket) do
-    # 1. Fetch the user's friends list (needed for the share modal)
-    # Using Accounts.list_friends as established in your Accounts context
-    friends = Zchat.Accounts.list_friends(socket.assigns.current_user)
-
-    # 2. Update the socket to show the modal and store the post ID
-    {:noreply,
-     socket
-     |> assign(:show_share_modal, true)
-     |> assign(:post_to_share, post_id)
-     |> assign(:friends_list, friends)
-     |> assign(:selected_friends, [])
-     |> assign(:friends_list_filtered, friends)
-     |> assign(:friends_filter, "")}
-  end
+  # --- EVENT HANDLERS ---
 
   @impl true
   def handle_event("filter_friends", %{"friend_search" => query}, socket) do
     q = String.trim(query || "")
+
     filtered =
       (socket.assigns.friends_list || [])
       |> Enum.filter(fn f ->
         username = to_string(f.username || "") |> String.downcase()
         email = to_string(f.email || "") |> String.downcase()
-        String.contains?(username, String.downcase(q)) or String.contains?(email, String.downcase(q))
+
+        String.contains?(username, String.downcase(q)) or
+          String.contains?(email, String.downcase(q))
       end)
 
     {:noreply, assign(socket, friends_list_filtered: filtered, friends_filter: q)}
@@ -112,7 +101,8 @@ defmodule ZchatWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket) when is_list(recipient_ids) do
+  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket)
+      when is_list(recipient_ids) do
     current_user_id = socket.assigns.current_user.id
     post_id = socket.assigns.post_to_share
 
@@ -126,7 +116,10 @@ defmodule ZchatWeb.UI.FeedLive do
         end
       end)
 
-    msg = if length(errs) == 0, do: "Sent to chat!", else: "Sent to #{length(oks)} users, #{length(errs)} failed."
+    msg =
+      if length(errs) == 0,
+        do: "Sent to chat!",
+        else: "Sent to #{length(oks)} users, #{length(errs)} failed."
 
     {:noreply,
      socket
@@ -135,35 +128,34 @@ defmodule ZchatWeb.UI.FeedLive do
      |> assign(:selected_friends, [])}
   end
 
-  # Backwards-compatible single-recipient handler
   def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
     handle_event("confirm_share", %{"recipient_ids" => [recipient_id]}, socket)
   end
 
-  # Update selected friends when the form changes (checkboxes)
   def handle_event("update_selected_friends", params, socket) do
     ids = params["recipient_ids"] || []
     ids = if is_list(ids), do: Enum.map(ids, &String.to_integer/1), else: [String.to_integer(ids)]
     {:noreply, assign(socket, :selected_friends, ids)}
   end
 
-  # Select all friends shortcut
   def handle_event("select_all_friends", _params, socket) do
     ids = Enum.map(socket.assigns.friends_list || [], & &1.id)
     {:noreply, assign(socket, :selected_friends, ids)}
   end
 
-  # Toggle friend selection from avatar grid
   def handle_event("toggle_friend", %{"id" => id}, socket) do
     id_int = String.to_integer(id)
     current = socket.assigns.selected_friends || []
-    new = if Enum.member?(current, id_int), do: List.delete(current, id_int), else: [id_int | current]
+
+    new =
+      if Enum.member?(current, id_int), do: List.delete(current, id_int), else: [id_int | current]
+
     {:noreply, assign(socket, :selected_friends, new)}
   end
 
-  # Submit when using avatar grid (no params) - use selected_friends assign
   def handle_event("confirm_share", _params, socket) do
     recipient_ids = socket.assigns.selected_friends || []
+
     if recipient_ids == [] do
       {:noreply, socket}
     else
@@ -178,7 +170,10 @@ defmodule ZchatWeb.UI.FeedLive do
           end
         end)
 
-      msg = if length(errs) == 0, do: "Sent to chat!", else: "Sent to #{length(oks)} users, #{length(errs)} failed."
+      msg =
+        if length(errs) == 0,
+          do: "Sent to chat!",
+          else: "Sent to #{length(oks)} users, #{length(errs)} failed."
 
       {:noreply,
        socket
@@ -188,23 +183,13 @@ defmodule ZchatWeb.UI.FeedLive do
     end
   end
 
-    #waves "story" handlers
-def handle_event("open_create_waves", _params, socket) do
-  {:noreply, assign(socket, show_waves_modal: true)}
-end
+  def handle_event("open_create_waves", _params, socket) do
+    {:noreply, assign(socket, show_waves_modal: true)}
+  end
 
-# This handles the "X" close button inside the modal
-def handle_event("close_waves_modal", _params, socket) do
-  {:noreply, assign(socket, show_waves_modal: false)}
-end
-
-def handle_info(:waves_created, socket) do
-  {:noreply,
-   socket
-   |> assign(show_waves_modal: false)
-   |> put_flash(:info, "Wave shared successfully!")}
-end
-  # --- INFINITE SCROLL EVENT ---
+  def handle_event("close_waves_modal", _params, socket) do
+    {:noreply, assign(socket, show_waves_modal: false)}
+  end
 
   @impl true
   def handle_event("load-more", _, socket) do
@@ -215,15 +200,6 @@ end
       {:noreply, socket}
     end
   end
-
-  # --- ASYNC LOADING HANDLER ---
-
-  @impl true
-  def handle_info(:load_more_data, socket) do
-    {:noreply, load_posts(socket)}
-  end
-
-  # --- SEARCH EVENTS ---
 
   @impl true
   def handle_event("live_search", %{"search" => query}, socket) do
@@ -254,22 +230,51 @@ end
     {:noreply, push_patch(socket, to: to)}
   end
 
-  # --- REAL-TIME UPDATES (PubSub) ---
+  @impl true
+  def handle_event("load_new_posts", _params, socket) do
+    pending = socket.assigns.pending_posts
+
+    socket =
+      Enum.reduce(pending, socket, fn post, acc ->
+        stream_insert(acc, :posts, post, at: 0)
+      end)
+
+    {:noreply, assign(socket, :pending_posts, [])}
+  end
+
+  # --- INFO HANDLERS ---
+
+  @impl true
+  def handle_info({:open_share_modal, post_id}, socket) do
+    # 1. Fetch the user's friends list (needed for the share modal)
+    friends = Zchat.Accounts.list_friends(socket.assigns.current_user)
+    # 2. Update the socket to show the modal and store the post ID
+    {:noreply,
+     socket
+     |> assign(:show_share_modal, true)
+     |> assign(:post_to_share, post_id)
+     |> assign(:friends_list, friends)
+     |> assign(:selected_friends, [])
+     |> assign(:friends_list_filtered, friends)
+     |> assign(:friends_filter, "")}
+  end
+
+  def handle_info(:waves_created, socket) do
+    {:noreply,
+     socket
+     |> assign(show_waves_modal: false)
+     |> put_flash(:info, "Wave shared successfully!")}
+  end
+
+  @impl true
+  def handle_info(:load_more_data, socket) do
+    {:noreply, load_posts(socket)}
+  end
 
   @impl true
   def handle_info({:post_created, post}, socket) do
     post = Zchat.Repo.preload(post, [:user, :likes, comments: :user])
     {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
-  end
-
-  @impl true
-  def handle_event("load_new_posts", _params, socket) do
-    pending = socket.assigns.pending_posts
-    socket =
-      Enum.reduce(pending, socket, fn post, acc ->
-        stream_insert(acc, :posts, post, at: 0)
-      end)
-    {:noreply, assign(socket, :pending_posts, [])}
   end
 
   @impl true
@@ -294,7 +299,7 @@ end
   end
 
   @impl true
-  def handle_info({:new_notification,_notif} , socket) do
+  def handle_info({:new_notification, _notif}, socket) do
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     send_update(ZchatWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
     {:noreply, socket}
@@ -365,5 +370,14 @@ end
   defp load_trending(socket) do
     trending = Posts.list_trending_posts(5)
     stream(socket, :trending, trending, reset: true)
+  end
+
+  defp load_waves(socket) do
+    if socket.assigns.current_user do
+      waves = Waves.list_active_waves(socket.assigns.current_user.id)
+      assign(socket, :waves, waves)
+    else
+      socket
+    end
   end
 end

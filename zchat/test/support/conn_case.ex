@@ -56,9 +56,10 @@ defmodule ZchatWeb.ConnCase do
   """
   def log_in_user(conn, user) do
     token = Zchat.Accounts.generate_user_session_token(user)
+    encoded_token = Base.url_encode64(token)
 
     conn
     |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:user_token, token)
+    |> Plug.Conn.put_session(:user_token, encoded_token)
   end
 end

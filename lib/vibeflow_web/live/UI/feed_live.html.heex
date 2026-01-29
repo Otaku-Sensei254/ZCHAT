@@ -246,7 +246,7 @@
                 />
                 <div class="relative">
                   <!-- Avatar -->
-                  <div class="w-14 h-14 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-lg font-semibold text-gray-600 dark:text-gray-400">
+                  <div class="w-14 h-14 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-lg font-semibold text-gray-600 dark:text-gray-400 relative peer-checked:ring-4 peer-checked:ring-indigo-400 peer-checked:ring-opacity-50 peer-checked:ring-offset-2 transition-all">
                     <%= if friend.avatar_url && friend.avatar_url != "" do %>
                       <img src={friend.avatar_url} class="w-full h-full object-cover" />
                     <% else %>
@@ -260,6 +260,9 @@
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                     </svg>
                   </div>
+
+                  <!-- Glow effect behind avatar -->
+                  <div class="absolute inset-0 rounded-full bg-indigo-400 opacity-0 peer-checked:opacity-20 blur-md transition-opacity duration-300 scale-110"></div>
                 </div>
                 
                 <!-- Username -->

@@ -1,0 +1,229 @@
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <div class="mb-8">
+    <.link navigate={~p"/feed"} class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+      </svg>
+      Back to Feed 
+    </.link>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-200">Create a New Post</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Share your thoughts, images, or videos with the community</p>
+  </div>
+
+  <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6 bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 border border-gray-100 dark:border-zinc-800">
+    
+    <div>
+      <label for={@form[:title].id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Title <span class="text-red-500">*</span>
+      </label>
+      <.input field={@form[:title]} type="text" placeholder="Enter a catchy title..." class="mt-1 block w-full" required />
+      <%= for err <- List.wrap(@form.errors[:title]) do %>
+        <.error><%= translate_error(err) %></.error>
+      <% end %>
+    </div>
+
+    <div class="mt-4">
+      <label for="post_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Category
+      </label>
+      <select 
+        id="post_category" 
+        name="post[category]" 
+        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md shadow-sm"
+      >
+        <option value="">Select a category</option>
+        <%= for category <- Zchat.Posts.Post.categories() do %>
+          <option value={category} selected={Ecto.Changeset.get_field(@form.source, :category) == category}><%= category %></option>
+        <% end %>
+      </select>
+      <%= for err <- List.wrap(@form.errors[:category]) do %>
+        <p class="mt-2 text-sm text-red-600"><%= translate_error(err) %></p>
+      <% end %>
+    </div>
+
+    <div>
+      <label for={@form[:content].id} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Content
+      </label>
+      <.input field={@form[:content]} type="textarea" rows="6" placeholder="What's on your mind?" class="mt-1 block w-full" />
+      <%= for err <- List.wrap(@form.errors[:content]) do %>
+        <.error><%= translate_error(err) %></.error>
+      <% end %>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 mt-4">
+        Images & Videos
+      </label>
+      
+      <div 
+        phx-drop-target={@uploads.media.ref}
+        class="flex justify-center px-6 py-8 mt-1 border-2 border-dashed rounded-lg border-gray-300 dark:border-zinc-700 hover:border-orange-500 dark:hover:border-orange-500 transition-colors bg-gray-50 dark:bg-zinc-800/50"
+      >
+        <div class="flex flex-col items-center justify-center text-center">
+          <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg" class="dark:hidden mb-3">
+            <rect x="3" y="3" width="40" height="40" rx="20" fill="#F2F4F7" />
+            <rect x="3" y="3" width="40" height="40" rx="20" stroke="#F9FAFB" stroke-width="6" />
+            <path d="M19.6667 26.3333L23.0001 23M23.0001 23L26.3334 26.3333M23.0001 23V30.5M29.6667 26.9524C30.6847 26.1117 31.3334 24.8399 31.3334 23.4167C31.3334 20.8854 29.2814 18.8333 26.7501 18.8333C26.568 18.8333 26.3976 18.7383 26.3052 18.5814C25.2185 16.7374 23.2121 15.5 20.9167 15.5C17.465 15.5 14.6667 18.2982 14.6667 21.75C14.6667 23.4718 15.363 25.0309 16.4892 26.1613" stroke="#475467" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg" class="hidden dark:block mb-3">
+            <rect x="3" y="3" width="40" height="40" rx="20" fill="#1f2937" />
+            <rect x="3" y="3" width="40" height="40" rx="20" stroke="#111827" stroke-width="6" />
+            <path d="M19.6667 26.3333L23.0001 23M23.0001 23L26.3334 26.3333M23.0001 23V30.5M29.6667 26.9524C30.6847 26.1117 31.3334 24.8399 31.3334 23.4167C31.3334 20.8854 29.2814 18.8333 26.7501 18.8333C26.568 18.8333 26.3976 18.7383 26.3052 18.5814C25.2185 16.7374 23.2121 15.5 20.9167 15.5C17.465 15.5 14.6667 18.2982 14.6667 21.75C14.6667 23.4718 15.363 25.0309 16.4892 26.1613" stroke="#9ca3af" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+
+          <div class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400 flex flex-col items-center">
+            <label for={@uploads.media.ref} class="relative flex items-center gap-1 font-semibold rounded-md hover:cursor-pointer text-orange-600 dark:text-orange-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2">
+              <span>Click to upload</span>
+              <.live_file_input upload={@uploads.media} class="sr-only" />
+            </label>
+            <p>or drag and drop</p>
+          </div>
+          <p class="text-xs mt-1 text-gray-500 dark:text-gray-500">
+            JPG, PNG, GIF, MP4, MOV (max 10MB each)
+          </p>
+        </div>
+      </div>
+      
+      <div :if={length(@uploaded_files) > 0 || Enum.count(@uploads.media.entries) > 0} class="mt-4 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden bg-white dark:bg-zinc-800">
+        <div class="flex flex-col divide-y divide-gray-100 dark:divide-zinc-700">
+
+          <%= for {file, index} <- Enum.with_index(@uploaded_files) do %>
+            <div class="flex items-center justify-between p-3 gap-3 bg-gray-50/50 dark:bg-zinc-800/50">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0"> 
+                <div class="shrink-0">
+                  <div class="w-12 h-12 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 flex items-center justify-center text-green-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex flex-col justify-center flex-1 min-w-0">
+                  <figcaption class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-full">
+                    <%= if is_map(file), do: file["client_name"], else: "Upload failed" %>
+                  </figcaption>
+                  <div class="flex items-center gap-3 mt-1">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      <%= if is_map(file), do: "#{Decimal.round(Decimal.from_float(file["client_size"] / 1024))} KB", else: "Error" %>
+                    </span>
+                    <% status_class = if is_map(file), do: "text-green-500", else: "text-red-500" %>
+                    <span class={"text-xs #{status_class} font-bold"}>
+                      <%= if is_map(file), do: "Uploaded", else: "Failed" %>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" phx-click="remove-uploaded" phx-value-index={index} class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          <% end %>
+
+          <%= for entry <- @uploads.media.entries do %>
+            <div class="flex items-center justify-between p-3 gap-3">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0"> 
+                <div class="shrink-0">
+                  <%= if String.starts_with?(entry.client_type, "video/") do %>
+                    <div class="w-12 h-12 rounded-lg bg-orange-50 dark:bg-zinc-900 border border-orange-100 dark:border-zinc-700 flex items-center justify-center text-orange-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  <% else %>
+                    <.live_img_preview entry={entry} class="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-zinc-600 bg-gray-50" />
+                  <% end %>
+                </div>
+
+                <div class="flex flex-col justify-center flex-1 min-w-0">
+                  <figcaption class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-full">
+                    <%= entry.client_name %>
+                  </figcaption>
+                  <div class="flex items-center gap-3 mt-1">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      <%= Decimal.round(Decimal.from_float(entry.client_size / 1024)) %> KB
+                    </span>
+                    <div class="h-1.5 w-full max-w-[100px] bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-orange-500 transition-all duration-300 rounded-full" style={"width: #{entry.progress}%"}></div>
+                    </div>
+                    <span class="text-xs text-orange-500 font-medium"><%= entry.progress %>%</span>
+                  </div>
+                  <%= for err <- upload_errors(@uploads.media, entry) do %>
+                    <p class="text-xs text-red-500 mt-0.5"><%= error_to_string(err) %></p>
+                  <% end %>
+                </div>
+              </div>
+
+              <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+                &times;
+              </button>
+            </div>
+          <% end %>
+
+        </div>
+      </div>
+
+      <%= for err <- upload_errors(@uploads.media) do %>
+        <p class="mt-2 text-sm text-red-600"><%= error_to_string(err) %></p>
+      <% end %>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Tags (Optional)
+      </label>
+      <div class="flex gap-2">
+        <input 
+          type="text" id="tag-input" name="tag_input" value="" 
+          placeholder="Add a tag (e.g. tech)"
+          class="flex-1 rounded-md border-gray-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm" 
+          phx-keydown="add_tag" phx-key="Enter"
+        />
+        <button 
+          type="button" phx-click="add_tag" 
+          class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors shadow-sm font-medium"
+          onclick="
+            const input = document.getElementById('tag-input');
+            if(input.value.trim() !== '') {
+              this.setAttribute('phx-value-tag', input.value); 
+              setTimeout(() => input.value = '', 10); 
+            } else {
+              this.removeAttribute('phx-value-tag');
+            }
+          "
+        >Add</button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <%= for tag <- Ecto.Changeset.get_field(@form.source, :tags, []) do %>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 rounded-full text-sm font-medium border border-orange-100 dark:border-orange-800/50">
+            #<%= tag %>
+            <button type="button" phx-click="remove_tag" phx-value-tag={tag} class="text-orange-400 hover:text-orange-600 dark:hover:text-orange-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors">&times;</button>
+          </span>
+        <% end %>
+      </div>
+      <%= for tag <- Ecto.Changeset.get_field(@form.source, :tags, []) do %>
+        <input type="hidden" name="post[tags][]" value={tag} />
+      <% end %>
+    </div>
+
+    <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
+      <.link navigate={~p"/feed"} class="px-6 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800 font-medium transition-colors">
+        Cancel
+      </.link>
+      
+      <.button 
+        type="submit" 
+        phx-disable-with="Publishing..."
+        disabled={Enum.count(@uploads.media.entries) > 0} 
+        class="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 font-bold shadow-md transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <%= if Enum.count(@uploads.media.entries) > 0 do %>
+          Uploading...
+        <% else %>
+          Create Post
+        <% end %>
+      </.button>
+    </div>
+  </.form>
+</div>

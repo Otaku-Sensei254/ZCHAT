@@ -1,0 +1,140 @@
+<!-- MAIN CONTAINER -->
+<div class="flex h-screen bg-gray-50 dark:bg-zinc-950 overflow-hidden">
+
+  <!-- 
+    MOBILE BACKDROP OVERLAY 
+    - Visible only when sidebar is open on mobile.
+    - Clicking this closes the sidebar.
+  -->
+  <div 
+    id="sidebar-overlay" 
+    class="fixed inset-0 z-30 bg-gray-900/80 backdrop-blur-sm hidden transition-opacity duration-300"
+    phx-click={
+      JS.add_class("-translate-x-full", to: "#admin-sidebar") 
+      |> JS.hide(to: "#sidebar-overlay")
+    }
+  ></div>
+
+  <!-- 
+    SIDEBAR 
+    - Mobile: fixed, off-screen (-translate-x-full), z-40
+    - Desktop: static, visible (md:translate-x-0), z-20
+  -->
+  <aside 
+    id="admin-sidebar"
+    class="
+      fixed inset-y-0 left-0 z-40 w-64 
+      bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 
+      flex flex-col shadow-xl 
+      transform -translate-x-full transition-transform duration-300 ease-in-out
+      md:translate-x-0 md:static md:shadow-lg md:z-20
+    "
+  >
+    
+    <!-- LOGO HEADER -->
+    <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100 dark:border-zinc-800">
+      <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+        Zchat Admin
+      </span>
+      
+      <!-- Mobile Close Button (X) -->
+      <button 
+        class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        phx-click={
+          JS.add_class("-translate-x-full", to: "#admin-sidebar") 
+          |> JS.hide(to: "#sidebar-overlay")
+        }
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <!-- NAVIGATION LIST -->
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+      <%= for item <- @navigation_items do %>
+        <%= case item do %>
+          <% {:section_header, section_name} -> %>
+            <div class="pt-4 pb-1 pl-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <%= section_name %>
+            </div>
+          
+          <% {:nav_link, nav_item} -> %>
+            <!-- Note: We add a click handler to close sidebar on mobile navigation -->
+            <div phx-click={JS.add_class("-translate-x-full", to: "#admin-sidebar") |> JS.hide(to: "#sidebar-overlay")}>
+              <.admin_nav_link 
+                navigate={nav_item.path} 
+                current_path={@current_path} 
+                icon={nav_item.icon}
+              >
+                <%= nav_item.label %>
+              </.admin_nav_link>
+            </div>
+        <% end %>
+      <% end %>
+    </nav>
+
+    <!-- USER PROFILE FOOTER -->
+    <div class="p-4 border-t border-gray-100 dark:border-zinc-800">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-xs overflow-hidden">
+          
+          <.link navigate={~p"/users/#{@current_user.username}"}>
+          <%= if @current_user.avatar_url do %>
+          
+            <img src={@current_user.avatar_url} alt="avatar" class="w-9 h-9 object-cover">
+            <% else %>
+            <span><%= String.at(@current_user.username, 0) |> String.upcase() %></span>
+          <% end %>
+          </.link>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+            <%= @current_user.username %>
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <%= @current_user.roles |> Enum.map(& &1.name) |> Enum.join(", ") %>
+          </p>
+        </div>
+        <.link href={~p"/users/log_out"} method="delete" class="text-gray-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </.link>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT WRAPPER -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+    
+    <!-- MOBILE HEADER (Visible < md) -->
+    <div class="md:hidden flex items-center justify-between bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-20">
+      <div class="flex items-center gap-3">
+        <!-- HAMBURGER BUTTON -->
+        <button 
+          class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+          phx-click={
+            JS.remove_class("-translate-x-full", to: "#admin-sidebar") 
+            |> JS.show(to: "#sidebar-overlay", transition: "fade-in")
+          }
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        
+        <span class="font-bold text-gray-900 dark:text-white">Admin Panel</span>
+      </div>
+      
+      <!-- Optional: Mobile User Icon -->
+      <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
+         <%= String.at(@current_user.username, 0) |> String.upcase() %>
+      </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+      <.flash_group flash={@flash} />
+      <%= @inner_content %>
+    </div>
+  </main>
+
+</div>

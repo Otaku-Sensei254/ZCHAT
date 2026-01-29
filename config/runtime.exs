@@ -31,7 +31,7 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base,
-    sever: true
+    server: true
 
 
   # --- Cloudinary ---

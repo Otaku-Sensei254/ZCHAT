@@ -253,6 +253,16 @@ defmodule Vibeflow.Chat do
 
   # Share post to multiple friends with optional message
   def share_post_to_friends(sender_id, post_id, recipient_ids, message \\ "") do
+    # Convert string IDs to integers if needed
+    recipient_ids =
+      recipient_ids
+      |> Enum.map(fn id ->
+        case is_binary(id) do
+          true -> String.to_integer(id)
+          false -> id
+        end
+      end)
+
     post =
       Repo.get!(Vibeflow.Posts.Post, post_id)
       |> Repo.preload(:user)

@@ -1,1 +1,1 @@
-call "%~dp0\zchat" eval Zchat.Release.migrate
+call "%~dp0\vibeflow" eval Vibeflow.Release.migrate

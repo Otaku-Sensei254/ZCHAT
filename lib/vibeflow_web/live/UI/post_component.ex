@@ -163,7 +163,6 @@ defmodule VibeflowWeb.UI.PostComponent do
   # --- REAL-TIME UPDATES ---
   # These handle updates broadcasted by other users
 
-  # @impl true
   # def handle_info({:post_liked, like}, socket) do
   #   # If someone else liked this post, increment count
   #   if like.likeable_id == socket.assigns.post.id and like.user_id != socket.assigns.current_user.id do
@@ -173,7 +172,6 @@ defmodule VibeflowWeb.UI.PostComponent do
   #   end
   # end
 
-  # @impl true
   # def handle_info({:post_unliked, %{post_id: post_id, user_id: user_id}}, socket) do
   #   # If someone else unliked this post, decrement count
   #   if post_id == socket.assigns.post.id and user_id != socket.assigns.current_user.id do
@@ -183,7 +181,6 @@ defmodule VibeflowWeb.UI.PostComponent do
   #   end
   # end
 
-  # @impl true
   # def handle_info({:new_comment, comment}, socket) do
   #   # If someone commented, increment count
   #   if comment.post_id == socket.assigns.post.id do

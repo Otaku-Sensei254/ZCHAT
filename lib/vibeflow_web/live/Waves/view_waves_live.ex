@@ -31,6 +31,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
   end
 
   # --- RENDER ---
+  @impl true
   def render(assigns) do
     ~H"""
     <div id="story-viewer" class="fixed inset-0 bg-black z-50 flex flex-col text-white select-none">
@@ -107,9 +108,12 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
 
   # --- EVENTS ---
 
+  @impl true
   def handle_event("next", _, socket), do: {:noreply, go_next(socket)}
+  @impl true
   def handle_event("prev", _, socket), do: {:noreply, go_prev(socket)}
 
+  @impl true
   def handle_event("close", _, socket) do
     {:noreply,
      socket

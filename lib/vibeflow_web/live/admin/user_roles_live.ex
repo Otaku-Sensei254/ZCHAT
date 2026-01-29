@@ -24,7 +24,8 @@ defmodule VibeflowWeb.Admin.UserRolesLive do
     role_id = String.to_integer(r_id)
     currentUser = socket.assigns.current_user
 
-    case Accounts.update_user_role(user_id, role_id) do
+    user = Accounts.get_user!(user_id)
+    case Accounts.update_user_roles(user, [role_id]) do
       {:ok, :added} ->
         # 1. Logic for when role was GRANTED
         Notifications.create_notification(%{

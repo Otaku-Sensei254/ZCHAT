@@ -1,5 +1,7 @@
 import Config
 
+config :logger, level: :debug
+
 if System.get_env("PHX_SERVER") do
   config :vibeflow, VibeflowWeb.Endpoint, server: true
 end

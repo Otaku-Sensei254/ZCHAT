@@ -380,4 +380,32 @@ defmodule VibeflowWeb.UI.FeedLive do
       socket
     end
   end
+
+  defp initials(user) do
+    cond do
+      user && user.username ->
+        user.username
+        |> String.split([" ", "_", "-"])
+        |> Enum.map_join("", &String.first/1)
+        |> String.upcase()
+        |> String.slice(0, 2)  # Limit to 2 characters
+
+      user && user.name ->
+        user.name
+        |> String.split()
+        |> Enum.map_join("", &String.first/1)
+        |> String.upcase()
+        |> String.slice(0, 2)
+
+      user && user.email ->
+        user.email
+        |> String.split("@")
+        |> List.first()
+        |> String.slice(0, 2)
+        |> String.upcase()
+
+      true ->
+        "?"
+    end
+  end
 end

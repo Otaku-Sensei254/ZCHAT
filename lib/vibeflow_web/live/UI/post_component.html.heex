@@ -15,7 +15,7 @@
                       <img src={@post.user.avatar_url} alt="#{@post.user.username} avatar" class="h-10 w-10 rounded-full object-cover border dark:border-zinc-700" referrerpolicy="no-referrer" />
                     <% else %>
                       <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
-                        <%= String.first(@post.user.username || @post.user.email || "?") %>
+                        <%= VibeflowWeb.CoreComponents.initials(@post.user) %>
                       </div>
                     <% end %>
                     </.link>

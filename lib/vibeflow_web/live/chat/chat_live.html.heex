@@ -45,7 +45,13 @@
               phx-value-user_id={user.id}
               class="w-full text-left flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
             >
-              <img src={user.avatar_url || "/images/default_avatar.png"} class="h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600" />
+              <%= if user.avatar_url && user.avatar_url != "" do %>
+                <img src={user.avatar_url} class="h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600" />
+              <% else %>
+                <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm mr-3 border border-gray-200 dark:border-zinc-600">
+                  <%= VibeflowWeb.CoreComponents.initials(user) %>
+                </div>
+              <% end %>
               <div>
                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
@@ -70,8 +76,7 @@
            display_name = if is_group, do: conv.name || "Unnamed Group", else: (other_member && other_member.user.username) || "Unknown"
            
            avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
-           name_for_initial = if !is_group && other_member, do: other_member.user.username || other_member.user.email, else: "?"
-           initial = String.first(name_for_initial || "?") |> String.upcase()
+           avatar_user = if !is_group && other_member, do: other_member.user
            
            is_active = @conversation && conv.id == @conversation.id
            is_online = if !is_group && other_member, do: Map.has_key?(@online_users, to_string(other_member.user.id)), else: false
@@ -92,9 +97,16 @@
                 </div>
               <% avatar_url -> %>
                 <img src={avatar_url} class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-zinc-700" />
-              <% true -> %>
+              <% avatar_user -> %>
                 <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-200 dark:border-indigo-800">
-                  <%= initial %>
+                  <%= VibeflowWeb.CoreComponents.initials(avatar_user) %>
+                </div>
+              <% true -> %>
+                <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-lg border border-gray-200 dark:border-gray-800">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
                 </div>
             <% end %>
 
@@ -143,8 +155,7 @@
             header_member = Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
             header_name = if @conversation.type == "group", do: @conversation.name, else: (header_member && header_member.user.username) || "Unknown"
             header_avatar = if @conversation.type != "group" && header_member, do: header_member.user.avatar_url
-            header_name_source = if @conversation.type != "group" && header_member, do: header_member.user.username || header_member.user.email, else: "?"
-            header_initial = String.first(header_name_source || "?") |> String.upcase()
+            header_user = if @conversation.type != "group" && header_member, do: header_member.user
             other_user_online = if @conversation.type != "group" && header_member, do: Map.has_key?(@online_users, to_string(header_member.user.id)), else: false
           %>
           
@@ -156,9 +167,13 @@
                  </div>
                <% header_avatar -> %>
                  <img src={header_avatar} class="w-10 h-10 rounded-full object-cover" />
-               <% true -> %>
+               <% header_user -> %>
                  <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
-                   <%= header_initial %>
+                   <%= VibeflowWeb.CoreComponents.initials(header_user) %>
+                 </div>
+               <% true -> %>
+                 <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-sm">
+                   ?
                  </div>
             <% end %>
             <%= if other_user_online do %>
@@ -212,7 +227,13 @@
                     <% end %>
                     <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
                     <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
-                      <img src={post.user.avatar_url || "/images/default_avatar.png"} class="w-6 h-6 rounded-full border border-white/50 object-cover">
+                      <%= if post.user.avatar_url && post.user.avatar_url != "" do %>
+                      <img src={post.user.avatar_url} class="w-6 h-6 rounded-full border border-white/50 object-cover">
+                    <% else %>
+                      <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs border border-white/50">
+                        <%= VibeflowWeb.CoreComponents.initials(post.user) %>
+                      </div>
+                    <% end %>
                       <span class="text-xs font-bold text-white shadow-sm"><%= post.user.username %></span>
                     </div>
                     <%= if post.content do %>

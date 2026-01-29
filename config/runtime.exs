@@ -1,7 +1,7 @@
 import Config
 
 if System.get_env("PHX_SERVER") do
-  config :zchat, ZchatWeb.Endpoint, server: true
+  config :vibeflow, VibeflowWeb.Endpoint, server: true
 end
 
 if config_env() == :prod do
@@ -12,7 +12,7 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :zchat, Zchat.Repo,
+  config :vibeflow, Vibeflow.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     ssl: [verify: :verify_none],
@@ -23,7 +23,7 @@ if config_env() == :prod do
   port = String.to_integer(System.get_env("PORT") || "8080")
   secret_key_base = System.get_env("SECRET_KEY_BASE") || raise "SECRET_KEY_BASE missing"
 
-  config :zchat, ZchatWeb.Endpoint,
+  config :vibeflow, VibeflowWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # 2. FORCE IPv4 (4 zeros)
@@ -44,7 +44,7 @@ end
 
 # If we are in Dev mode but have a Cloud URL, use the Cloud!
 if config_env() == :dev and System.get_env("DATABASE_URL") do
-  config :zchat, Zchat.Repo,
+  config :vibeflow, Vibeflow.Repo,
     url: System.get_env("DATABASE_URL"),
     # Neon needs SSL, so we force it here
     ssl: [verify: :verify_none],

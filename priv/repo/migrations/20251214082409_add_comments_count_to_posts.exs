@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddCommentsCountToPosts do
+defmodule Vibeflow.Repo.Migrations.AddCommentsCountToPosts do
   use Ecto.Migration
 
   def change do

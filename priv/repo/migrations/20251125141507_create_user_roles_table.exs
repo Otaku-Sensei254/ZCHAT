@@ -1,5 +1,5 @@
 # priv/repo/migrations/[timestamp]_create_user_roles_table.exs
-defmodule Zchat.Repo.Migrations.CreateUserRolesTable do
+defmodule Vibeflow.Repo.Migrations.CreateUserRolesTable do
   use Ecto.Migration
 
   def change do

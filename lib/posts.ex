@@ -1,11 +1,11 @@
-defmodule Zchat.Posts do
+defmodule Vibeflow.Posts do
   @moduledoc """
   The Posts context for handling blog posts, comments, and likes.
   """
   import Ecto.Query, warn: false
-  alias Zchat.Repo
-  alias Zchat.Notifications
-  alias Zchat.Posts.{Post, Like, Comment}
+  alias Vibeflow.Repo
+  alias Vibeflow.Notifications
+  alias Vibeflow.Posts.{Post, Like, Comment}
 
   # --- TRENDING ---
 
@@ -180,8 +180,8 @@ defmodule Zchat.Posts do
       {:ok, post} ->
         post = Repo.preload(post, :user)
         Notifications.notify_followers_of_new_post(post)
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:new_post, post})
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_created, post})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:new_post, post})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_created, post})
         {:ok, post}
       error -> error
     end
@@ -204,8 +204,8 @@ defmodule Zchat.Posts do
     Repo.delete(post)
     |> case do
       {:ok, post} ->
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_deleted, post})
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:post_deleted, post})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_deleted, post})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_deleted, post})
         {:ok, post}
       error -> error
     end
@@ -245,8 +245,8 @@ defmodule Zchat.Posts do
     |> case do
       {:ok, comment} ->
         comment = Repo.preload(comment, :user)
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "admin:stats", {:comment_created, comment})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:comment_created, comment})
 
         unless comment.post_id |> get_post!() |> Map.get(:user_id) == comment.user_id do
           post = get_post!(comment.post_id)
@@ -275,7 +275,7 @@ defmodule Zchat.Posts do
   end
 
   defp handle_comment_update({:ok, comment}) do
-    Phoenix.PubSub.broadcast(Zchat.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
+    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
     {:ok, comment}
   end
   defp handle_comment_update({:error, changeset}), do: {:error, changeset}
@@ -307,12 +307,12 @@ defmodule Zchat.Posts do
 
         cond do
           like.likeable_type == "Post" ->
-            Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_liked, like})
-            Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_liked, like})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{like.likeable_id}", {:post_liked, like})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_liked, like})
           like.likeable_type == "Comment" ->
             comment = Repo.get(Comment, like.likeable_id)
             if comment do
-              Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_liked, like})
+              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:comment_liked, like})
             end
         end
 
@@ -330,12 +330,12 @@ defmodule Zchat.Posts do
 
         cond do
           like.likeable_type == "Post" ->
-            Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{like.likeable_id}", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
-            Phoenix.PubSub.broadcast(Zchat.PubSub, "posts", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{like.likeable_id}", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
           like.likeable_type == "Comment" ->
             comment = Repo.get(Comment, like.likeable_id)
             if comment do
-              Phoenix.PubSub.broadcast(Zchat.PubSub, "post:#{comment.post_id}", {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}})
+              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}})
             end
         end
 
@@ -388,7 +388,7 @@ defmodule Zchat.Posts do
     %{
       total_posts: Repo.aggregate(Post, :count),
       total_comments: Repo.aggregate(Comment, :count),
-      total_users: Repo.aggregate(Zchat.Accounts.User, :count)
+      total_users: Repo.aggregate(Vibeflow.Accounts.User, :count)
     }
   end
 
@@ -461,7 +461,7 @@ defmodule Zchat.Posts do
   end
 
   defp upload_and_format(path) do
-    case Zchat.Infrastructure.UploadCloudinary.upload_file(path) do
+    case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
       {:ok, result} ->
         %{
           "url" => result.secure_url,

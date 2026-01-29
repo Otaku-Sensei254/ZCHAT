@@ -1,10 +1,10 @@
-defmodule Zchat.AccountsTest do
-  use Zchat.DataCase
+defmodule Vibeflow.AccountsTest do
+  use Vibeflow.DataCase
 
-  alias Zchat.Accounts
+  alias Vibeflow.Accounts
 
-  import Zchat.AccountsFixtures
-  alias Zchat.Accounts.{User, UserToken}
+  import Vibeflow.AccountsFixtures
+  alias Vibeflow.Accounts.{User, UserToken}
 
   describe "get_user_by_email/1" do
     test "does not return the user if the email does not exist" do

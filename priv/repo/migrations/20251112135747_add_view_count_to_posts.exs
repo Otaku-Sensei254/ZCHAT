@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddViewCountToPosts do
+defmodule Vibeflow.Repo.Migrations.AddViewCountToPosts do
   use Ecto.Migration
 
   def change do

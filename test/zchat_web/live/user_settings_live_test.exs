@@ -1,9 +1,9 @@
-defmodule ZchatWeb.UserSettingsLiveTest do
-  use ZchatWeb.ConnCase, async: true
+defmodule VibeflowWeb.UserSettingsLiveTest do
+  use VibeflowWeb.ConnCase, async: true
 
-  alias Zchat.Accounts
+  alias Vibeflow.Accounts
   import Phoenix.LiveViewTest
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
   describe "Settings page" do
     test "renders settings page", %{conn: conn} do

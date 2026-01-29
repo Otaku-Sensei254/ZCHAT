@@ -1,7 +1,7 @@
-defimpl Canada.Can, for: Zchat.Accounts.User do
-  alias Zchat.Posts.Post
-  alias Zchat.Chat.Conversation
-  alias Zchat.Accounts
+defimpl Canada.Can, for: Vibeflow.Accounts.User do
+  alias Vibeflow.Posts.Post
+  alias Vibeflow.Chat.Conversation
+  alias Vibeflow.Accounts
 
   # --- SPECIFIC RULES FIRST ---
 
@@ -22,11 +22,11 @@ defimpl Canada.Can, for: Zchat.Accounts.User do
 
   # chat permissions
   def can?(user, :read, %Conversation{} = conversation) do
-    Zchat.Chat.member_of_conversation?(user.id, conversation.id)
+    Vibeflow.Chat.member_of_conversation?(user.id, conversation.id)
   end
 
   # --- LAST: ADMIN GLOBAL ALLOW ---
-  def can?(%Zchat.Accounts.User{} = user, _action, _resource) do
+  def can?(%Vibeflow.Accounts.User{} = user, _action, _resource) do
     Ecto.assoc_loaded?(user.roles) &&
       Enum.any?(user.roles, &(&1.name == "admin"))
   end

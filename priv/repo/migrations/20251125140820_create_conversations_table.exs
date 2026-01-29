@@ -1,5 +1,5 @@
 # priv/repo/migrations/[timestamp]_create_conversations_table.exs
-defmodule Zchat.Repo.Migrations.CreateConversationsTable do
+defmodule Vibeflow.Repo.Migrations.CreateConversationsTable do
   use Ecto.Migration
 
   def change do

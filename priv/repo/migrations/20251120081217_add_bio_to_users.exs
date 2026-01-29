@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddBioToUsers do
+defmodule Vibeflow.Repo.Migrations.AddBioToUsers do
   use Ecto.Migration
 
   def change do

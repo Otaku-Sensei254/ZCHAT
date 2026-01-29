@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.CreateNotifications do
+defmodule Vibeflow.Repo.Migrations.CreateNotifications do
   use Ecto.Migration
 
   def change do

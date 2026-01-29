@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.CreatePermissionRoles do
+defmodule Vibeflow.Repo.Migrations.CreatePermissionRoles do
   use Ecto.Migration
 
   def change do

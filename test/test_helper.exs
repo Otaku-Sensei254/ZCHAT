@@ -1,2 +1,2 @@
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Zchat.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(Vibeflow.Repo, :manual)

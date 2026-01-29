@@ -1,5 +1,5 @@
 # In your existing 20251125140525_create_messages_table.exs
-defmodule Zchat.Repo.Migrations.CreateMessagesTable do
+defmodule Vibeflow.Repo.Migrations.CreateMessagesTable do
   use Ecto.Migration
 
   def change do

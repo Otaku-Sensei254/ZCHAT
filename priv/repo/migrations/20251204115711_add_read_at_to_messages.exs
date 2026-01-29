@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddReadAtToMessages do
+defmodule Vibeflow.Repo.Migrations.AddReadAtToMessages do
   use Ecto.Migration
 
   def change do

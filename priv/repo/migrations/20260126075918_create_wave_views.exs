@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.CreateWaveViews do
+defmodule Vibeflow.Repo.Migrations.CreateWaveViews do
   use Ecto.Migration
 
   def change do

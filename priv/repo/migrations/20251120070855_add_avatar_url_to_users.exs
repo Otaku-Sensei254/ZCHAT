@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddAvatarUrlToUsers do
+defmodule Vibeflow.Repo.Migrations.AddAvatarUrlToUsers do
   use Ecto.Migration
 
   def change do

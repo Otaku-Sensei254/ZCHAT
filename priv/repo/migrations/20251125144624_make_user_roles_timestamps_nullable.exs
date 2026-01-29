@@ -1,5 +1,5 @@
 # priv/repo/migrations/[timestamp]_make_user_roles_timestamps_nullable.exs
-defmodule Zchat.Repo.Migrations.MakeUserRolesTimestampsNullable do
+defmodule Vibeflow.Repo.Migrations.MakeUserRolesTimestampsNullable do
   use Ecto.Migration
 
   def change do

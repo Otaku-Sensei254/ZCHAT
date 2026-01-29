@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.CreatePosts do
+defmodule Vibeflow.Repo.Migrations.CreatePosts do
   use Ecto.Migration
 
   def change do

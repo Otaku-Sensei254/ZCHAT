@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddItunesIdToMusicTracks do
+defmodule Vibeflow.Repo.Migrations.AddItunesIdToMusicTracks do
   use Ecto.Migration
 
   def change do

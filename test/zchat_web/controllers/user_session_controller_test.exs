@@ -1,7 +1,7 @@
-defmodule ZchatWeb.UserSessionControllerTest do
-  use ZchatWeb.ConnCase, async: true
+defmodule VibeflowWeb.UserSessionControllerTest do
+  use VibeflowWeb.ConnCase, async: true
 
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
   setup do
     %{user: user_fixture()}

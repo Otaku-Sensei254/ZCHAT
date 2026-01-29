@@ -1,11 +1,11 @@
-defmodule ZchatWeb.UserForgotPasswordLiveTest do
-  use ZchatWeb.ConnCase, async: true
+defmodule VibeflowWeb.UserForgotPasswordLiveTest do
+  use VibeflowWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
-  alias Zchat.Accounts
-  alias Zchat.Repo
+  alias Vibeflow.Accounts
+  alias Vibeflow.Repo
 
   describe "Forgot password page" do
     test "renders email page", %{conn: conn} do

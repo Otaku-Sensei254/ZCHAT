@@ -1,5 +1,5 @@
-defmodule Zchat.Release do
-  @app :zchat
+defmodule Vibeflow.Release do
+  @app :vibeflow
 
   def migrate do
     # This is the standard Ecto migration code used in Heroku deployments
@@ -9,7 +9,7 @@ defmodule Zchat.Release do
 
     # Get the repo configuration dynamically
     config = Application.get_env(@app, :repo)
-    # Get the name of the repository module (e.g., Zchat.Repo)
+    # Get the name of the repository module (e.g., Vibeflow.Repo)
     repo = Keyword.get(config, :repo, @app)
 
     # Run the migrations using Ecto.Migrator
@@ -22,7 +22,7 @@ defmodule Zchat.Release do
   def seed do
     IO.puts("Running Ecto seeds...")
     Application.load(@app)
-    path = Path.join(migrations_path(Zchat.Repo), "seeds.exs")
+    path = Path.join(migrations_path(Vibeflow.Repo), "seeds.exs")
     Code.eval_file(path)
     IO.puts("Seeds completed successfully.")
   end

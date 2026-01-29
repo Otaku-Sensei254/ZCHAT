@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddSharedPostToMessages do
+defmodule Vibeflow.Repo.Migrations.AddSharedPostToMessages do
   use Ecto.Migration
 
   def change do

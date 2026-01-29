@@ -1,4 +1,4 @@
-defmodule Zchat.DataCase do
+defmodule Vibeflow.DataCase do
   @moduledoc """
   This module defines the setup for tests requiring
   access to the application's data layer.
@@ -10,7 +10,7 @@ defmodule Zchat.DataCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
-  by setting `use Zchat.DataCase, async: true`, although
+  by setting `use Vibeflow.DataCase, async: true`, although
   this option is not recommended for other databases.
   """
 
@@ -18,17 +18,17 @@ defmodule Zchat.DataCase do
 
   using do
     quote do
-      alias Zchat.Repo
+      alias Vibeflow.Repo
 
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      import Zchat.DataCase
+      import Vibeflow.DataCase
     end
   end
 
   setup tags do
-    Zchat.DataCase.setup_sandbox(tags)
+    Vibeflow.DataCase.setup_sandbox(tags)
     :ok
   end
 
@@ -36,13 +36,13 @@ defmodule Zchat.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Zchat.Repo)
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Vibeflow.Repo)
 
     unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Zchat.Repo, {:shared, self()})
+      Ecto.Adapters.SQL.Sandbox.mode(Vibeflow.Repo, {:shared, self()})
     end
 
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.checkin(Zchat.Repo) end)
+    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.checkin(Vibeflow.Repo) end)
     :ok
   end
 

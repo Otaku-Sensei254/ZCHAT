@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddDurationToMusicTracks do
+defmodule Vibeflow.Repo.Migrations.AddDurationToMusicTracks do
   use Ecto.Migration
 
   def change do

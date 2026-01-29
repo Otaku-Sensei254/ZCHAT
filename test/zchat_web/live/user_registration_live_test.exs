@@ -1,8 +1,8 @@
-defmodule ZchatWeb.UserRegistrationLiveTest do
-  use ZchatWeb.ConnCase, async: true
+defmodule VibeflowWeb.UserRegistrationLiveTest do
+  use VibeflowWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
   describe "Registration page" do
     test "renders registration page", %{conn: conn} do

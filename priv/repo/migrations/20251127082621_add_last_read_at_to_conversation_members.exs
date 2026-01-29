@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddLastReadAtToConversationMembers do
+defmodule Vibeflow.Repo.Migrations.AddLastReadAtToConversationMembers do
   use Ecto.Migration
 
   def change do

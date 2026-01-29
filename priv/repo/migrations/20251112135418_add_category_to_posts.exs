@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddCategoryToPosts do
+defmodule Vibeflow.Repo.Migrations.AddCategoryToPosts do
   use Ecto.Migration
 
   def change do

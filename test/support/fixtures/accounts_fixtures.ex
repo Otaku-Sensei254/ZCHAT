@@ -1,7 +1,7 @@
-defmodule Zchat.AccountsFixtures do
+defmodule Vibeflow.AccountsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Zchat.Accounts` context.
+  entities via the `Vibeflow.Accounts` context.
   """
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
@@ -20,7 +20,7 @@ defmodule Zchat.AccountsFixtures do
     {:ok, user} =
       attrs
       |> valid_user_attributes()
-      |> Zchat.Accounts.register_user()
+      |> Vibeflow.Accounts.register_user()
 
     user
   end

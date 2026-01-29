@@ -1,8 +1,8 @@
-defmodule ZchatWeb.UserLoginLiveTest do
-  use ZchatWeb.ConnCase, async: true
+defmodule VibeflowWeb.UserLoginLiveTest do
+  use VibeflowWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
   describe "Log in page" do
     test "renders log in page", %{conn: conn} do

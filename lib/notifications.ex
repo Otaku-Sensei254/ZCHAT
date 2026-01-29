@@ -1,7 +1,7 @@
-defmodule Zchat.Notifications do
+defmodule Vibeflow.Notifications do
   import Ecto.Query, warn: false
-  alias Zchat.Repo
-  alias Zchat.Notifications.Notification
+  alias Vibeflow.Repo
+  alias Vibeflow.Notifications.Notification
 
   # --- READS ---
 
@@ -33,7 +33,7 @@ defmodule Zchat.Notifications do
         notif = Repo.preload(notif, [:actor, :post])
         # Broadcast generic event to trigger UI refresh
         Phoenix.PubSub.broadcast(
-          Zchat.PubSub,
+          Vibeflow.PubSub,
           "notifications:#{notif.user_id}",
           {:new_notification, notif})
         {:ok, notif}
@@ -52,7 +52,7 @@ defmodule Zchat.Notifications do
           |> Repo.update()
 
         # Broadcast update
-        Phoenix.PubSub.broadcast(Zchat.PubSub, "notifications:#{updated.user_id}", :update_notifications)
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{updated.user_id}", :update_notifications)
         {:ok, updated}
     end
   end
@@ -61,13 +61,13 @@ defmodule Zchat.Notifications do
     from(n in Notification, where: n.user_id == ^user_id and is_nil(n.read_at))
     |> Repo.update_all(set: [read_at: NaiveDateTime.utc_now()])
 
-    Phoenix.PubSub.broadcast(Zchat.PubSub, "notifications:#{user_id}", :update_notifications)
+    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{user_id}", :update_notifications)
   end
 
   # --- HELPERS ---
 
   def notify_followers_of_new_post(post) do
-    alias Zchat.Socials
+    alias Vibeflow.Socials
     followers = Socials.get_followers_for_notifications(post.user_id)
 
     Enum.each(followers, fn follower ->

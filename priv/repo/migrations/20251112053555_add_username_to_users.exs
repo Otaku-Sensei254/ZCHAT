@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddUsernameToUsers do
+defmodule Vibeflow.Repo.Migrations.AddUsernameToUsers do
   use Ecto.Migration
 
   def change do

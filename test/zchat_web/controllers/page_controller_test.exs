@@ -1,5 +1,5 @@
-defmodule ZchatWeb.PageControllerTest do
-  use ZchatWeb.ConnCase
+defmodule VibeflowWeb.PageControllerTest do
+  use VibeflowWeb.ConnCase
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")

@@ -1,13 +1,13 @@
-defmodule Zchat.WavesTest do
+defmodule Vibeflow.WavesTest do
   # 1. Use DataCase. This gives you access to the Repo and the Sandbox.
-  use Zchat.DataCase
+  use Vibeflow.DataCase
 
-  alias Zchat.Waves
-  alias Zchat.Socials
-  alias Zchat.Socials.Follow
+  alias Vibeflow.Waves
+  alias Vibeflow.Socials
+  alias Vibeflow.Socials.Follow
 
   # This allows us to use `user_fixture()` to quickly make fake users
-  import Zchat.AccountsFixtures
+  import Vibeflow.AccountsFixtures
 
   describe "list_active_waves/1" do
     test "returns waves from people I follow, but ignores strangers" do

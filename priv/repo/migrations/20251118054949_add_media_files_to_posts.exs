@@ -1,4 +1,4 @@
-defmodule Zchat.Repo.Migrations.AddMediaFilesToPosts do
+defmodule Vibeflow.Repo.Migrations.AddMediaFilesToPosts do
   use Ecto.Migration
 
   def change do

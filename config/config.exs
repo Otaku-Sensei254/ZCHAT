@@ -7,17 +7,17 @@
 # General application configuration
 import Config
 
-config :zchat,
-  ecto_repos: [Zchat.Repo]
+config :vibeflow,
+  ecto_repos: [Vibeflow.Repo]
 
 # Configures the endpoint
-config :zchat, ZchatWeb.Endpoint,
+config :vibeflow, VibeflowWeb.Endpoint,
   url: [host: "localhost"],
   render_errors: [
-    formats: [html: ZchatWeb.ErrorHTML, json: ZchatWeb.ErrorJSON],
+    formats: [html: VibeflowWeb.ErrorHTML, json: VibeflowWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Zchat.PubSub,
+  pubsub_server: Vibeflow.PubSub,
   live_view: [signing_salt: "qoodR1tP"]
 
 # Configures the mailer
@@ -27,7 +27,7 @@ config :zchat, ZchatWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :zchat, Zchat.Mailer, adapter: Swoosh.Adapters.Local
+config :vibeflow, Vibeflow.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,

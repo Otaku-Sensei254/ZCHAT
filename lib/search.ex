@@ -1,8 +1,8 @@
-defmodule Zchat.Search do
+defmodule Vibeflow.Search do
   import Ecto.Query, warn: false
-  alias Zchat.Repo
-  alias Zchat.Accounts.User
-  alias Zchat.Posts.Post
+  alias Vibeflow.Repo
+  alias Vibeflow.Accounts.User
+  alias Vibeflow.Posts.Post
 
   def global_search(query) when byte_size(query) < 2, do: []
 

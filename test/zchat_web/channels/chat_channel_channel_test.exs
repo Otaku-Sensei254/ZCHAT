@@ -1,16 +1,16 @@
-defmodule ZchatWeb.ChatChannelChannelTest do
-  use ZchatWeb.ChannelCase
+defmodule VibeflowWeb.ChatChannelChannelTest do
+  use VibeflowWeb.ChannelCase
   import Phoenix.Socket
 
   setup do
     # Create a dummy user using your new fixture
-    user = Zchat.AccountsFixtures.user_fixture()
+    user = Vibeflow.AccountsFixtures.user_fixture()
 
     {:ok, _, socket} =
-      ZchatWeb.UserSocket
+      VibeflowWeb.UserSocket
       |> socket("user_id", %{some: :assign})
       |> assign(:current_user, user)
-      |> subscribe_and_join(ZchatWeb.ChatChannelChannel, "chat_topic")
+      |> subscribe_and_join(VibeflowWeb.ChatChannelChannel, "chat_topic")
 
     %{socket: socket}
   end

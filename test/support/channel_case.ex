@@ -1,4 +1,4 @@
-defmodule ZchatWeb.ChannelCase do
+defmodule VibeflowWeb.ChannelCase do
   @moduledoc """
   This module defines the test case to be used by
   channel tests.
@@ -11,7 +11,7 @@ defmodule ZchatWeb.ChannelCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
-  by setting `use ZchatWeb.ChannelCase, async: true`, although
+  by setting `use VibeflowWeb.ChannelCase, async: true`, although
   this option is not recommended for other databases.
   """
 
@@ -21,15 +21,15 @@ defmodule ZchatWeb.ChannelCase do
     quote do
       # Import conveniences for testing with channels
       import Phoenix.ChannelTest
-      import ZchatWeb.ChannelCase
+      import VibeflowWeb.ChannelCase
 
       # The default endpoint for testing
-      @endpoint ZchatWeb.Endpoint
+      @endpoint VibeflowWeb.Endpoint
     end
   end
 
   setup tags do
-    Zchat.DataCase.setup_sandbox(tags)
+    Vibeflow.DataCase.setup_sandbox(tags)
     :ok
   end
 end

@@ -1,5 +1,5 @@
-defmodule ZchatWeb.Presence do
+defmodule VibeflowWeb.Presence do
   use Phoenix.Presence,
-    otp_app: :zchat,
-    pubsub_server: Zchat.PubSub
+    otp_app: :vibeflow,
+    pubsub_server: Vibeflow.PubSub
 end

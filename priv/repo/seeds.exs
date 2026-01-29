@@ -1,6 +1,6 @@
 # priv/repo/seeds.exs
-alias Zchat.Repo
-alias Zchat.Accounts.{Role, Permission}
+alias Vibeflow.Repo
+alias Vibeflow.Accounts.{Role, Permission}
 
 IO.puts("🌱 Seeding Roles & Permissions...")
 

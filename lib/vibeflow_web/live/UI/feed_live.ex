@@ -144,6 +144,9 @@ defmodule VibeflowWeb.UI.FeedLive do
     ids = if is_list(ids), do: Enum.map(ids, &String.to_integer/1), else: [String.to_integer(ids)]
     {:noreply, assign(socket, :selected_friends, ids)}
   end
+  def handle_event("update_selected_friends", _params, socket) do
+    {:noreply, assign(socket, :selected_friends, [])}
+  end
 
   def handle_event("select_all_friends", _params, socket) do
     ids = Enum.map(socket.assigns.friends_list || [], & &1.id)

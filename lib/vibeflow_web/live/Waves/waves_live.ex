@@ -175,7 +175,7 @@ defmodule VibeflowWeb.Waves.WavesLive do
 
       # CRITICAL CHECK: Is the file actually on the server yet?
       if !entry.done? do
-        Logger.warn(">>> UPLOAD STILL IN PROGRESS: #{entry.progress}% <<<")
+        Logger.warning(">>> UPLOAD STILL IN PROGRESS: #{entry.progress}% <<<")
         {:noreply, put_flash(socket, :info, "Please wait, uploading... #{entry.progress}%")}
       else
         Logger.info(">>> CONSUMING UPLOADED ENTRIES <<<")

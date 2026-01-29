@@ -101,31 +101,38 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket)
+  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids, "share_message" => message}, socket)
       when is_list(recipient_ids) do
     current_user_id = socket.assigns.current_user.id
     post_id = socket.assigns.post_to_share
 
-    {oks, errs} =
-      recipient_ids
-      |> Enum.map(&String.to_integer/1)
-      |> Enum.reduce({[], []}, fn recipient_int_id, {oks, errs} ->
-        case Vibeflow.Chat.share_posts_to_friend(current_user_id, recipient_int_id, post_id) do
-          {:ok, _} -> {[recipient_int_id | oks], errs}
-          {:error, _} -> {oks, [recipient_int_id | errs]}
-        end
-      end)
+    # Share the post with optional message
+    case Vibeflow.Chat.share_post_to_friends(current_user_id, post_id, recipient_ids, message) do
+      {:ok, _shared_post} ->
+        msg =
+          case length(recipient_ids) do
+            1 -> "Post shared successfully!"
+            n -> "Post shared to #{n} friends!"
+          end
 
-    msg =
-      if length(errs) == 0,
-        do: "Sent to chat!",
-        else: "Sent to #{length(oks)} users, #{length(errs)} failed."
+        {:noreply,
+         socket
+         |> put_flash(:info, msg)
+         |> assign(:show_share_modal, false)
+         |> assign(:selected_friends, [])}
 
-    {:noreply,
-     socket
-     |> put_flash(:info, msg)
-     |> assign(:show_share_modal, false)
-     |> assign(:selected_friends, [])}
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to share post: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket)
+      when is_list(recipient_ids) do
+    # Handle case where no message is provided
+    handle_event("confirm_share", %{"recipient_ids" => recipient_ids, "share_message" => ""}, socket)
   end
 
   def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do

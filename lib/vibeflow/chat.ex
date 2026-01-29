@@ -250,4 +250,51 @@ defmodule Vibeflow.Chat do
 
     {:ok, message}
   end
+
+  # Share post to multiple friends with optional message
+  def share_post_to_friends(sender_id, post_id, recipient_ids, message \\ "") do
+    post =
+      Repo.get!(Vibeflow.Posts.Post, post_id)
+      |> Repo.preload(:user)
+
+    content = if message && message != "", do: message, else: "Shared a post"
+
+    # Create messages for each recipient
+    results =
+      Enum.map(recipient_ids, fn recipient_id ->
+        case get_or_create_private_conversation(sender_id, recipient_id) do
+          {:ok, conversation} ->
+            case create_message(%{
+              content: content,
+              user_id: sender_id,
+              conversation_id: conversation.id,
+              shared_post_id: post_id
+            }) do
+              {:ok, message} ->
+                # Create notification for the recipient
+                Notifications.create_notification(%{
+                  user_id: recipient_id,
+                  actor_id: sender_id,
+                  type: "shared_post",
+                  post_id: post_id,
+                  conversation_id: conversation.id
+                })
+                {:ok, message}
+              error ->
+                error
+            end
+          error ->
+            error
+        end
+      end)
+
+    # Check if all shares were successful
+    case Enum.all?(results, &match?({:ok, _}, &1)) do
+      true ->
+        {:ok, results}
+      false ->
+        failed_count = Enum.count(results, &match?({:error, _}, &1))
+        {:error, "Failed to share to #{failed_count} recipients"}
+    end
+  end
 end

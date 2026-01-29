@@ -236,7 +236,7 @@
         <form phx-change="update_selected_friends" phx-submit="confirm_share" id="share-form">
           <div class="grid grid-cols-4 gap-4 max-h-48 overflow-y-auto pr-2">
             <%= for friend <- (@friends_list_filtered || @friends_list || []) do %>
-              <label class="flex flex-col items-center gap-2 cursor-pointer group relative">
+              <label class="flex flex-col items-center gap-2 cursor-pointer group relative peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-900/20 rounded-lg p-2 transition-colors">
                 <input 
                   type="checkbox" 
                   name="recipient_ids[]" 

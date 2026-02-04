@@ -91,4 +91,4 @@ config :cloudex,
   api_key: "576125769822254",
   secret: "yNxdsd0kWa_OtysW-x5ve8LGyEOw",
   cloud_name: "dahpsrzjh",
-  upload_preset: "vibeflow_uploads"
+  upload_preset: "zchat_uploads"

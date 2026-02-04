@@ -23,6 +23,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:current_media_index, 0)
      # FIX: Initialize BOTH streams here
      |> stream(:comments, [])
+
      |> stream(:mobile_comments, [])}
   end
 
@@ -132,6 +133,35 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   end
 
  @impl true
+  def handle_event("share_post", _, socket) do
+    post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.id}"
+
+    {:noreply,
+     socket
+     |> push_event("share_post", %{
+       title: "Check out this post by #{socket.assigns.post.user.username}",
+       text: socket.assigns.post.content,
+       url: post_url
+     })}
+  end
+
+  @impl true
+  def handle_event("toggle_follow", %{"user-id" => user_id}, socket) do
+    if socket.assigns.current_user do
+      # Prevent following yourself
+      if String.to_integer(user_id) == socket.assigns.current_user.id do
+        {:noreply, put_flash(socket, :error, "You cannot follow yourself")}
+      else
+        # Toggle follow logic would go here
+        # For now, just show a success message
+        {:noreply, put_flash(socket, :info, "Follow functionality coming soon!")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Login required to follow users")}
+    end
+  end
+
+  @impl true
   def handle_event("show_comments", _, socket) do
     comments = Posts.list_comments(post_id: socket.assigns.post.id, preload: [:user])
 

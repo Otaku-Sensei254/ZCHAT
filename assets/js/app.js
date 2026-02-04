@@ -252,6 +252,63 @@ Hooks.VideoAutoplay = {
   },
 };
 
+Hooks.ShareHook = {
+  mounted() {
+    this.handleEvent("share_post", ({title, text, url}) => {
+      if (navigator.share) {
+        // Use native Web Share API on mobile
+        navigator.share({
+          title: title,
+          text: text,
+          url: url
+        }).catch((error) => {
+          console.log("Share cancelled or failed:", error);
+          // Fallback to copying to clipboard
+          this.copyToClipboard(url);
+        });
+      } else {
+        // Fallback for desktop - copy to clipboard
+        this.copyToClipboard(url);
+      }
+    });
+  },
+  
+  copyToClipboard(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        // Show success message (you could emit an event back to LiveView)
+        console.log("Link copied to clipboard!");
+      }).catch((error) => {
+        console.error("Failed to copy:", error);
+        // Fallback method
+        this.fallbackCopy(text);
+      });
+    } else {
+      this.fallbackCopy(text);
+    }
+  },
+  
+  fallbackCopy(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      console.log("Link copied to clipboard!");
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+    
+    document.body.removeChild(textArea);
+  }
+};
+
 Hooks.InfiniteScroll = {
   mounted() {
     this.observer = new IntersectionObserver((entries) => {

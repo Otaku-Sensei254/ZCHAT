@@ -38,7 +38,13 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
    |> assign(:posts, posts)
    |> assign(:follow_stats, follow_stats)
    |> assign(:is_following, is_following)
-   |> assign(:hide_bottom_nav, true)}
+   |> assign(:hide_bottom_nav, true)
+   |> assign(:show_followers_modal, false)
+   |> assign(:show_following_modal, false)
+   |> assign(:followers, [])
+   |> assign(:following, [])
+   |> assign(:search_query, "")
+   |> assign(:modal_type, nil)}
     end
   end
 
@@ -104,8 +110,68 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     end
   end
 
+  # Followers/Following Modal Events
+  @impl true
+  def handle_event("show_followers", _, socket) do
+    profile_user = socket.assigns.user
+    followers = Socials.list_followers(profile_user.id)
 
-  
+    {:noreply,
+     socket
+     |> assign(:show_followers_modal, true)
+     |> assign(:show_following_modal, false)
+     |> assign(:followers, followers)
+     |> assign(:modal_type, "followers")
+     |> assign(:search_query, "")}
+  end
+
+  @impl true
+  def handle_event("show_following", _, socket) do
+    profile_user = socket.assigns.user
+    following = Socials.list_following(profile_user.id)
+
+    {:noreply,
+     socket
+     |> assign(:show_followers_modal, false)
+     |> assign(:show_following_modal, true)
+     |> assign(:following, following)
+     |> assign(:modal_type, "following")
+     |> assign(:search_query, "")}
+  end
+
+  @impl true
+  def handle_event("close_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_followers_modal, false)
+     |> assign(:show_following_modal, false)
+     |> assign(:search_query, "")}
+  end
+
+  @impl true
+  def handle_event("search_follows", %{"search" => search_query}, socket) do
+    profile_user = socket.assigns.user
+    modal_type = socket.assigns.modal_type
+
+    {followers, following} =
+      case modal_type do
+        "followers" ->
+          {Socials.list_followers(profile_user.id, search: search_query), socket.assigns.following}
+        "following" ->
+          {socket.assigns.followers, Socials.list_following(profile_user.id, search: search_query)}
+        _ ->
+          {socket.assigns.followers, socket.assigns.following}
+      end
+
+    {:noreply,
+     socket
+     |> assign(:followers, followers)
+     |> assign(:following, following)
+     |> assign(:search_query, search_query)}
+  end
+
+
+
   @impl true
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
     {:noreply, socket}

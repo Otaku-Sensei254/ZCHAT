@@ -114,16 +114,62 @@
                         phx-click="close_search" 
                       >
                         <div class="shrink-0">
-                          <%= if result.image do %>
-                            <img src={result.image} class="w-8 h-8 rounded-full object-cover" />
+                          <%= if result.type == :user do %>
+                            <%= if result.image do %>
+                              <img src={result.image} class="w-8 h-8 rounded-full object-cover" />
+                            <% else %>
+                              <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-700 flex items-center justify-center">
+                                <.icon name="hero-user" class="w-4 h-4 text-gray-500" />
+                              </div>
+                            <% end %>
                           <% else %>
-                            <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-700 flex items-center justify-center">
-                              <.icon name="hero-user" class="w-4 h-4 text-gray-500" />
-                            </div>
+                            <%= if result.image do %>
+                              <%= if result.media_type == "video" do %>
+                                <video 
+                                  src={result.image} 
+                                  class="w-8 h-8 rounded object-cover" 
+                                  autoplay 
+                                  muted 
+                                  loop 
+                                  playsinline
+                                  preload="metadata"
+                                />
+                              <% else %>
+                                <img src={result.image} class="w-8 h-8 rounded object-cover" />
+                              <% end %>
+                            <% else %>
+                              <%= if result.media_type == "video" do %>
+                                <div class="w-8 h-8 rounded bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                  <.icon name="hero-video-camera" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                </div>
+                              <% else %>
+                                <div class="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                  <.icon name="hero-document-text" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                              <% end %>
+                            <% end %>
                           <% end %>
                         </div>
                         <div class="flex flex-col">
-                          <span class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= result.title %></span>
+                          <%= if result.type == :user do %>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= result.title %></span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              <%= if result.sub && result.sub != "", do: result.sub, else: "No bio" %>
+                            </span>
+                          <% else %>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[200px]"><%= result.title %></span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              <%= case result.type do %>
+                                <% :post -> %>
+                                  Post by <%= result.sub %>
+                                <% :post_by_user -> %>
+                                  by <%= result.sub %>
+                              <% end %>
+                              <%= if result.media_type do %>
+                                • <%= String.capitalize(result.media_type) %>
+                              <% end %>
+                            </span>
+                          <% end %>
                         </div>
                       </.link>
                     <% end %>

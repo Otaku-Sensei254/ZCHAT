@@ -77,6 +77,18 @@ def icon(%{name: "hero-user"} = assigns) do
     """
   end
 
+  def icon(%{name: "hero-document-text"} = assigns) do
+    ~H"""
+    <Heroicons.document_text solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-video-camera"} = assigns) do
+    ~H"""
+    <Heroicons.video_camera solid class={@class} />
+    """
+  end
+
   @doc """
   Renders a modal.
 

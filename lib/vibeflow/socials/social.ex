@@ -49,35 +49,61 @@ defmodule Vibeflow.Socials do
   end
 
   @doc """
-  Gets the list of users that a user is following.
+  Gets the list of users that a user is following with search functionality.
   """
   def list_following(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
+    search = Keyword.get(opts, :search, nil)
 
-    from(f in Follow,
+    query = from(f in Follow,
       where: f.follower_id == ^user_id,
       preload: [:following],
       limit: ^limit,
       offset: ^offset
     )
+
+    query =
+      if search && search != "" do
+        from(f in query,
+          join: following in assoc(f, :following),
+          where: ilike(following.username, ^"%#{search}%") or ilike(following.email, ^"%#{search}%")
+        )
+      else
+        query
+      end
+
+    query
     |> Repo.all()
     |> Enum.map(& &1.following)
   end
 
   @doc """
-  Gets the list of users that are following a user.
+  Gets the list of users that are following a user with search functionality.
   """
   def list_followers(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
+    search = Keyword.get(opts, :search, nil)
 
-    from(f in Follow,
+    query = from(f in Follow,
       where: f.following_id == ^user_id,
       preload: [:follower],
       limit: ^limit,
       offset: ^offset
     )
+
+    query =
+      if search && search != "" do
+        from(f in query,
+          join: follower in assoc(f, :follower),
+          where: ilike(follower.username, ^"%#{search}%") or ilike(follower.email, ^"%#{search}%")
+        )
+      else
+        query
+      end
+
+    query
     |> Repo.all()
     |> Enum.map(& &1.follower)
   end

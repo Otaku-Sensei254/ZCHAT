@@ -65,6 +65,18 @@ def icon(%{name: "hero-user"} = assigns) do
     """
   end
 
+  def icon(%{name: "hero-eye"} = assigns) do
+    ~H"""
+    <Heroicons.eye solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-eye-slash"} = assigns) do
+    ~H"""
+    <Heroicons.eye_slash solid class={@class} />
+    """
+  end
+
   @doc """
   Renders a modal.
 

@@ -809,4 +809,30 @@ window.addEventListener('phx:page-loading-stop', setBottomNavVisibility);
   });
 })();
 
+// Password visibility toggle function
+window.togglePasswordVisibility = function(inputId, button) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  
+  // Update the icon
+  const icon = button.querySelector('svg');
+  if (icon) {
+    // Remove existing icon classes
+    icon.className = icon.className.replace(/hero-eye[^"\s]*|hero-eye-slash[^"\s]*/g, '').trim();
+    
+    // Add the appropriate icon class
+    if (isPassword) {
+      icon.classList.add('hero-eye-slash');
+    } else {
+      icon.classList.add('hero-eye');
+    }
+  }
+  
+  // Update aria-label
+  button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+};
+
 window.liveSocket = liveSocket

@@ -190,9 +190,6 @@ defmodule VibeflowWeb.UI.PostComponent do
   #   end
   # end
 
-  # Ignore other messages
-  def handle_info(_, socket), do: {:noreply, socket}
-
   #--------cut off some blog post content to view --------
   defp content_cut(content, length \\ 250) do
     if String.length(content) > length do

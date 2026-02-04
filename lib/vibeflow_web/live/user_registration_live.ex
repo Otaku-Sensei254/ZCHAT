@@ -56,11 +56,24 @@ defmodule VibeflowWeb.UserRegistrationLive do
               />
             </div>
 
-            <div>
-              <.input field={@form[:password]} type="password" label="Password" required
-                class="block w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 focus:border-indigo-500 focus:ring-orange-500 sm:text-sm shadow-sm transition-all"
+            <div class="relative">
+              <.input
+                field={@form[:password]}
+                type="password"
+                label="Password"
+                required
+                id="registration-password"
+                class="block w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 focus:border-indigo-500 focus:ring-orange-500 sm:text-sm shadow-sm transition-all pr-10"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-6"
+                aria-label="Show password"
+                onclick="togglePasswordVisibility('registration-password', this)"
+              >
+                <.icon name="hero-eye" class="h-5 w-5" />
+              </button>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Must be at least 8 characters</p>
             </div>
 

@@ -19,7 +19,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> assign(:current_like, nil)
      |> assign(:like_count, 0)
-     |> assign(:hide_bottom_nav, true)
+    #  |> assign(:hide_bottom_nav, true)
      |> assign(:show_comments_modal, false)
      |> assign(:current_media_index, 0)
      # FIX: Initialize BOTH streams here

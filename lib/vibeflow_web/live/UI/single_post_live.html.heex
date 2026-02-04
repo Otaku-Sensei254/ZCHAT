@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto lg:px-4 lg:py-6 h-full pb-safe">
+<div class="max-w-7xl mx-auto lg:px-4 lg:py-6 pb-safe">
   
   <%!-- Back Button (Desktop Only) --%>
   <.link navigate={~p"/feed"} class="hidden lg:inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors">
@@ -17,7 +17,7 @@
           MOBILE IMMERSIVE VIEW 
           (Ultra Simple Design)
        --%>
-       <div id="single-post-container" class="lg:hidden relative h-[calc(100dvh-4rem)] w-full bg-gray-50 dark:bg-gray-900" phx-hook="ShareHook">
+       <div id="single-post-container" class="lg:hidden relative min-h-[calc(100dvh-4rem)] w-full bg-gray-50 dark:bg-gray-900" phx-hook="ShareHook">
          
          <%!-- Simple Header --%>
          <div class="bg-white dark:bg-black px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
@@ -31,7 +31,7 @@
          </div>
 
          <%!-- Content Area --%>
-         <div class="flex-1 overflow-y-auto">
+         <div class="overflow-y-auto">
            
            <%!-- Media --%>
            <%= if @post.media_files && @post.media_files != [] do %>

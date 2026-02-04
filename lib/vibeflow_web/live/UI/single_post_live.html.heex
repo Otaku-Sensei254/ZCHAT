@@ -35,7 +35,7 @@
            
            <%!-- Media --%>
            <%= if @post.media_files && @post.media_files != [] do %>
-             <div class="bg-black">
+             <div class="bg-black relative">
                <% current_media = Enum.at(@post.media_files, @current_media_index) %>
                <%= cond do %>
                  <% current_media["type"] == "image" -> %>
@@ -48,6 +48,27 @@
                    <div class="h-48 bg-black flex items-center justify-center text-white">
                      Media not supported
                    </div>
+               <% end %>
+
+               <%!-- Navigation Buttons --%>
+               <%= if length(@post.media_files) > 1 do %>
+                 <button 
+                   phx-click="prev_media"
+                   class="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                 >
+                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                   </svg>
+                 </button>
+                 
+                 <button 
+                   phx-click="next_media"
+                   class="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                 >
+                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                   </svg>
+                 </button>
                <% end %>
 
                <%!-- Simple Navigation --%>

@@ -12,7 +12,7 @@ config :vibeflow, Vibeflow.Repo,
   username: "dtech",
   password: "dtechpsql",
   hostname: "localhost",
-  database: "vibeflow_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "zchat_dev#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
 

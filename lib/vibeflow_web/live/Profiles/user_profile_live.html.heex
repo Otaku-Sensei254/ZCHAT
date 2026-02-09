@@ -502,7 +502,7 @@
                             <% end %>
                             <div>
                               <p class="text-sm font-medium text-gray-900 dark:text-white"><%= follower.username %></p>
-                              <p class="text-xs text-gray-500 dark:text-gray-400"><%= follower.email %></p>
+                              <p class="text-xs text-gray-500 dark:text-gray-400"><%= follower.bio %></p>
                             </div>
                           </div>
                           <.link navigate={~p"/users/#{follower.username}"} class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">
@@ -532,7 +532,7 @@
                             <% end %>
                             <div>
                               <p class="text-sm font-medium text-gray-900 dark:text-white"><%= following_user.username %></p>
-                              <p class="text-xs text-gray-500 dark:text-gray-400"><%= following_user.email %></p>
+                              <p class="text-xs text-gray-500 dark:text-gray-400"><%= following_user.bio %></p>
                             </div>
                           </div>
                           <.link navigate={~p"/users/#{following_user.username}"} class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">

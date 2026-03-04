@@ -19,8 +19,8 @@ defmodule VibeflowWeb.UI.FeedLive do
 
     socket =
       socket
-      |> stream_configure(:posts, dom_id: &"post-#{&1.id}")
-      |> stream_configure(:trending, dom_id: &"trending-#{&1.id}")
+      |> stream_configure(:posts, dom_id: &"post-#{&1.uuid}")
+      |> stream_configure(:trending, dom_id: &"trending-#{&1.uuid}")
       |> assign(:show_waves_modal, false)
       |> assign(
         page: 1,
@@ -255,14 +255,14 @@ defmodule VibeflowWeb.UI.FeedLive do
   # --- INFO HANDLERS ---
 
   @impl true
-  def handle_info({:open_share_modal, post_id}, socket) do
+  def handle_info({:open_share_modal, post_id_or_uuid}, socket) do
     # 1. Fetch the user's friends list (needed for the share modal)
     friends = Vibeflow.Accounts.list_friends(socket.assigns.current_user)
     # 2. Update the socket to show the modal and store the post ID
     {:noreply,
      socket
      |> assign(:show_share_modal, true)
-     |> assign(:post_to_share, post_id)
+     |> assign(:post_to_share, post_id_or_uuid)
      |> assign(:friends_list, friends)
      |> assign(:selected_friends, [])
      |> assign(:friends_list_filtered, friends)

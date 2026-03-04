@@ -148,9 +148,11 @@ defmodule Vibeflow.Chat do
       )
       |> Repo.all()
     # Ensure the message has its associations preloaded (user, shared_post, reply_to)
+    convo = Repo.get!(Conversation, conversation_id)
     preloaded_message =
       Repo.get(Message, message.id)
       |> Repo.preload([:user, shared_post: :user, reply_to: :user])
+      |> Map.put(:conversation_uuid, convo.uuid)
 
     Enum.each(members, fn user_id ->
       # Broadcast a "new_sidebar_message" event so the universal
@@ -246,12 +248,10 @@ defmodule Vibeflow.Chat do
   end
 
   # sharing reels/posts
-  def share_posts_to_friend(sender_id, friend_id, post_id) do
+  def share_posts_to_friend(sender_id, friend_id, post_id_or_uuid) do
     {:ok, conversation} = get_or_create_private_conversation(sender_id, friend_id)
-    # now get the post
-    post =
-      Repo.get!(Vibeflow.Posts.Post, post_id)
-      |> Repo.preload(:user)
+    # now get the post (supports id or uuid)
+    post = Vibeflow.Posts.get_post!(post_id_or_uuid)
 
     content = "Shared a post"
 
@@ -260,14 +260,14 @@ defmodule Vibeflow.Chat do
         content: content,
         user_id: sender_id,
         conversation_id: conversation.id,
-        shared_post_id: post_id
+        shared_post_id: post.id
       })
 
     Notifications.create_notification(%{
       user_id: friend_id,
       actor_id: sender_id,
       type: "shared_post",
-      post_id: post_id,
+      post_id: post.id,
       conversation_id: conversation.id
     })
 
@@ -275,7 +275,7 @@ defmodule Vibeflow.Chat do
   end
 
   # Share post to multiple friends with optional message
-  def share_post_to_friends(sender_id, post_id, recipient_ids, message \\ "") do
+  def share_post_to_friends(sender_id, post_id_or_uuid, recipient_ids, message \\ "") do
     # Convert string IDs to integers if needed
     recipient_ids =
       recipient_ids
@@ -286,9 +286,7 @@ defmodule Vibeflow.Chat do
         end
       end)
 
-    post =
-      Repo.get!(Vibeflow.Posts.Post, post_id)
-      |> Repo.preload(:user)
+    post = Vibeflow.Posts.get_post!(post_id_or_uuid)
 
     content = if message && message != "", do: message, else: "Shared a post"
 
@@ -301,7 +299,7 @@ defmodule Vibeflow.Chat do
               content: content,
               user_id: sender_id,
               conversation_id: conversation.id,
-              shared_post_id: post_id
+              shared_post_id: post.id
             }) do
               {:ok, message} ->
                 # Create notification for the recipient
@@ -309,7 +307,7 @@ defmodule Vibeflow.Chat do
                   user_id: recipient_id,
                   actor_id: sender_id,
                   type: "shared_post",
-                  post_id: post_id,
+                  post_id: post.id,
                   conversation_id: conversation.id
                 })
                 {:ok, message}

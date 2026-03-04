@@ -133,8 +133,8 @@ defmodule VibeflowWeb.UI.PostComponent do
   @impl true
   def handle_event("request_share", _, socket) do
     # We send a message to the process (FeedLive) identified by self()
-    # The message is a tuple: {:open_share_modal, post_id}
-    send(self(), {:open_share_modal, socket.assigns.post.id})
+    # The message is a tuple: {:open_share_modal, post_uuid}
+    send(self(), {:open_share_modal, socket.assigns.post.uuid})
     {:noreply, socket}
   end
 # --- AUTHORIZATION HELPERS ---

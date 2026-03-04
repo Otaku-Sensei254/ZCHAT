@@ -91,7 +91,7 @@ defmodule VibeflowWeb.UserActivityHook do
         # If the user is currently viewing the conversation, just update the
         # unread count silently (the Chat LiveView will handle inserting the
         # message). Otherwise, show the popup.
-        if socket.assigns[:conversation] && to_string(socket.assigns.conversation.id) == to_string(message.conversation_id) do
+        if socket.assigns[:conversation] && socket.assigns.conversation.uuid == message.conversation_uuid do
           {:cont, assign(socket, :unread_chats_count, new_count)}
         else
           {:cont,

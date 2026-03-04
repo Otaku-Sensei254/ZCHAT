@@ -28,7 +28,7 @@ defmodule Vibeflow.Search do
     |> Enum.map(fn post ->
       thumbnail_url = extract_thumbnail_url(post.media_files)
       media_type = extract_media_type(post.media_files)
-      %{type: :post, id: post.id, title: post.title, image: thumbnail_url, media_type: media_type, sub: post.user.username}
+      %{type: :post, id: post.id, uuid: post.uuid, title: post.title, image: thumbnail_url, media_type: media_type, sub: post.user.username}
     end)
 
     # 3. Search Posts by username
@@ -42,7 +42,7 @@ defmodule Vibeflow.Search do
     |> Enum.map(fn post ->
       thumbnail_url = extract_thumbnail_url(post.media_files)
       media_type = extract_media_type(post.media_files)
-      %{type: :post_by_user, id: post.id, title: post.title, image: thumbnail_url, media_type: media_type, sub: post.user.username}
+      %{type: :post_by_user, id: post.id, uuid: post.uuid, title: post.title, image: thumbnail_url, media_type: media_type, sub: post.user.username}
     end)
 
     users ++ content_posts ++ username_posts

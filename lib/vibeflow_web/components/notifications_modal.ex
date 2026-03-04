@@ -56,7 +56,7 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   end
 
   def notification_link(%{type: "shared_post", conversation_id: conv_id}) do
-    case Vibeflow.Chat.get_conversation(conv_id) do
+    case Vibeflow.Chat.get_conversation!(conv_id) do
       %{uuid: uuid} -> ~p"/chat/#{uuid}"
       _ -> "/chat"
     end
@@ -66,7 +66,7 @@ defmodule VibeflowWeb.Components.NotificationsModal do
     ~p"/posts/#{uuid}"
   end
 
-  def notification_link(%{post_id: post_id} = n) when is_integer(post_id) do
+  def notification_link(%{post_id: post_id}) when is_integer(post_id) do
     # Fallback if post not preloaded
     case Vibeflow.Posts.get_post!(post_id) do
       %{uuid: uuid} -> ~p"/posts/#{uuid}"

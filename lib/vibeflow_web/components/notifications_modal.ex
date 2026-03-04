@@ -51,17 +51,32 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   end
 
   # --- VIEW HELPERS ---
-  def notification_link(%{type: "shared_post", conversation_id: conv_id}) when is_integer(conv_id) do
-    ~p"/chat/#{conv_id}"
+  def notification_link(%{type: "shared_post", conversation: %{uuid: uuid}}) do
+    ~p"/chat/#{uuid}"
   end
 
-  def notification_link(%{type: "follow", actor: %{username: username}}) when is_binary(username) do
+  def notification_link(%{type: "shared_post", conversation_id: conv_id}) do
+    case Vibeflow.Chat.get_conversation(conv_id) do
+      %{uuid: uuid} -> ~p"/chat/#{uuid}"
+      _ -> "/chat"
+    end
+  end
+
+  def notification_link(%{post: %{uuid: uuid}}) do
+    ~p"/posts/#{uuid}"
+  end
+
+  def notification_link(%{post_id: post_id} = n) when is_integer(post_id) do
+    # Fallback if post not preloaded
+    case Vibeflow.Posts.get_post!(post_id) do
+      %{uuid: uuid} -> ~p"/posts/#{uuid}"
+      _ -> ~p"/posts/#{post_id}"
+    end
+  end
+  def notification_link(%{type: "follow", actor: %{username: username}}) do
     ~p"/users/#{username}"
   end
 
-  def notification_link(%{post_id: post_id}) when is_integer(post_id) do
-    ~p"/posts/#{post_id}"
-  end
   def notification_link(%{type: "role_change", user: %{username: username}}) when is_binary(username) do
 
     ~p"/users/#{username}"

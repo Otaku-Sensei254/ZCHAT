@@ -54,16 +54,16 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # ===========================================================================
 
   @impl true
-  def handle_params(%{"id" => conversation_id}, _uri, socket) do
+  def handle_params(%{"uuid" => conversation_uuid}, _uri, socket) do
     current_user_id = socket.assigns.current_user.id
-    conversation = Chat.get_conversation!(conversation_id)
+    conversation = Chat.get_conversation!(conversation_uuid)
 
     if connected?(socket) do
       # Unsubscribe from previous if exists
       if socket.assigns.conversation do
-        Phoenix.PubSub.unsubscribe(Vibeflow.PubSub, "conversation:#{socket.assigns.conversation.id}")
+        Phoenix.PubSub.unsubscribe(Vibeflow.PubSub, "conversation:#{socket.assigns.conversation.uuid}")
       end
-      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.id}")
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
     end
 
     # Mark as Read
@@ -179,7 +179,7 @@ end
     {:noreply,
      socket
      |> assign(user_search_results: [], user_search_query: "")
-     |> push_patch(to: ~p"/chat/#{conversation.id}")}
+     |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
   end
 
   @impl true
@@ -219,7 +219,7 @@ end
     # Only broadcast if we are in a conversation
     if socket.assigns.conversation do
       is_typing = Map.get(params, "is_typing", false)
-      topic = "conversation:#{socket.assigns.conversation.id}"
+      topic = "conversation:#{socket.assigns.conversation.uuid}"
 
       payload = %{
         user: %{id: socket.assigns.current_user.id, username: socket.assigns.current_user.username},
@@ -271,8 +271,7 @@ end
     current_user_id = socket.assigns.current_user.id
 
     # Check if we are currently looking at this conversation
-    # We convert IDs to string to be safe against integer/string mismatch
-    is_current_chat = active_conversation && to_string(active_conversation.id) == to_string(message.conversation_id)
+    is_current_chat = active_conversation && active_conversation.uuid == message.conversation_uuid
 
     socket =
       if is_current_chat do

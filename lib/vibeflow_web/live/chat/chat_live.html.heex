@@ -78,11 +78,11 @@
            avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
            avatar_user = if !is_group && other_member, do: other_member.user
            
-           is_active = @conversation && conv.id == @conversation.id
+           is_active = @conversation && conv.uuid == @conversation.uuid
            is_online = if !is_group && other_member, do: Map.has_key?(@online_users, to_string(other_member.user.id)), else: false
         %>
         
-        <.link navigate={~p"/chat/#{conv.id}"} class={[
+        <.link navigate={~p"/chat/#{conv.uuid}"} class={[
           "flex items-center gap-3 p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
           is_active && "bg-blue-50 dark:bg-blue-900/20 md:border-l-4 md:border-l-blue-500"
         ]}>
@@ -138,9 +138,9 @@
   }>
     <%= if @conversation do %>
       <div 
-        id={"chat-container-#{@conversation.id}"}
+        id={"chat-container-#{@conversation.uuid}"}
         class="flex-1 flex flex-col h-full overflow-hidden"
-        data-conversation-id={@conversation.id}
+        data-conversation-id={@conversation.uuid}
         data-user-token={@user_token}
       >
         <div class="p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 z-10 shadow-sm shrink-0">
@@ -208,7 +208,7 @@
                 <%= if message.shared_post do %>
                   <% post = message.shared_post %>
                   <% media = List.first(post.media_files || []) %>
-                  <.link navigate={~p"/posts/#{post.id}"} class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}>
+                  <.link navigate={~p"/posts/#{post.uuid}"} class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}>
                     <%= if media do %>
                       <%= if media["type"] == "video" do %>
                         <video phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>

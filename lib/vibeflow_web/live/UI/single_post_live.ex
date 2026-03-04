@@ -22,15 +22,15 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     #  |> assign(:hide_bottom_nav, true)
      |> assign(:show_comments_modal, false)
      |> assign(:current_media_index, 0)
-     # FIX: Initialize BOTH streams here
+    #  FIX: Initialize BOTH streams here
      |> stream(:comments, [])
 
      |> stream(:mobile_comments, [])}
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _uri, socket) do
-    post = Posts.get_post!(id, preload: [:user, :likes, comments: :user])
+  def handle_params(%{"uuid" => uuid}, _uri, socket) do
+    post = Posts.get_post!(uuid, preload: [:user, :likes, comments: :user])
 
     # Ensure your Posts.list_comments returns newest first (inserted_at: :desc)
     # so it matches the prepend behavior of stream_insert
@@ -134,9 +134,8 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   end
 
  @impl true
-  def handle_event("share_post", _, socket) do
-    post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.id}"
-
+ def handle_event("share_post", _, socket) do
+   post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.uuid}"
     {:noreply,
      socket
      |> push_event("share_post", %{

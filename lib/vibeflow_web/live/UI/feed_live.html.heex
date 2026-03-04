@@ -67,7 +67,7 @@
           <% end %>
 
           <%= for wave_group <- @waves do %>
-            <.link navigate={~p"/waves/view/#{wave_group.user.id}"} class="flex flex-col items-center gap-1 cursor-pointer shrink-0">
+            <.link navigate={~p"/waves/view/#{wave_group.user.username}"} class="flex flex-col items-center gap-1 cursor-pointer shrink-0">
               <div class={[
                 "relative w-14 h-14 rounded-full p-0.5 flex items-center justify-center transition group",
                 wave_group.has_unseen && "bg-gradient-to-tr from-yellow-400 to-pink-600",
@@ -109,7 +109,7 @@
                   <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden z-50">
                     <%= for result <- @search_results do %>
                       <.link 
-                        navigate={if result.type == :user, do: ~p"/users/#{result.title}", else: ~p"/posts/#{result.id}"}
+                        navigate={if result.type == :user, do: ~p"/users/#{result.title}", else: ~p"/posts/#{result.uuid}"}
                         class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
                         phx-click="close_search" 
                       >
@@ -230,7 +230,7 @@
           <div class="space-y-4">
             <%= for {_id, post} <- @streams.trending do %>
               <div class="text-sm">
-                <.link navigate={~p"/posts/#{post.id}"} class="block hover:bg-gray-50 dark:hover:bg-zinc-800 p-2 rounded transition-colors">
+                <.link navigate={~p"/posts/#{post.uuid}"} class="block hover:bg-gray-50 dark:hover:bg-zinc-800 p-2 rounded transition-colors">
                   <p class="font-medium text-gray-900 dark:text-gray-200 line-clamp-2"><%= post.title || "Untitled" %></p>
                   <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">
                     <%= length(post.likes) %> likes • <%= Timex.from_now(post.inserted_at) %>

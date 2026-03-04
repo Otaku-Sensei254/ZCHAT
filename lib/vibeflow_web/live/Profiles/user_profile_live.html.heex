@@ -336,7 +336,7 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <%= for post <- @posts do %>
           <.link
-            navigate={~p"/posts/#{post.id}"}
+            navigate={~p"/posts/#{post.uuid}"}
             class="relative group aspect-square bg-white dark:bg-zinc-800 cursor-pointer overflow-hidden rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-zinc-700 transition-all duration-300 hover:-translate-y-1"
           >
             <%!-- Media Logic --%>

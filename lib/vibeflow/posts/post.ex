@@ -17,6 +17,7 @@ defmodule Vibeflow.Posts.Post do
 
   @type t :: %__MODULE__{
           id: integer() | nil,
+          uuid: Ecto.UUID.t() | nil,
           title: String.t() | nil,
           content: String.t() | nil,
           media_url: String.t() | nil,
@@ -38,6 +39,7 @@ defmodule Vibeflow.Posts.Post do
         }
 
   schema "posts" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :title, :string
     field :content, :string
     field :tags, {:array, :string}, default: []

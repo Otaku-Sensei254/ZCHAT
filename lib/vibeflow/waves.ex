@@ -105,7 +105,20 @@ defmodule Vibeflow.Waves do
       ** (Ecto.NoResultsError)
 
   """
-  def get_wave!(id), do: Repo.get!(Wave, id)
+  def get_wave!(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} -> Repo.get_by!(Wave, uuid: uuid)
+      :error -> Repo.get!(Wave, id_or_uuid)
+    end
+  end
+
+  def get_wave_by_uuid!(uuid) do
+    Repo.get_by!(Wave, uuid: uuid)
+  end
+
+  def get_wave_by_uuid(uuid) do
+    Repo.get_by(Wave, uuid: uuid)
+  end
 
   @doc """
   Creates a wave.

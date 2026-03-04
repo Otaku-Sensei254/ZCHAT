@@ -117,17 +117,35 @@ defmodule Vibeflow.Posts do
 
   # --- GETTING POSTS ---
 
-  def get_post_with_views!(id) do
+  def get_post_with_views!(id_or_uuid) do
     post =
-      Post
-      |> Repo.get!(id)
-      |> Repo.preload([:user, :likes, comments: :user])
-      |> Post.ensure_media_files()
+      case Ecto.UUID.cast(id_or_uuid) do
+        {:ok, uuid} -> get_post_by_uuid!(uuid)
+        :error -> get_post!(id_or_uuid)
+      end
 
-    from(p in Post, where: p.id == ^id)
+    from(p in Post, where: p.id == ^post.id)
     |> Repo.update_all(inc: [view_count: 1])
 
     post
+  end
+
+  def get_post_by_uuid!(uuid, opts \\ []) do
+    preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
+
+    Post
+    |> Repo.get_by!(uuid: uuid)
+    |> Repo.preload(preload)
+    |> Post.ensure_media_files()
+  end
+
+  def get_post_by_uuid(uuid, opts \\ []) do
+    preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
+
+    Post
+    |> Repo.get_by(uuid: uuid)
+    |> Repo.preload(preload)
+    |> Post.ensure_media_files()
   end
 
   def list_fresh_random_posts(limit \\ 20, days_ago \\ 5) do
@@ -142,13 +160,21 @@ defmodule Vibeflow.Posts do
           |> Repo.all()
   end
 
-  def get_post!(id, opts \\ []) do
+  def get_post!(id_or_uuid, opts \\ []) do
     preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
 
-    Post
-    |> Repo.get!(id)
-    |> Repo.preload(preload)
-    |> Post.ensure_media_files()
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} ->
+        Post
+        |> Repo.get_by!(uuid: uuid)
+        |> Repo.preload(preload)
+        |> Post.ensure_media_files()
+      :error ->
+        Post
+        |> Repo.get!(id_or_uuid)
+        |> Repo.preload(preload)
+        |> Post.ensure_media_files()
+    end
   end
 
   def categories do

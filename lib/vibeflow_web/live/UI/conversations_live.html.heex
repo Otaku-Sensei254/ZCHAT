@@ -14,7 +14,7 @@
        m.user_id != @current_user.id
      end) %>
             <.link
-              navigate={~p"/conversations/#{conversation.id}"}
+              navigate={~p"/chat/#{conversation.uuid}"}
               class="block p-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
             >
               <div class="flex items-center gap-4">
@@ -33,7 +33,7 @@
                 <% else %>
                   <!-- Fallback if user data is missing -->
                   <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">?</div>
-                  <p class="font-bold">Chat #<%= conversation.id %></p>
+                  <p class="font-bold">Chat #<%= String.slice(conversation.uuid, 0, 8) %></p>
                 <% end %>
               </div>
             </.link>

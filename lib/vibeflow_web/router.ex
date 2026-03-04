@@ -31,7 +31,7 @@ defmodule VibeflowWeb.Router do
       live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
       live "/posts/new", CreatePostLive, :new
-      live "/posts/:id", UI.SinglePostLive, :show
+      live "/posts/:uuid", UI.SinglePostLive, :show
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
       live "/tags/:tag", UI.TagLive, :show
@@ -177,18 +177,18 @@ end
       on_mount: [{VibeflowWeb.UserAuth, :ensure_authenticated}, VibeflowWeb.UserActivityHook] do
       live "/users/settings", UserSettingsLive, :edit
       live "/waves", Waves.WavesLive, :index
-      live "/waves/view/:user_id", Waves.ViewWavesLive, :show
+      live "/waves/view/:username", Waves.ViewWavesLive, :show
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive
-      live "/posts/:id/edit", CreatePostLive, :edit
+      live "/posts/:uuid/edit", CreatePostLive, :edit
     end
 
     live_session :chat,
       on_mount: [{VibeflowWeb.UserAuth, :mount_current_user},
       {VibeflowWeb.ChatAuthHook, :require_member }, VibeflowWeb.UserActivityHook] do
       live "/chat", Chat.ChatLive, :index
-      live "/chat/:id", Chat.ChatLive, :index
+      live "/chat/:uuid", Chat.ChatLive, :index
     end
   end
 

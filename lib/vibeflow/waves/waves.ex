@@ -3,6 +3,7 @@ defmodule Vibeflow.Waves.Wave do
   import Ecto.Changeset
 
   schema "waves" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :media_url, :string
     field :media_type, :string
     field :caption, :string

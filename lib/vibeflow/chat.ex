@@ -7,10 +7,27 @@ defmodule Vibeflow.Chat do
   alias Vibeflow.Posts
   # --- CONVERSATIONS ---
 
-  def get_conversation!(id) do
+  def get_conversation_by_uuid!(uuid) do
     Conversation
-    |> Repo.get!(id)
+    |> Repo.get_by!(uuid: uuid)
     |> Repo.preload(conversation_members: :user)
+  end
+
+  def get_conversation_by_uuid(uuid) do
+    Conversation
+    |> Repo.get_by(uuid: uuid)
+    |> Repo.preload(conversation_members: :user)
+  end
+
+  def get_conversation!(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} ->
+        get_conversation_by_uuid!(uuid)
+      :error ->
+        Conversation
+        |> Repo.get!(id_or_uuid)
+        |> Repo.preload(conversation_members: :user)
+    end
   end
 
   def list_user_conversations(%User{} = user), do: list_user_conversations(user.id)
@@ -67,7 +84,7 @@ defmodule Vibeflow.Chat do
   end
 
   def subscribe_to_conversation(conversation) do
-    Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.id}")
+    Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
   end
 
   # --- MESSAGES ---
@@ -99,7 +116,8 @@ defmodule Vibeflow.Chat do
       {:ok, message} ->
         # 1. Bump the conversation's "updated_at" so it jumps to top
         touch_conversation(message.conversation_id)
-        broadcast_message(%Conversation{id: message.conversation_id}, message)
+        convo = Repo.get!(Conversation, message.conversation_id)
+        broadcast_message(convo, message)
         notify_sidebar_members(message.conversation_id, message)
         {:ok, message}
 
@@ -112,11 +130,12 @@ defmodule Vibeflow.Chat do
   def delete_message(message) do
     # 1. Delete from DB
     Repo.delete(message)
+    convo = Repo.get!(Conversation, message.conversation_id)
 
     # 2. Broadcast to LiveView so it disappears instantly
     Phoenix.PubSub.broadcast(
       Vibeflow.PubSub,
-      "conversation:#{message.conversation_id}",
+      "conversation:#{convo.uuid}",
       {:message_deleted, message}
     )
   end
@@ -154,10 +173,13 @@ defmodule Vibeflow.Chat do
     # Preload user so the LiveView can display avatar/username immediately
     message = Repo.preload(message, [:user, shared_post: :user, reply_to: :user])
 
+    # Include conversation_uuid in the message map for easier routing in LiveView
+    message_with_uuid = Map.put(message, :conversation_uuid, conversation.uuid)
+
     Phoenix.PubSub.broadcast(
       Vibeflow.PubSub,
-      "conversation:#{conversation.id}",
-      {:new_message, message}
+      "conversation:#{conversation.uuid}",
+      {:new_message, message_with_uuid}
     )
   end
 
@@ -187,6 +209,7 @@ defmodule Vibeflow.Chat do
 
       member ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)
+        convo = Repo.get!(Conversation, conversation_id)
 
         {:ok, updated_member} =
           member
@@ -195,7 +218,7 @@ defmodule Vibeflow.Chat do
 
         Phoenix.PubSub.broadcast(
           Vibeflow.PubSub,
-          "conversation:#{conversation_id}",
+          "conversation:#{convo.uuid}",
           {:message_read,
            %{user_id: user_id, conversation_id: conversation_id, last_read_at: now}}
         )

@@ -3,6 +3,7 @@ defmodule Vibeflow.Chat.Conversation do
   import Ecto.Changeset
 
   schema "conversations" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :name, :string
     field :type, :string, default: "direct" # Matches your DB 'type' column
 

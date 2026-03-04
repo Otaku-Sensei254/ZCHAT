@@ -10,8 +10,9 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    user_id = params["user_id"]
-    waves = Waves.list_user_waves(user_id)
+    username = params["username"]
+    user = Vibeflow.Accounts.get_user_by_username(username)
+    waves = if user, do: Waves.list_user_waves(user.id), else: []
 
     if waves == [] do
       {:noreply,

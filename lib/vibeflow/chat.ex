@@ -30,6 +30,19 @@ defmodule Vibeflow.Chat do
     end
   end
 
+  def get_conversation(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} ->
+        get_conversation_by_uuid(uuid)
+      :error ->
+        Conversation
+        |> Repo.get(id_or_uuid)
+        |> Repo.preload(conversation_members: :user)
+    end
+  rescue
+    _ -> nil
+  end
+
   def list_user_conversations(%User{} = user), do: list_user_conversations(user.id)
 
   def list_user_conversations(user_id) do

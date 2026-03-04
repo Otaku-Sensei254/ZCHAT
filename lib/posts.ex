@@ -177,6 +177,25 @@ defmodule Vibeflow.Posts do
     end
   end
 
+  def get_post(id_or_uuid, opts \\ []) do
+    preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
+
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} ->
+        Post
+        |> Repo.get_by(uuid: uuid)
+        |> Repo.preload(preload)
+        |> Post.ensure_media_files()
+      :error ->
+        Post
+        |> Repo.get(id_or_uuid)
+        |> Repo.preload(preload)
+        |> Post.ensure_media_files()
+    end
+  rescue
+    _ -> nil
+  end
+
   def categories do
     ["Tech", "Drama", "Action", "Fiction", "Music","Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
   end

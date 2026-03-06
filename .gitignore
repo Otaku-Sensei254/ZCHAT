@@ -37,3 +37,7 @@ npm-debug.log
 
 Git SSH.TXT
 *.dump
+
+# Root node modules
+/node_modules/
+/node_modules/

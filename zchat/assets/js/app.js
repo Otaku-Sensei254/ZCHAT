@@ -6,6 +6,8 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
+import data from "@emoji-mart/data"
+import { Picker } from "emoji-mart"
 //import './user_socket.js'
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
@@ -20,14 +22,133 @@ Hooks.ChatInput = {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault(); 
         this.el.form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+      } else if (e.key === "Escape") {
+        this.hideEmojiPicker();
       }
       this.pushTyping();
     });
+    this.el.addEventListener("input", () => this.autoGrow());
 
-    this.handleEvent("clear-input", () => { this.el.value = ""; });
+    this.bindEmojiUI();
+
+    this.handleEvent("clear-input", () => {
+      this.el.value = "";
+      this.autoGrow();
+    });
+    this.autoGrow();
+  },
+  updated() {
+    this.bindEmojiUI();
+    this.autoGrow();
   },
 
   typingTimer: null,
+  bindEmojiUI() {
+    const form = this.el.closest("form");
+    const emojiToggle = form?.querySelector("[data-emoji-toggle]");
+    const emojiPanel = form?.querySelector("[data-emoji-picker]");
+    const emojiPickerContainer = form?.querySelector("[data-emoji-picker-container]");
+
+    const sameNodes =
+      this.emojiToggle === emojiToggle &&
+      this.emojiPanel === emojiPanel &&
+      this.emojiPickerContainer === emojiPickerContainer;
+
+    if (sameNodes && this.emojiToggleClick && this.outsideClick) return;
+
+    if (this.emojiToggle && this.emojiToggleClick) {
+      this.emojiToggle.removeEventListener("click", this.emojiToggleClick);
+    }
+    if (this.outsideClick) {
+      document.removeEventListener("click", this.outsideClick);
+    }
+    if (this.fallbackEmojiWrap && this.fallbackEmojiClick) {
+      this.fallbackEmojiWrap.removeEventListener("click", this.fallbackEmojiClick);
+    }
+
+    this.form = form;
+    this.emojiToggle = emojiToggle;
+    this.emojiPanel = emojiPanel;
+    this.emojiPickerContainer = emojiPickerContainer;
+
+    if (!(this.emojiToggle && this.emojiPanel && this.emojiPickerContainer)) return;
+
+    if (!this.emojiPickerContainer.firstChild) {
+      try {
+        this.emojiPickerInstance = new Picker({
+          data,
+          theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+          previewPosition: "none",
+          navPosition: "top",
+          maxFrequentRows: 2,
+          perLine: 8,
+          set: "native",
+          onEmojiSelect: (emoji) => this.insertEmoji(emoji.native)
+        });
+        this.emojiPickerContainer.appendChild(this.emojiPickerInstance);
+      } catch (_err) {
+        this.renderEmojiFallback();
+      }
+    }
+
+    this.emojiToggleClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleEmojiPicker();
+    };
+
+    this.outsideClick = (e) => {
+      if (!this.emojiPanel.classList.contains("hidden")) {
+        const clickedInsidePicker = this.emojiPanel.contains(e.target);
+        const clickedToggle = this.emojiToggle.contains(e.target);
+        if (!clickedInsidePicker && !clickedToggle) {
+          this.hideEmojiPicker();
+        }
+      }
+    };
+
+    this.emojiToggle.addEventListener("click", this.emojiToggleClick);
+    document.addEventListener("click", this.outsideClick);
+  },
+  autoGrow() {
+    this.el.style.height = "auto";
+    const nextHeight = Math.min(this.el.scrollHeight, 144);
+    this.el.style.height = `${nextHeight}px`;
+  },
+  renderEmojiFallback() {
+    const emojis = ["😊","😀","😂","😍","😉","🤔","👍","👏","🔥","🎉","❤️","🙏","😎","😭","😅","😡","🤝","✅"];
+    const wrap = document.createElement("div");
+    wrap.className = "w-56 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg p-2";
+    wrap.innerHTML = emojis.map((emoji) =>
+      `<button type="button" data-fallback-emoji="${emoji}" class="p-1 text-xl rounded hover:bg-gray-100 dark:hover:bg-zinc-700">${emoji}</button>`
+    ).join("");
+    wrap.classList.add("grid", "grid-cols-6", "gap-1");
+    this.fallbackEmojiClick = (e) => {
+      const btn = e.target.closest("[data-fallback-emoji]");
+      if (!btn) return;
+      this.insertEmoji(btn.getAttribute("data-fallback-emoji"));
+    };
+    wrap.addEventListener("click", this.fallbackEmojiClick);
+    this.fallbackEmojiWrap = wrap;
+    this.emojiPickerContainer.appendChild(wrap);
+  },
+  toggleEmojiPicker() {
+    this.emojiPanel.classList.toggle("hidden");
+  },
+  hideEmojiPicker() {
+    if (this.emojiPanel) this.emojiPanel.classList.add("hidden");
+  },
+  insertEmoji(emoji) {
+    const start = this.el.selectionStart ?? this.el.value.length;
+    const end = this.el.selectionEnd ?? this.el.value.length;
+    const nextValue = this.el.value.slice(0, start) + emoji + this.el.value.slice(end);
+    this.el.value = nextValue;
+    const cursor = start + emoji.length;
+    this.el.setSelectionRange(cursor, cursor);
+    this.el.focus();
+    this.hideEmojiPicker();
+    this.pushTyping();
+  },
   pushTyping() {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer);
@@ -41,6 +162,17 @@ Hooks.ChatInput = {
       this.pushEvent("update_typing_indicator", {is_typing: false});
       this.typingTimer = null;
     }, 2000);
+  },
+  destroyed() {
+    if (this.emojiToggle && this.emojiToggleClick) {
+      this.emojiToggle.removeEventListener("click", this.emojiToggleClick);
+    }
+    if (this.fallbackEmojiWrap && this.fallbackEmojiClick) {
+      this.fallbackEmojiWrap.removeEventListener("click", this.fallbackEmojiClick);
+    }
+    if (this.outsideClick) {
+      document.removeEventListener("click", this.outsideClick);
+    }
   }
 }
 // In your app.js - replace the entire ChatHook with this:

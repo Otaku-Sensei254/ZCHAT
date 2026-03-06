@@ -94,9 +94,18 @@ defmodule VibeflowWeb.UserActivityHook do
         if socket.assigns[:conversation] && socket.assigns.conversation.uuid == message.conversation_uuid do
           {:cont, assign(socket, :unread_chats_count, new_count)}
         else
+          browser_notification = %{
+            title: "New message from #{username}",
+            body: truncate(Map.get(message, :content) || "Tap to open chat"),
+            url: chat_url_for_message(message),
+            tag: "chat-#{Map.get(message, :id)}",
+            icon: message_user && message_user.avatar_url
+          }
+
           {:cont,
            socket
            |> assign(:unread_chats_count, new_count)
+           |> push_event("new_notification", %{notification: browser_notification})
            |> put_flash(:info, popup_text)}
         end
       else
@@ -114,9 +123,13 @@ defmodule VibeflowWeb.UserActivityHook do
     try do
       # Format the text like "Batman liked your post" (defensive)
       text = format_notification_text(notif)
+      browser_notification = build_browser_notification(notif, text)
 
       # We use :cont so the specific page (Feed/Chat) can also update its UI if needed
-      {:cont, put_flash(socket, :info, text)}
+      {:cont,
+       socket
+       |> push_event("new_notification", %{notification: browser_notification})
+       |> put_flash(:info, text)}
     rescue
       e ->
         Logger.error("UserActivityHook handle_global_event new_notification error: #{inspect(e)}")
@@ -158,6 +171,25 @@ defmodule VibeflowWeb.UserActivityHook do
       "follow" -> "#{actor} started following you 👤"
       "shared_post" -> "#{actor} shared a post with you 🚀"
       _ -> "You have a new notification 🔔"
+    end
+  end
+
+  defp build_browser_notification(notif, text) do
+    actor = Map.get(notif || %{}, :actor) || %{}
+
+    %{
+      title: "Vibeflow",
+      body: text,
+      url: "/notifications",
+      tag: "notif-#{Map.get(notif || %{}, :id, System.unique_integer([:positive]))}",
+      icon: Map.get(actor, :avatar_url)
+    }
+  end
+
+  defp chat_url_for_message(message) do
+    case Map.get(message, :conversation_uuid) do
+      uuid when is_binary(uuid) and uuid != "" -> "/chat/#{uuid}"
+      _ -> "/chat"
     end
   end
 end

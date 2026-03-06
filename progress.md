@@ -29,3 +29,20 @@
 - Applied all chat-related updates in both app paths:
   - `lib/vibeflow_web/...` and `zchat/lib/zchat_web/...`
   - `assets/...` and `zchat/assets/...`
+
+## 2026-03-06 Browser Notification Popups
+
+- Implemented browser-level notification popups (Web Notifications API) for real-time app events.
+- Mounted `NotificationsHook` globally in shared layouts so it is always active:
+  - `lib/vibeflow_web/components/layouts/app.html.heex`
+  - `lib/vibeflow_web/components/layouts/sidepanel.html.heex`
+- Enhanced frontend notification hook in `assets/js/app.js`:
+  - Requests notification permission on first user interaction.
+  - Shows OS/browser popup notifications when tab is not visible.
+  - Opens/focuses app and navigates on notification click.
+  - Keeps existing in-app badge/modal refresh behavior.
+- Updated `lib/vibeflow_web/user_activity_hook.ex` to push `new_notification` events with payloads for:
+  - General notifications (likes/comments/follows/shares).
+  - New incoming chat messages with deep-link target to chat conversation.
+- Build verification:
+  - `mix compile` completed successfully (existing warnings remain; no new compile errors from this change).

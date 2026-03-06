@@ -269,6 +269,39 @@ Hooks.ChatInput = {
 
 Hooks.NotificationsHook = {
   mounted() {
+    this.requestPermission = () => {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    };
+
+    this.maybeShowBrowserNotification = (notification) => {
+      if (!notification) return;
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      if (document.visibilityState === "visible") return;
+
+      const browserNotification = new Notification(
+        notification.title || "Vibeflow",
+        {
+          body: notification.body || "You have a new notification",
+          icon: notification.icon || undefined,
+          tag: notification.tag || undefined
+        }
+      );
+
+      browserNotification.onclick = () => {
+        window.focus();
+        if (notification.url) {
+          window.location.href = notification.url;
+        }
+        browserNotification.close();
+      };
+    };
+
+    window.addEventListener("click", this.requestPermission, { once: true });
+
     this.handleEvent("new_notification", ({ notification }) => {
       // Update notification badge
       const badge = document.querySelector("#notification-badge");
@@ -283,6 +316,8 @@ Hooks.NotificationsHook = {
       if (modal && !modal.classList.contains("hidden")) {
         this.pushEvent("load_notifications", {});
       }
+
+      this.maybeShowBrowserNotification(notification);
     });
 
     this.handleEvent("refresh_notifications", () => {
@@ -292,6 +327,10 @@ Hooks.NotificationsHook = {
         this.pushEvent("load_notifications", {});
       }
     });
+  },
+
+  destroyed() {
+    window.removeEventListener("click", this.requestPermission);
   }
 };
 

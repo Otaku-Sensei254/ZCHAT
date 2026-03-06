@@ -164,6 +164,31 @@ defmodule VibeflowWeb.UserSettingsLive do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:new_sidebar_message, _message}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:new_notification, _notification}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_sidebar, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(_message, socket) do
+    {:noreply, socket}
+  end
+
 @impl true
   def render(assigns) do
     ~H"""
@@ -342,6 +367,30 @@ defmodule VibeflowWeb.UserSettingsLive do
             </div>
           </div>
         </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl" id="notification-settings" phx-hook="NotificationSettings">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Browser Notifications</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Control desktop popup notifications for new messages and activity.
+              </p>
+
+              <div class="mt-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                <p data-notifications-status class="text-sm text-gray-600 dark:text-gray-300">
+                  Status: Checking...
+                </p>
+                <button
+                  type="button"
+                  data-notifications-toggle
+                  class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                >
+                  Enable
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     """
@@ -352,8 +401,4 @@ defmodule VibeflowWeb.UserSettingsLive do
   defp error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
   defp error_to_string(_), do: "Something went wrong"
 
-  @impl true
-  def handle_info(:update_notifications, socket) do
-    {:noreply, socket}
-  end
 end

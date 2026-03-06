@@ -15,6 +15,17 @@ import userSocket from "./user_socket";
 
 // Define Hooks object
 let Hooks = {};
+const BROWSER_NOTIFICATIONS_KEY = "vibeflow_browser_notifications_enabled";
+
+function browserNotificationsEnabled() {
+  return localStorage.getItem(BROWSER_NOTIFICATIONS_KEY) !== "false";
+}
+
+function setBrowserNotificationsEnabled(enabled) {
+  localStorage.setItem(BROWSER_NOTIFICATIONS_KEY, enabled ? "true" : "false");
+  window.dispatchEvent(new CustomEvent("vibeflow:notification-setting-changed"));
+}
+
 Hooks.ChatInput = {
   mounted() {
     // Handle Enter key to submit
@@ -270,6 +281,7 @@ Hooks.ChatInput = {
 Hooks.NotificationsHook = {
   mounted() {
     this.requestPermission = () => {
+      if (!browserNotificationsEnabled()) return;
       if (!("Notification" in window)) return;
       if (Notification.permission === "default") {
         Notification.requestPermission().catch(() => {});
@@ -278,6 +290,7 @@ Hooks.NotificationsHook = {
 
     this.maybeShowBrowserNotification = (notification) => {
       if (!notification) return;
+      if (!browserNotificationsEnabled()) return;
       if (!("Notification" in window)) return;
       if (Notification.permission !== "granted") return;
       if (document.visibilityState === "visible") return;
@@ -301,6 +314,12 @@ Hooks.NotificationsHook = {
     };
 
     window.addEventListener("click", this.requestPermission, { once: true });
+    this.onSettingsChanged = () => {
+      if (browserNotificationsEnabled()) {
+        this.requestPermission();
+      }
+    };
+    window.addEventListener("vibeflow:notification-setting-changed", this.onSettingsChanged);
 
     this.handleEvent("new_notification", ({ notification }) => {
       // Update notification badge
@@ -331,6 +350,51 @@ Hooks.NotificationsHook = {
 
   destroyed() {
     window.removeEventListener("click", this.requestPermission);
+    window.removeEventListener("vibeflow:notification-setting-changed", this.onSettingsChanged);
+  }
+};
+
+Hooks.NotificationSettings = {
+  mounted() {
+    this.toggle = this.el.querySelector("[data-notifications-toggle]");
+    this.status = this.el.querySelector("[data-notifications-status]");
+
+    if (!(this.toggle && this.status)) return;
+
+    this.renderState = () => {
+      const enabled = browserNotificationsEnabled();
+      const permission = "Notification" in window ? Notification.permission : "unsupported";
+      const statusText =
+        permission === "unsupported"
+          ? "This browser does not support notifications."
+          : `Status: ${enabled ? "Enabled" : "Disabled"} (${permission})`;
+
+      this.status.textContent = statusText;
+      this.toggle.textContent = enabled ? "Disable" : "Enable";
+    };
+
+    this.onToggle = () => {
+      const nextEnabled = !browserNotificationsEnabled();
+      setBrowserNotificationsEnabled(nextEnabled);
+
+      if (nextEnabled && "Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission()
+          .catch(() => {})
+          .finally(() => this.renderState());
+        return;
+      }
+
+      this.renderState();
+    };
+
+    this.toggle.addEventListener("click", this.onToggle);
+    this.renderState();
+  },
+
+  destroyed() {
+    if (this.toggle && this.onToggle) {
+      this.toggle.removeEventListener("click", this.onToggle);
+    }
   }
 };
 

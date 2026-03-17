@@ -4,21 +4,28 @@ defmodule Vibeflow.Accounts.User do
   alias Vibeflow.Posts.Post
 
   schema "users" do
-    field :username, :string
-    field :email, :string
-    field :avatar_url, :string
-    field :bio, :string
-    field :password, :string, virtual: true, redact: true
-    field :hashed_password, :string, redact: true
-    field :current_password, :string, virtual: true, redact: true
-    field :confirmed_at, :naive_datetime
-    has_many :posts, Post
-    many_to_many :roles, Vibeflow.Accounts.Role, join_through: "user_roles", on_replace: :delete
-    many_to_many :following, Vibeflow.Accounts.User,
-    join_through: "follows",
-    join_keys: [follower_id: :id, following_id: :id]
-    has_many :reposts, Vibeflow.Posts.Repost
-    has_many :likes, Vibeflow.Posts.Like
+    field(:username, :string)
+    field(:email, :string)
+    field(:avatar_url, :string)
+    field(:bio, :string)
+    field(:password, :string, virtual: true, redact: true)
+    field(:hashed_password, :string, redact: true)
+    field(:current_password, :string, virtual: true, redact: true)
+    field(:confirmed_at, :naive_datetime)
+    field(:is_verified, :boolean, default: false)
+    has_many(:posts, Post)
+    has_many(:social_accounts, Vibeflow.Socials.SocialAccount)
+    has_many(:verification_requests, Vibeflow.Accounts.VerificationRequest)
+
+    many_to_many(:roles, Vibeflow.Accounts.Role, join_through: "user_roles", on_replace: :delete)
+
+    many_to_many(:following, Vibeflow.Accounts.User,
+      join_through: "follows",
+      join_keys: [follower_id: :id, following_id: :id]
+    )
+
+    has_many(:reposts, Vibeflow.Posts.Repost)
+    has_many(:likes, Vibeflow.Posts.Like)
 
     timestamps()
   end
@@ -51,17 +58,18 @@ defmodule Vibeflow.Accounts.User do
     |> cast(attrs, [:username, :email, :password, :avatar_url])
     |> validate_email(opts)
     |> validate_required([:username])
-    |> unique_constraint(:username, message: "Username already taken") # Combined the constraints
-    |> validate_length(:username, min: 2, max: 50) # Optional, but good practice
+    # Combined the constraints
+    |> unique_constraint(:username, message: "Username already taken")
+    # Optional, but good practice
+    |> validate_length(:username, min: 2, max: 50)
     |> validate_password(opts)
+    |> prepare_changes(fn changeset ->
+      if changeset.valid? do
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:user_created, changeset.data})
+      end
 
-  |> prepare_changes(fn changeset ->
-    if changeset.valid? do
-    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:user_created, changeset.data})
-    end
-
-    changeset
-  end)
+      changeset
+    end)
   end
 
   defp validate_email(changeset, opts) do
@@ -149,7 +157,7 @@ defmodule Vibeflow.Accounts.User do
   """
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :bio, :avatar_url])
+    |> cast(attrs, [:username, :bio, :avatar_url, :is_verified])
     |> validate_required([:username])
     |> validate_length(:username, min: 3, max: 20)
     |> validate_length(:bio, max: 160)
@@ -195,23 +203,23 @@ defmodule Vibeflow.Accounts.User do
     end
   end
 
-  #helper function to check if user is admin
+  # helper function to check if user is admin
   # ... existing code ...
 
-@doc """
-Checks if the user is an admin.
-"""
+  @doc """
+  Checks if the user is an admin.
+  """
 
-def is_admin?(%Vibeflow.Accounts.User{roles: roles}) when is_list(roles) do
-  Enum.any?(roles, fn role -> role.name == "admin" end)
-end
+  def is_admin?(%Vibeflow.Accounts.User{roles: roles}) when is_list(roles) do
+    Enum.any?(roles, fn role -> role.name == "admin" end)
+  end
 
-# Fallback: If roles are not loaded (Ecto.Association.NotLoaded) or user is nil
-def is_admin?(_), do: false
+  # Fallback: If roles are not loaded (Ecto.Association.NotLoaded) or user is nil
+  def is_admin?(_), do: false
 
-@doc """
-A changeset for upgrading users to admins (only accessible by system)
-"""
+  @doc """
+  A changeset for upgrading users to admins (only accessible by system)
+  """
   def admin_changeset(user, attrs) do
     user
     |> cast(attrs, [:role])
@@ -223,7 +231,8 @@ A changeset for upgrading users to admins (only accessible by system)
   """
   def roles_changeset(user, attrs) do
     user
-    |> cast(attrs, []) # No direct fields to cast, only associations
+    # No direct fields to cast, only associations
+    |> cast(attrs, [])
     |> cast_assoc(:roles)
   end
 
@@ -232,7 +241,8 @@ A changeset for upgrading users to admins (only accessible by system)
   """
   def roles_changeset(user) do
     user
-    |> cast(%{}, []) # No direct fields to cast, only associations
+    # No direct fields to cast, only associations
+    |> cast(%{}, [])
     |> cast_assoc(:roles)
   end
 end

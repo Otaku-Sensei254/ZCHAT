@@ -1,6 +1,6 @@
 defmodule VibeflowWeb.UserSettingsLive do
   use VibeflowWeb, :live_view
-  alias Vibeflow.Infrastructure.UploadClouhdinary
+  alias Vibeflow.Infrastructure.UploadCloudinary
   alias Vibeflow.Accounts
   require Logger
 

@@ -59,7 +59,7 @@
             </div>
 
             <.link 
-              navigate={notification_link(notif)}
+              navigate={notification_link(notif, @current_user)}
               phx-click="mark_as_read"
               phx-value-id={notif.id}
               phx-target={@myself}

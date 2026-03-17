@@ -32,7 +32,10 @@ defmodule VibeflowWeb.UserActivityHook do
                  avatar: user.avatar_url
                }) do
             {:ok, _meta} ->
-              VibeflowWeb.Endpoint.subscribe(topic)
+              # We don't need to subscribe here; Presence.track is enough
+              # to make the user appear in the Presence list.
+              # Only subscribe if the hook itself needs to handle presence_diff.
+              :ok
             other ->
               # Log non-fatal unexpected results; do not crash the LiveView
               Logger.warning("Presence.track returned: #{inspect(other)} for user=#{user.id}")

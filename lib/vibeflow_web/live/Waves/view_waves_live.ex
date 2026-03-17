@@ -57,7 +57,9 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
             <%= current_wave.user.username %>
           </span>
           <span class="text-xs text-white/70 ml-2">
-            <%= Calendar.strftime(current_wave.inserted_at, "%H:%M") %>
+            <span id={"timestamp-#{current_wave.id}"} phx-hook="LocalTime" data-timestamp={current_wave.inserted_at} class="invisible">
+              <%= Calendar.strftime(current_wave.inserted_at, "%H:%M") %>
+            </span>
           </span>
         </div>
 
@@ -73,9 +75,9 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
             src={current_wave.media_url}
             autoplay
             playsinline
-            muted={false}
+            muted={current_wave.music_track != nil}
             class="max-h-full max-w-full"
-            phx-hook="StoryVideo"
+            phx-hook="WaveVideo"
           ></video>
         <% else %>
           <img src={current_wave.media_url} class="max-h-full max-w-full object-contain" />
@@ -101,7 +103,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
             </div>
           </div>
         </div>
-        <audio src={current_wave.music_track.audio_url} autoplay loop class="hidden"></audio>
+        <audio id={"audio-player-#{current_wave.id}"} src={current_wave.music_track.audio_url} autoplay phx-hook="WaveAudio" class="hidden"></audio>
       <% end %>
     </div>
     """
@@ -179,8 +181,8 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
     # -------------------------
 
     if current_wave.media_type != "video" and current_wave.music_track do
-      # If image with music, use song duration, with a fallback to 5 seconds
-      delay = current_wave.music_track.duration_ms || 5000
+      # Cap image with music to 7 seconds or song duration (whichever is shorter)
+      delay = min(current_wave.music_track.duration_ms || 7000, 7000)
       timer_ref = Process.send_after(self(), :next_slide, delay)
       assign(socket, :timer_ref, timer_ref)
     else if current_wave.media_type != "video" do
@@ -188,7 +190,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
       timer_ref = Process.send_after(self(), :next_slide, 5000)
       assign(socket, :timer_ref, timer_ref)
     else
-      # If video, wait for JS hook
+      # If video, wait for JS hook (WaveVideo)
       socket
     end
     end

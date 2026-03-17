@@ -25,5 +25,10 @@ defmodule VibeflowWeb.UI.NotificationsLive do
      socket
      |> assign(:notifications, [notification | socket.assigns.notifications])}
   end
+
+  @impl true
+  def handle_info(_event, socket) do
+    {:noreply, socket}
+  end
 end
   

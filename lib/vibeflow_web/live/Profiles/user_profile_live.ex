@@ -10,9 +10,13 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
   def mount(%{"username" => username}, session, socket) do
     socket = VibeflowWeb.UserAuth.mount_current_user(socket, session)
 
-    # Preload roles to prevent crashes in the template
+    if connected?(socket) && socket.assigns.current_user do
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "notifications:#{socket.assigns.current_user.id}")
+    end
+
+    # Preload roles and social accounts
     case Accounts.get_user_by_username(username)
-    |> Vibeflow.Repo.preload(:roles) do
+         |> Vibeflow.Repo.preload([:roles, :social_accounts]) do
       nil ->
         {:ok,
          socket
@@ -20,7 +24,6 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
          |> redirect(to: ~p"/feed")}
 
       user ->
-        # This now works because we fixed the Context!
         posts = Posts.list_posts(user_id: user.id, limit: 20)
         follow_stats = Socials.get_follow_stats(user.id)
 
@@ -31,20 +34,108 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
             false
           end
 
-  {:ok,
-   socket
-   |> assign(:page_title, "#{user.username}'s Profile")
-   |> assign(:user, user)
-   |> assign(:posts, posts)
-   |> assign(:follow_stats, follow_stats)
-   |> assign(:is_following, is_following)
-   |> assign(:hide_bottom_nav, true)
-   |> assign(:show_followers_modal, false)
-   |> assign(:show_following_modal, false)
-   |> assign(:followers, [])
-   |> assign(:following, [])
-   |> assign(:search_query, "")
-   |> assign(:modal_type, nil)}
+        # Check for pending verification request if it's the current user's profile
+        pending_verification =
+          if socket.assigns.current_user && socket.assigns.current_user.id == user.id do
+            Accounts.check_verification_status(user)
+          else
+            nil
+          end
+
+        {:ok,
+         socket
+         |> assign(:page_title, "#{user.username}'s Profile")
+         |> assign(:user, user)
+         |> assign(:posts, posts)
+         |> assign(:follow_stats, follow_stats)
+         |> assign(:is_following, is_following)
+         |> assign(:hide_bottom_nav, true)
+         |> assign(:show_followers_modal, false)
+         |> assign(:show_following_modal, false)
+         |> assign(:show_verification_modal, false)
+         |> assign(:pending_verification, pending_verification)
+         |> assign(:social_form, to_form(%{"platform" => "youtube", "username" => ""}))
+         |> assign(:followers, [])
+         |> assign(:following, [])
+         |> assign(:search_query, "")
+         |> assign(:modal_type, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("open_verification_modal", _, socket) do
+    {:noreply, assign(socket, show_verification_modal: true)}
+  end
+
+  @impl true
+  def handle_event("close_verification_modal", _, socket) do
+    {:noreply, assign(socket, show_verification_modal: false)}
+  end
+
+  @impl true
+  def handle_event("validate_social", %{"platform" => platform, "username" => username}, socket) do
+    {:noreply, assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
+  end
+
+  @impl true
+  def handle_event("add_social", %{"platform" => platform, "username" => username}, socket) do
+    case Socials.create_social_account(socket.assigns.current_user, %{
+           "platform" => platform,
+           "username" => username
+         }) do
+      {:ok, _social} ->
+        # Refresh user with new social accounts
+        user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+
+        {:noreply,
+         socket
+         |> assign(:user, user)
+         |> assign(:social_form, to_form(%{"platform" => platform, "username" => ""}))
+         |> put_flash(:info, "Social account added successfully")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, social_form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_social", %{"id" => id}, socket) do
+    case Socials.delete_social_account(id) do
+      {:ok, _} ->
+        user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+        {:noreply, assign(socket, :user, user) |> put_flash(:info, "Social account removed")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Could not remove social account")}
+    end
+  end
+
+  @impl true
+  def handle_event("submit_verification", _, socket) do
+    user = socket.assigns.user
+
+    if Enum.empty?(user.social_accounts) do
+      {:noreply, put_flash(socket, :error, "Please add at least one social account first")}
+    else
+      case Accounts.get_verified(user) do
+        {:ok, _msg} ->
+          pending = Accounts.check_verification_status(user)
+
+          {:noreply,
+           socket
+           |> assign(:pending_verification, pending)
+           |> assign(:show_verification_modal, false)
+           |> put_flash(:info, "Verification request submitted! Our team will contact you soon.")}
+
+        {:error, :pending} ->
+          {:noreply,
+           socket
+           |> assign(:show_verification_modal, false)
+           |> put_flash(:info, "Your verification request is already pending.")}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Could not submit verification request")}
+      end
     end
   end
 
@@ -202,10 +293,18 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
   @impl true
   def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
 
-    @impl true
-    def handle_info({:new_notification,_}, socket) do
+  @impl true
+  def handle_info({:new_notification, notif}, socket) do
+    if socket.assigns.current_user && notif.user_id == socket.assigns.current_user.id and
+         notif.type in ["verification_approved", "verification_rejected"] do
+      user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+      pending = Accounts.check_verification_status(user)
+
+      {:noreply, assign(socket, user: user, pending_verification: pending)}
+    else
       {:noreply, socket}
     end
+  end
 
 
 end

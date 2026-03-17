@@ -82,6 +82,7 @@ defmodule VibeflowWeb.Router do
           VibeflowWeb.UserActivityHook
       ] do
       live "/dashboard", DashboardLive, :index
+      live "/verification-requests", VerificationsLive, :index
       live "/reports", ReportsLive, :index
       live "/reports/:id", ReportsLive, :show
     end
@@ -138,6 +139,7 @@ scope "/admin", VibeflowWeb.Admin do
       VibeflowWeb.UserActivityHook
     ] do
     live "/dashboard", DashboardLive, :index
+    live "/verification-requests", VerificationsLive, :index
     live "/users", ManagementLive, :index
     live "/users/:user_id/edit_roles", UserRolesLive, :edit
     live "/roles", CreateRolesLive

@@ -323,23 +323,13 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_info(:update_notifications, socket) do
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info({:update_sidebar, _message}, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
+  def handle_info(_event, socket), do: {:noreply, socket}
 
   # --- CORE HELPERS ---
 

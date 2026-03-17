@@ -5,16 +5,15 @@ defmodule Vibeflow.Accounts do
 
   import Ecto.Query, warn: false
   alias Vibeflow.Repo
-  alias Vibeflow.Accounts.{User, UserToken, UserNotifier, Role, Permission}
+  alias Vibeflow.Accounts.{User, UserToken, UserNotifier, Role, Permission, VerificationRequest}
   alias Vibeflow.Infrastructure.UploadCloudinary
   ## Database getters
 
- def get_user_by_email(email) when is_binary(email) do
-     with user when not is_nil(user) <- Repo.get_by(User, email: email) do
-       Repo.preload(user, roles: :permissions)
-     end
-   end
-
+  def get_user_by_email(email) when is_binary(email) do
+    with user when not is_nil(user) <- Repo.get_by(User, email: email) do
+      Repo.preload(user, roles: :permissions)
+    end
+  end
 
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
@@ -127,6 +126,179 @@ defmodule Vibeflow.Accounts do
     |> Repo.update()
   end
 
+  # user request verifications
+  def get_verified(%User{} = user, attrs \\ %{}) do
+    cond do
+      Repo.exists?(
+        from(v in VerificationRequest, where: v.user_id == ^user.id and v.status == "approved")
+      ) ->
+        {:ok, "User is verified"}
+
+      Repo.exists?(
+        from(v in VerificationRequest, where: v.user_id == ^user.id and v.status == "pending")
+      ) ->
+        {:error, :pending}
+
+      true ->
+        create_verification_request(user, attrs)
+    end
+  end
+
+  defp create_verification_request(user, attrs) do
+    user = Repo.preload(user, :social_accounts)
+    # check if they have social accounts
+    fetch_socials = Enum.map(user.social_accounts, & &1.url)
+
+    attrs =
+      attrs
+      |> Map.put("user_id", user.id)
+      |> Map.put("social_links", fetch_socials)
+
+    case %VerificationRequest{}
+         |> VerificationRequest.changeset(attrs)
+         |> Repo.insert() do
+      {:ok, _request} ->
+        # Notify admins
+        notify_admins_of_verification_request(user)
+        {:ok, "Verification request submitted"}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  defp notify_admins_of_verification_request(user) do
+    admins = list_admins()
+    moderators = list_moderators()
+
+    (admins ++ moderators)
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.each(fn admin ->
+      Vibeflow.Notifications.create_notification(%{
+        type: "verification_request",
+        user_id: admin.id,
+        actor_id: user.id
+      })
+    end)
+  end
+
+  def list_admins do
+    list_role_users("admin")
+  end
+
+  def list_moderators do
+    list_role_users("moderator")
+  end
+
+  defp list_role_users(role_name) do
+    role = Repo.get_by(Role, name: role_name)
+
+    if role do
+      from(u in User,
+        join: ur in "user_roles",
+        on: u.id == ur.user_id,
+        where: ur.role_id == ^role.id
+      )
+      |> Repo.all()
+    else
+      []
+    end
+  end
+
+  # for admin and moderator to view all verification requests
+  def list_verification_requests do
+    VerificationRequest
+    |> order_by([desc: :inserted_at])
+    |> preload(:user)
+    |> Repo.all()
+  end
+
+  # check for pending requests
+  def list_pending_verification_requests do
+    VerificationRequest
+    |> where([v], v.status == "pending")
+    |> order_by([asc: :inserted_at])
+    |> preload(:user)
+    |> Repo.all()
+  end
+
+  def get_verification_request!(id) do
+    VerificationRequest
+    |> Repo.get!(id)
+    |> Repo.preload(:user)
+  end
+
+  # check request status
+  def check_verification_status(%User{} = user) do
+    Repo.get_by(VerificationRequest, user_id: user.id, status: "pending")
+  end
+
+  def get_latest_verification_request(%User{} = user) do
+    from(vr in VerificationRequest,
+      where: vr.user_id == ^user.id,
+      order_by: [desc: vr.inserted_at],
+      limit: 1
+    )
+    |> Repo.one()
+  end
+
+  def get_latest_verification_request(_), do: nil
+
+  # admin approves or rejects a verification request
+  def approve_verification_request(%VerificationRequest{} = request, admin_id) do
+    Repo.transaction(fn ->
+      {:ok, updated_request} =
+        request
+        |> VerificationRequest.changeset(%{"status" => "approved"})
+        |> Repo.update()
+
+      {:ok, _user} =
+        request.user
+        |> User.profile_changeset(%{"is_verified" => true})
+        |> Repo.update()
+
+      # Notify user
+      Vibeflow.Notifications.create_notification(%{
+        type: "verification_approved",
+        user_id: request.user_id,
+        actor_id: admin_id
+      })
+
+      updated_request
+    end)
+  end
+
+  def reject_verification_request(%VerificationRequest{} = request, admin_id, admin_notes \\ nil) do
+    {:ok, updated_request} =
+      request
+      |> VerificationRequest.changeset(%{"status" => "rejected", "admin_notes" => admin_notes})
+      |> Repo.update()
+
+    # Notify user
+    Vibeflow.Notifications.create_notification(%{
+      type: "verification_rejected",
+      user_id: request.user_id,
+      actor_id: admin_id
+    })
+
+    {:ok, updated_request}
+  end
+
+  def reject_verification_request(%VerificationRequest{} = request) do
+    case request
+         |> VerificationRequest.changeset(%{"status" => "rejected"})
+         |> Repo.update() do
+      {:ok, request} ->
+        user = get_user!(request.user_id)
+        Notifications.notify_verification_rejected(user, request.id)
+        {:ok, request}
+
+      error ->
+        error
+    end
+  end
+
+  # defp create
   ## Session
 
   def generate_user_session_token(user) do
@@ -137,12 +309,13 @@ defmodule Vibeflow.Accounts do
 
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
+
     Repo.one(query)
     |> Repo.preload(roles: :permissions)
   end
 
   def delete_user_session_token(token) do
-    Repo.delete_all(from t in Vibeflow.Accounts.UserToken, where: t.token == ^token)
+    Repo.delete_all(from(t in Vibeflow.Accounts.UserToken, where: t.token == ^token))
     :ok
   end
 
@@ -225,7 +398,8 @@ defmodule Vibeflow.Accounts do
   end
 
   def has_permission?(%User{} = user, permission_slug) do
-    user = Repo.preload(user, [roles: :permissions])
+    user = Repo.preload(user, roles: :permissions)
+
     Enum.any?(user.roles, fn role ->
       Enum.any?(role.permissions, fn p -> p.slug == permission_slug end)
     end)
@@ -234,7 +408,7 @@ defmodule Vibeflow.Accounts do
   def user_has_permission?(user, perm), do: has_permission?(user, perm)
 
   def update_user_roles(%User{} = user, role_ids) do
-    roles = Repo.all(from r in Role, where: r.id in ^role_ids)
+    roles = Repo.all(from(r in Role, where: r.id in ^role_ids))
 
     user
     |> Repo.preload(:roles)
@@ -248,8 +422,9 @@ defmodule Vibeflow.Accounts do
   end
 
   def create_role(attrs, permission_ids \\ []) do
-    permissions = (from p in Permission , where: p.id in ^permission_ids)
-    |> Repo.all()
+    permissions =
+      from(p in Permission, where: p.id in ^permission_ids)
+      |> Repo.all()
 
     %Vibeflow.Accounts.Role{}
     |> Role.changeset(attrs)
@@ -259,6 +434,7 @@ defmodule Vibeflow.Accounts do
 
   def search_users(query) do
     search_term = "%#{query}%"
+
     from(u in User,
       where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term),
       order_by: [asc: u.inserted_at],
@@ -284,7 +460,8 @@ defmodule Vibeflow.Accounts do
 
   def remove_role_from_user(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
     from(ur in "user_roles",
-      where: ur.user_id == ^user_id and ur.role_id == ^role_id)
+      where: ur.user_id == ^user_id and ur.role_id == ^role_id
+    )
     |> Repo.delete_all()
     |> case do
       {1, _} -> {:ok, "Role removed"}
@@ -309,10 +486,13 @@ defmodule Vibeflow.Accounts do
 
   def list_users_with_role(role_name) do
     case get_role_by_name(role_name) do
-      nil -> []
+      nil ->
+        []
+
       role ->
         from(u in User,
-          join: ur in "user_roles", on: ur.user_id == u.id,
+          join: ur in "user_roles",
+          on: ur.user_id == u.id,
           where: ur.role_id == ^role.id,
           preload: [:roles]
         )
@@ -351,9 +531,9 @@ defmodule Vibeflow.Accounts do
         # Simple check to see if it looks like a local file path
         if File.exists?(path) do
           IO.puts("-> File exists on disk. Attempting upload...")
-           upload_to_cloudinary(path, attrs, field_name)
+          upload_to_cloudinary(path, attrs, field_name)
         else
-           attrs
+          attrs
         end
 
       _ ->
@@ -361,7 +541,7 @@ defmodule Vibeflow.Accounts do
     end
   end
 
-defp upload_to_cloudinary(path, attrs, field_name) do
+  defp upload_to_cloudinary(path, attrs, field_name) do
     # FIX: We removed 'opts' because your uploader doesn't support it.
     # We simply pass the path.
     case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
@@ -376,13 +556,13 @@ defp upload_to_cloudinary(path, attrs, field_name) do
     end
   end
 
-  #get friends
-  def list_friends(%User{}= user) do
+  # get friends
+  def list_friends(%User{} = user) do
     user
     |> Repo.preload(:following)
     |> Map.get(:following)
-
   end
+
   def follow_user(user_a, user_b) do
     user_a
     |> Repo.preload(:following)

@@ -19,6 +19,15 @@ defmodule Vibeflow.Waves do
       [%Wave{}, ...]
 
   """
+  #get all the waves
+  def get_all_waves do
+    Wave
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+    |> Repo.preload(:user)
+  end
+
+  
   def list_waves(current_user_id) do
     # get the people the user has followed and show their waves
     following_ids =

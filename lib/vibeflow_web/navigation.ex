@@ -37,6 +37,13 @@ defmodule VibeflowWeb.Navigation do
         roles: ["admin"],
         section: "User Management"
       },
+      %{
+        path: "/admin/verification-requests",
+        label: "Verification Requests",
+        icon: "shield",
+        roles: ["admin"],
+        section: "User Management"
+      },
 
       # Moderator section
       %{
@@ -55,6 +62,13 @@ defmodule VibeflowWeb.Navigation do
         path: "/moderator/reports",
         label: "Reports",
         icon: "eye",
+        roles: ["moderator"],
+        section: "Moderation"
+      },
+      %{
+        path: "/moderator/verification-requests",
+        label: "Verification Requests",
+        icon: "shield",
         roles: ["moderator"],
         section: "Moderation"
       },

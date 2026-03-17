@@ -1,5 +1,6 @@
 defmodule VibeflowWeb.Components.NotificationsModal do
   use VibeflowWeb, :live_component
+  alias Vibeflow.Accounts
   alias Vibeflow.Notifications
 
   @impl true
@@ -51,37 +52,53 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   end
 
   # --- VIEW HELPERS ---
-  def notification_link(%{type: "shared_post", conversation: %{uuid: uuid}}) do
+  def notification_link(%{type: "shared_post", conversation: %{uuid: uuid}}, _current_user) do
     ~p"/chat/#{uuid}"
   end
 
-  def notification_link(%{type: "shared_post", conversation_id: conv_id}) do
+  def notification_link(%{type: "shared_post", conversation_id: conv_id}, _current_user) do
     case Vibeflow.Chat.get_conversation(conv_id) do
       %{uuid: uuid} -> ~p"/chat/#{uuid}"
       _ -> "/chat"
     end
   end
 
-  def notification_link(%{post: %{uuid: uuid}}) do
+  def notification_link(%{post: %{uuid: uuid}}, _current_user) do
     ~p"/posts/#{uuid}"
   end
 
-  def notification_link(%{post_id: post_id}) when is_integer(post_id) do
+  def notification_link(%{post_id: post_id}, _current_user) when is_integer(post_id) do
     # Fallback if post not preloaded - USE SAFE get_post (no bang)
     case Vibeflow.Posts.get_post(post_id) do
       %{uuid: uuid} -> ~p"/posts/#{uuid}"
       _ -> "#"
     end
   end
-  def notification_link(%{type: "follow", actor: %{username: username}}) do
+  def notification_link(%{type: "follow", actor: %{username: username}}, _current_user) do
     ~p"/users/#{username}"
   end
 
-  def notification_link(%{type: "role_change", user: %{username: username}}) when is_binary(username) do
+  def notification_link(%{type: "role_change", user: %{username: username}}, _current_user) when is_binary(username) do
 
     ~p"/users/#{username}"
   end
-    def notification_link(_unknown) do
+  def notification_link(%{type: "verification_request"}, current_user) do
+    cond do
+      Accounts.user_has_role?(current_user, "admin") -> "/admin/verification-requests"
+      Accounts.user_has_role?(current_user, "moderator") -> "/moderator/verification-requests"
+      true -> ~p"/"
+    end
+  end
+
+  def notification_link(%{type: "verification_approved"}, current_user) do
+    ~p"/users/#{current_user.username}"
+  end
+
+  def notification_link(%{type: "verification_rejected"}, current_user) do
+    ~p"/users/#{current_user.username}"
+  end
+
+  def notification_link(_unknown, _current_user) do
     ~p"/"
   end
 
@@ -94,6 +111,9 @@ defmodule VibeflowWeb.Components.NotificationsModal do
       "new_post" -> "posted something new"
       "role_change" -> "updated your role"
       "shared_post" -> "Shared a post with you"
+      "verification_request" -> "requested verification"
+      "verification_approved" -> "approved your verification"
+      "verification_rejected" -> "rejected your verification"
       _ -> "sent a notification"
     end
   end

@@ -675,6 +675,7 @@ Hooks.CameraCapture = {
     this.recordingChunks = [];
     this.timerInterval = null;
     this.secondsRecorded = 0;
+    this.timerStartMs = null;
     this.videoReady = false;
     this.stream = null;
 
@@ -825,6 +826,7 @@ Hooks.CameraCapture = {
       
       this.recording = false;
       this.stopTimer();
+      this.stopMusicPreview();
       if (btn) {
         btn.classList.remove('animate-pulse', 'bg-red-700', 'scale-110');
         btn.innerHTML = `<div class="w-4 h-4 bg-white rounded-sm"></div>`;
@@ -834,6 +836,7 @@ Hooks.CameraCapture = {
     this.mediaRecorder.start();
     this.recording = true;
     this.startTimer();
+    this.playMusicPreview();
 
     if (btn) {
       btn.classList.add('animate-pulse', 'bg-red-700', 'scale-110');
@@ -842,6 +845,7 @@ Hooks.CameraCapture = {
   },
 
   stopRecording(btn) {
+    this.stopMusicPreview();
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
@@ -874,21 +878,47 @@ Hooks.CameraCapture = {
 
   startTimer() {
     this.secondsRecorded = 0;
+    this.timerStartMs = Date.now();
     if (this.timerEl) {
       this.timerEl.classList.remove("hidden");
       this.timerEl.innerText = "00:00";
     }
     this.timerInterval = setInterval(() => {
-      this.secondsRecorded++;
-      const m = Math.floor(this.secondsRecorded / 60).toString().padStart(2, '0');
-      const s = (this.secondsRecorded % 60).toString().padStart(2, '0');
+      const elapsedMs = Date.now() - this.timerStartMs;
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+      const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+      const s = (totalSeconds % 60).toString().padStart(2, '0');
       if (this.timerEl) this.timerEl.innerText = `${m}:${s}`;
-    }, 1000);
+    }, 200);
   },
 
   stopTimer() {
     clearInterval(this.timerInterval);
+    this.timerStartMs = null;
     if (this.timerEl) this.timerEl.classList.add("hidden");
+  },
+
+  getMusicPreviewEl() {
+    return document.getElementById("music-preview-player");
+  },
+
+  playMusicPreview() {
+    const audio = this.getMusicPreviewEl();
+    if (!audio) return;
+    try {
+      audio.currentTime = 0;
+      audio.loop = true;
+      audio.play().catch(() => {});
+    } catch (e) { /* noop */ }
+  },
+
+  stopMusicPreview() {
+    const audio = this.getMusicPreviewEl();
+    if (!audio) return;
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+    } catch (e) { /* noop */ }
   }
 };
 
@@ -898,6 +928,12 @@ Hooks.CameraCapture = {
 Hooks.WaveVideo = {
   mounted() {
     this.el.addEventListener("ended", () => {
+      // Only stop audio players that specifically belong to this wave's viewer
+      const viewer = this.el.closest("#story-viewer");
+      if (viewer) {
+        const audios = viewer.querySelectorAll("audio");
+        audios.forEach(a => { a.pause(); a.currentTime = 0; });
+      }
       this.pushEvent("video_ended", {})
     })
     // Attempt play, mute if blocked by browser policy
@@ -905,6 +941,23 @@ Hooks.WaveVideo = {
       this.el.muted = true
       this.el.play()
     })
+  }
+}
+
+Hooks.WaveAudio = {
+  mounted() {
+    // Small delay to ensure any previous wave cleanup has finished
+    setTimeout(() => {
+      if (this.el) {
+        this.el.play().catch(() => {
+          console.log("Audio autoplay blocked, waiting for interaction");
+        });
+      }
+    }, 50);
+  },
+  destroyed() {
+    this.el.pause();
+    this.el.currentTime = 0;
   }
 }
 

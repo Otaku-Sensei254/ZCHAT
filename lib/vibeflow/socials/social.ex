@@ -137,4 +137,89 @@ defmodule Vibeflow.Socials do
     _target_post = Posts.get_post!(post_id)
     # TODO: Implement sharing logic
   end
+
+  # --- SOCIAL ACCOUNTS ---
+
+  alias Vibeflow.Socials.SocialAccount
+
+  def list_social_accounts(user_id) do
+    from(sa in SocialAccount, where: sa.user_id == ^user_id)
+    |> Repo.all()
+  end
+
+  def create_social_account(user, attrs) do
+    platform = attrs["platform"] || attrs[:platform]
+    username = attrs["username"] || attrs[:username]
+
+    username = normalize_username(platform, username)
+
+    url = build_social_url(platform, username)
+
+    attrs =
+      attrs
+      |> Map.put("url", url)
+      |> Map.put("user_id", user.id)
+
+    %SocialAccount{}
+    |> SocialAccount.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def delete_social_account(id) do
+    Repo.get!(SocialAccount, id) |> Repo.delete()
+  end
+
+  defp build_social_url("youtube", username), do: "https://youtube.com/@#{username}"
+  defp build_social_url("instagram", username), do: "https://instagram.com/#{username}"
+  defp build_social_url("x", username), do: "https://x.com/#{username}"
+  defp build_social_url("twitch", username), do: "https://twitch.tv/#{username}"
+  defp build_social_url("tiktok", username), do: "https://tiktok.com/@#{username}"
+  defp build_social_url("discord", username), do: username # Discord doesn't have a simple public profile URL by username
+  defp build_social_url(_, username), do: username
+
+  defp normalize_username(platform, username) do
+    username =
+      username
+      |> to_string()
+      |> String.trim()
+      |> String.replace_prefix("https://", "")
+      |> String.replace_prefix("http://", "")
+      |> String.replace_prefix("www.", "")
+
+    username =
+      case platform do
+        "youtube" ->
+          username
+          |> String.replace_prefix("youtube.com/@", "")
+          |> String.replace_prefix("youtube.com/c/", "")
+          |> String.replace_prefix("youtube.com/user/", "")
+
+        "instagram" ->
+          String.replace_prefix(username, "instagram.com/", "")
+
+        "x" ->
+          String.replace_prefix(username, "x.com/", "")
+
+        "twitch" ->
+          String.replace_prefix(username, "twitch.tv/", "")
+
+        "tiktok" ->
+          username
+          |> String.replace_prefix("tiktok.com/@", "")
+          |> String.replace_prefix("tiktok.com/", "")
+
+        _ ->
+          username
+      end
+
+    String.trim_leading(username, "@")
+  end
+
+  def get_social_prefix("youtube"), do: "youtube.com/@"
+  def get_social_prefix("instagram"), do: "instagram.com/"
+  def get_social_prefix("x"), do: "x.com/"
+  def get_social_prefix("twitch"), do: "twitch.tv/"
+  def get_social_prefix("tiktok"), do: "tiktok.com/@"
+  def get_social_prefix("discord"), do: "Username: "
+  def get_social_prefix(_), do: ""
 end

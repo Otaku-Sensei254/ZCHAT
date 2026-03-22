@@ -27,7 +27,7 @@ defmodule VibeflowWeb.CreatePostLive do
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
        max_entries: 20,
-       max_file_size: 20_000_000,
+       max_file_size: 100_000_000,
        auto_upload: true,
        progress: &handle_progress/3
      )}

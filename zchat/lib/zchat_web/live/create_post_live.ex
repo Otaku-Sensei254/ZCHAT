@@ -162,7 +162,7 @@ defmodule ZchatWeb.CreatePostLive do
     {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
   end
 
-  def error_to_string(:too_large), do: "File is too large (Max 50MB)"
+  def error_to_string(:too_large), do: "File is too large. (Max 50MB)"
   def error_to_string(:too_many_files), do: "You have selected too many files"
   def error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
 end

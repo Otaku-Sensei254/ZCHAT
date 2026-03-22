@@ -26,7 +26,7 @@ defmodule ZchatWeb.CreatePostLive do
      |> assign(:uploaded_files, [])
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
-       max_entries: 21,
+       max_entries: 21,#this is inside chat not vibe
        max_file_size: 100_000_000,
        auto_upload: true,
        progress: &handle_progress/3

@@ -19,11 +19,12 @@
                       </div>
                     <% end %>
                     </.link>
-                  <span class="font-semibold text-gray-900 dark:text-gray-200 text-base">
+                  <span class="font-semibold text-gray-900 dark:text-gray-200 text-base flex items-center gap-1">
                     <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
                       <%= @post.user.username %>
                       
                     </.link>
+                    <.verified_badge user={@post.user} class="h-6 w-6" />
                   </span>
                   </div>            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">
               · <%= Timex.from_now(@post.inserted_at) %>

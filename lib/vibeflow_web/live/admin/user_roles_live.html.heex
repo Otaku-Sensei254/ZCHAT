@@ -1,6 +1,10 @@
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-    Edit Roles for <span class="text-blue-600"><%= @user.username %></span>
+    Edit Roles for
+    <span class="text-blue-600 inline-flex items-center gap-1">
+      <%= @user.username %>
+      <.verified_badge user={@user} class="h-6 w-6" />
+    </span>
   </h1>
 
   <div class="bg-white dark:bg-zinc-900 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-zinc-800">

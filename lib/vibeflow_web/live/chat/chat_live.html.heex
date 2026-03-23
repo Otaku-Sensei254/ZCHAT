@@ -53,7 +53,10 @@
                 </div>
               <% end %>
               <div>
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                  <%= user.username %>
+                  <.verified_badge user={user} class="h-6 w-6" />
+                </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
               </div>
             </button>
@@ -116,7 +119,12 @@
 
           <div class="flex-1 min-w-0">
             <div class="flex justify-between items-center mb-1">
-              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base"><%= display_name %></p>
+              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base flex items-center gap-1">
+                <%= display_name %>
+                <%= if !is_group && other_member && other_member.user do %>
+                  <.verified_badge user={other_member.user} class="h-6 w-6" />
+                <% end %>
+              </p>
               <%= if conv.unread_count > 0 do %>
                 <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                   <%= conv.unread_count %>
@@ -181,7 +189,12 @@
           </div>
           
           <div>
-            <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight"><%= header_name %></span>
+            <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight inline-flex items-center gap-1">
+              <%= header_name %>
+              <%= if @conversation.type != "group" && header_user do %>
+                <.verified_badge user={header_user} class="h-6 w-6" />
+              <% end %>
+            </span>
             <%= if other_user_online do %>
               <p class="text-xs text-green-500 font-medium">Active now</p>
             <% end %>
@@ -233,7 +246,10 @@
                         <%= VibeflowWeb.CoreComponents.initials(post.user) %>
                       </div>
                     <% end %>
-                      <span class="text-xs font-bold text-white shadow-sm"><%= post.user.username %></span>
+                      <span class="text-xs font-bold text-white shadow-sm flex items-center gap-1">
+                        <%= post.user.username %>
+                        <.verified_badge user={post.user} class="h-6 w-6" />
+                      </span>
                     </div>
                     <%= if post.content do %>
                       <div class="absolute bottom-3 left-3 right-3 z-10"><p class="text-xs text-white/90 font-medium drop-shadow-md break-words"><%= content_cut(post.content, 80) %></p></div>
@@ -252,7 +268,10 @@
                            else: "bg-white/50 dark:bg-black/20 border-blue-500 text-gray-600 dark:text-gray-300")
                         }
                       >
-                        <p class="font-bold opacity-100 mb-0.5"><%= message.reply_to.user.username %></p>
+                        <p class="font-bold opacity-100 mb-0.5 flex items-center gap-1">
+                          <%= message.reply_to.user.username %>
+                          <.verified_badge user={message.reply_to.user} class="h-6 w-6" />
+                        </p>
                         
                         <%= if message.reply_to.media_files && message.reply_to.media_files != [] && (!message.reply_to.content || message.reply_to.content == "") do %>
                           <p class="opacity-90 truncate font-normal italic flex items-center gap-1">
@@ -380,8 +399,9 @@
             <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-100 dark:border-zinc-800/50 animate-in slide-in-from-bottom-2 fade-in duration-200">
               <div class="w-1 h-8 bg-blue-500 rounded-full shrink-0"></div>
               <div class="flex-1 min-w-0 flex flex-col justify-center text-sm">
-                <span class="text-blue-500 font-bold text-xs mb-0.5 truncate">
+                <span class="text-blue-500 font-bold text-xs mb-0.5 truncate flex items-center gap-1">
                   Replying to <%= @replying_to.user.username %>
+                  <.verified_badge user={@replying_to.user} class="h-6 w-6" />
                 </span>
                 <p class="text-gray-500 dark:text-gray-400 truncate opacity-90">
                   <%= cond do %>

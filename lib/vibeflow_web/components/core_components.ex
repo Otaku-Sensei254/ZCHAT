@@ -90,6 +90,33 @@ def icon(%{name: "hero-user"} = assigns) do
   end
 
   @doc """
+  Renders a verified badge next to a user name.
+
+  ## Examples
+
+      <.verified_badge user={@user} />
+      <.verified_badge user={@user} class="h-6 w-6" />
+  """
+  attr :user, :any, required: true
+  attr :class, :string, default: "h-6 w-6"
+
+  def verified_badge(assigns) do
+    assigns =
+      assign(assigns, :verified?, match?(%{is_verified: true}, assigns.user))
+
+    ~H"""
+    <%= if @verified? do %>
+      <img
+        src="/images/vibeflow_verified.png"
+        alt="Verified"
+        title="Verified"
+        class={["inline-block align-middle", @class]}
+      />
+    <% end %>
+    """
+  end
+
+  @doc """
   Renders a modal.
 
   ## Examples

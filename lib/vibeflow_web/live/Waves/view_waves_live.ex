@@ -53,8 +53,9 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
             src={current_wave.user.avatar_url || "/images/default_avatar.png"}
             class="w-8 h-8 rounded-full border border-white object-cover"
           />
-          <span class="font-bold text-sm shadow-black drop-shadow-md">
+          <span class="font-bold text-sm shadow-black drop-shadow-md flex items-center gap-1">
             <%= current_wave.user.username %>
+            <.verified_badge user={current_wave.user} class="h-6 w-6" />
           </span>
           <span class="text-xs text-white/70 ml-2">
             <span id={"timestamp-#{current_wave.id}"} phx-hook="LocalTime" data-timestamp={current_wave.inserted_at} class="invisible">

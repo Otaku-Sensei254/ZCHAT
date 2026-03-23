@@ -56,8 +56,9 @@
             </div>
             
             <div>
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-1">
                 <%= user.username %>
+                <.verified_badge user={user} class="h-6 w-6" />
               </h2>
               <p class="text-sm text-gray-500 dark:text-gray-400 break-all">
                 <%= user.email %>

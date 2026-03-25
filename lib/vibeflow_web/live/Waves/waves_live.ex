@@ -67,11 +67,16 @@ defmodule VibeflowWeb.Waves.WavesLive do
       </div>
 
       <%= if @uploads.media.entries == [] do %>
-        <div class="absolute bottom-0 left-0 right-0 z-30 pb-12 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex justify-around items-end">
-          <button onclick="document.getElementById('gallery-trigger').click()" class="mb-6 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></button>
-          <div class="flex flex-col items-center gap-3"><button id="btn-snap" class="w-20 h-20 rounded-full border-[6px] border-white bg-transparent active:scale-95 transition-all shadow-lg"></button></div>
-          <div class="flex flex-col items-center gap-3"><button id="btn-record" class="w-14 h-14 rounded-full bg-red-500 border-4 border-white/50 hover:bg-red-600 active:scale-90 transition-all flex items-center justify-center shadow-lg"><div class="w-4 h-4 bg-white rounded-sm"></div></button></div>
-          <div class="absolute bottom-32 right-8"><button phx-click="switch_camera" class="p-3 rounded-full bg-black/40 text-white backdrop-blur-md border border-white/10 hover:bg-black/60 transition"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button></div>
+        <div class="absolute bottom-0 left-0 right-0 z-30 pb-12 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex justify-center items-center gap-10">
+          <button onclick="document.getElementById('gallery-trigger').click()" class="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </button>
+          
+          <button id="btn-snap" class="w-20 h-20 rounded-full border-[6px] border-white bg-transparent active:scale-95 transition-all shadow-lg focus:outline-none"></button>
+          
+          <button phx-click="switch_camera" class="p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
         </div>
       <% end %>
 

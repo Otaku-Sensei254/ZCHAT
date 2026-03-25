@@ -1,0 +1,39 @@
+<h2>Fixing Mobile Spacing Discrepancy</h2>
+<p class="subtitle">Why the padding might not be showing up</p>
+
+<div class="section">
+  <h3>The Discovery</h3>
+  <p>I found a few issues that might be preventing our padding from working correctly:</p>
+  <ul>
+    <li><b>Safe Area Inconsistency:</b> The code uses <code>pl-safe</code> and <code>pr-safe</code>, but the Tailwind config only defines a value for "left".</li>
+    <li><b>Viewport Meta:</b> The <code>viewport</code> meta tag is missing <code>viewport-fit=cover</code>, which is required for safe-area insets to work on many mobile browsers.</li>
+    <li><b>CSS Precedence:</b> The <code>pl-safe</code> class might be overriding our <code>px-6</code> if it's resulting in a value of 0.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Proposed Fix (Technical)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Updates to apply</div>
+    <div class="mockup-body">
+      <ol>
+        <li>Update <code>root.html.heex</code> to include <code>viewport-fit=cover</code>.</li>
+        <li>Fix <code>tailwind.config.js</code> to properly define both left and right safe areas.</li>
+        <li>Switch to standard Tailwind padding or ensure safe areas are added <i>to</i> the padding.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p>Should I go ahead and apply these technical fixes to "unlock" the padding behavior?</p>
+  <div class="options">
+    <div class="option" data-choice="apply_fixes" onclick="toggleSelect(this)">
+      <div class="letter">✓</div>
+      <div class="content">
+        <h3>Yes, apply technical fixes</h3>
+        <p>Fix the configuration so padding works as expected.</p>
+      </div>
+    </div>
+  </div>
+</div>

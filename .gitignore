@@ -41,3 +41,6 @@ Git SSH.TXT
 # Root node modules
 /node_modules/
 /node_modules/
+
+
+/dev.local.exs

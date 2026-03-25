@@ -3,7 +3,7 @@
 <%= unless assigns[:hide_header] do %>
 <header
   class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 pl-safe pr-safe">
+  <div class="container mx-auto px-6 sm:px-6 lg:px-8">
     <nav class="flex items-center justify-between h-16">
 
       <div class="flex-shrink-0">
@@ -157,8 +157,8 @@
 </header>
 <% end %>
 
-<main class="pt-16 pb-20 md:pb-0 pl-safe pr-safe min-h-screen bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-  <div class="mx-auto px-4 sm:px-6 lg:px-8">
+<main class="pt-16 pb-20 md:pb-0 min-h-screen bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+  <div class="mx-auto px-6 sm:px-6 lg:px-8">
     <.flash_group flash={@flash} />
     <%= @inner_content %>
   </div>
@@ -166,7 +166,7 @@
 
 <!-- Mobile bottom navigation (Instagram-style) -->
 <%= unless assigns[:hide_bottom_nav] do %>
-  <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 md:hidden pl-safe pr-safe" style="padding-bottom: env(safe-area-inset-bottom);">
+  <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 md:hidden" style="padding-bottom: env(safe-area-inset-bottom);">
     
     <%= if @current_user do %>
       <%!-- ============================================== --%>

@@ -87,6 +87,10 @@ defmodule ZchatWeb.CreatePostLive do
 
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
+<<<<<<< zchat2.0
+=======
+    # 1. Use files that were already consumed and stored in assigns
+>>>>>>> ui-ux
     clean_media =
       socket.assigns.uploaded_files
       |> Enum.map(fn file -> Map.take(file, ["url", "type"]) end)

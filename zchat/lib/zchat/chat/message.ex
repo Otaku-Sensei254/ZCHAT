@@ -41,4 +41,14 @@ defmodule Zchat.Chat.Message do
       add_error(changeset, :content, "Message cannot be empty")
     end
   end
+    defp validate_content_or_media(changeset) do
+    content = get_field(changeset, :content)
+    media = get_field(changeset, :media_files)
+
+    if (content == nil or content == "") and (media == [] or media == nil) do
+      add_error(changeset, :content, "Message cannot be empty")
+    else
+      changeset
+    end
+  end
 end

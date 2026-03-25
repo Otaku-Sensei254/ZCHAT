@@ -31,7 +31,11 @@ config :zchat, ZchatWeb.Endpoint,
   secret_key_base: "8gjJqzyWVc0zO9d4050vu+owlK9JCRn6jYOP5QROMEBYtbN7W18q9V7MjkieMtYT",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]},
+    transport_options: [
+      socket_opts: [:inet6],
+      num_acceptors: 100
+    ]
   ]
 
 # ## SSL Support

@@ -144,6 +144,14 @@ defmodule ZchatWeb.UserSettingsLive do
     end
   end
 
+<<<<<<< zchat2.0
+  @impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    {:noreply, socket}
+  end
+
+=======
+>>>>>>> ui-ux
 @impl true
   def render(assigns) do
     ~H"""
@@ -209,6 +217,7 @@ defmodule ZchatWeb.UserSettingsLive do
                     <% end %>
                   </div>
                 </div>
+<<<<<<< zchat2.0
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                   <div class="sm:col-span-4">
@@ -221,6 +230,20 @@ defmodule ZchatWeb.UserSettingsLive do
                   </div>
                 </div>
 
+=======
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <.input field={@profile_form[:username]} type="text" label="Username" required />
+                  </div>
+
+                  <div class="col-span-full">
+                    <.input field={@profile_form[:bio]} type="textarea" label="Bio" rows="3" placeholder="Tell us a little about yourself..." />
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Brief description for your profile.</p>
+                  </div>
+                </div>
+
+>>>>>>> ui-ux
                 <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
                   <.button phx-disable-with="Saving..." class="bg-orange-600 hover:bg-orange-500">Save Profile</.button>
                 </div>

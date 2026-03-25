@@ -19,7 +19,8 @@ defmodule Zchat.MixProject do
   def application do
     [
       mod: {Zchat.Application, []},
-      extra_applications: [:logger, :runtime_tools, :canada]
+      extra_applications: [:logger, :runtime_tools, :canada],
+      
     ]
   end
 

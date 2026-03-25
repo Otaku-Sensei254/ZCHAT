@@ -263,7 +263,57 @@
                 </div>
                     <% end %>
 
+<<<<<<< zchat2.0
+                    <div class="leading-relaxed break-words">
+                      <%= for segment <- message_segments(message.content || "") do %><%= case segment do %><% {:text, text} -> %><%= text %><% {:link, url} -> %><a href={url} target="_blank" rel="noopener noreferrer" class={"font-semibold underline break-all " <> if(is_me, do: "text-white", else: "text-blue-600 dark:text-blue-400")}><%= url %></a><% end %><% end %>
+                    </div>
+
+                    <%= if preview_url = first_link(message.content || "") do %>
+                      <% preview = Map.get(@link_previews, preview_url) %>
+                      <a
+                        href={preview_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class={"mt-2 block overflow-hidden rounded-xl border transition-colors " <>
+                          if(is_me,
+                            do: "border-white/30 bg-white/10 hover:bg-white/15",
+                            else: "border-gray-200 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-900")}
+                      >
+                        <%= if preview && preview.image do %>
+                          <img
+                            src={preview.image}
+                            alt="Link preview image"
+                            class="w-full max-h-44 object-cover border-b border-white/20 dark:border-zinc-700"
+                            loading="lazy"
+                          />
+                        <% end %>
+
+                        <div class="p-2.5">
+                          <p class={"text-[11px] uppercase tracking-wide " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                            <%= (preview && preview.domain) || link_domain(preview_url) %>
+                          </p>
+
+                          <%= if preview && preview.title && preview.title != "" do %>
+                            <p class={"text-sm font-semibold mt-0.5 line-clamp-2 " <> if(is_me, do: "text-white", else: "text-gray-900 dark:text-gray-100")}>
+                              <%= preview.title %>
+                            </p>
+                          <% end %>
+
+                          <%= if preview && preview.description && preview.description != "" do %>
+                            <p class={"text-xs mt-1 line-clamp-2 " <> if(is_me, do: "text-blue-100", else: "text-gray-600 dark:text-gray-300")}>
+                              <%= preview.description %>
+                            </p>
+                          <% end %>
+
+                          <p class={"text-xs mt-1 break-all " <> if(is_me, do: "text-blue-100", else: "text-gray-700 dark:text-gray-200")}>
+                            <%= preview_url %>
+                          </p>
+                        </div>
+                      </a>
+                    <% end %>
+=======
                     <p class="leading-relaxed"><%= message.content %></p>
+>>>>>>> ui-ux
                     
                     <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
                       <span class="text-[10px]">
@@ -378,25 +428,63 @@
           <div class="p-4">
             <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
             
+<<<<<<< zchat2.0
+            <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
+              
+              <label class="mb-1 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95">
+=======
             <form phx-submit="send_message" phx-change="validate" class="flex gap-3 items-end">
               
               <label class="mb-2 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95">
+>>>>>>> ui-ux
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <.live_file_input upload={@uploads.media_file} class="hidden" />
               </label>
 
+<<<<<<< zchat2.0
+              <div id="chat-emoji-picker-wrap" class="mb-1 relative" phx-update="ignore">
+                <button
+                  type="button"
+                  data-emoji-toggle
+                  class="flex h-9 w-9 items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95"
+                  title="Choose an emoji"
+                  aria-label="Choose an emoji"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.5-8a1 1 0 011 1 2.5 2.5 0 005 0 1 1 0 112 0 4.5 4.5 0 01-9 0 1 1 0 011-1zm-.5-2a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0zm6 0a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+
+                <div
+                  data-emoji-picker
+                  class="hidden absolute bottom-full left-0 mb-2 z-20"
+                >
+                  <div data-emoji-picker-container></div>
+                </div>
+              </div>
+
+              <div class="flex-1 relative">
+                <textarea
+=======
               <div class="flex-1 relative">
                 <input 
                   type="text" 
+>>>>>>> ui-ux
                   id="chat-input"
                   phx-hook="ChatInput"
                   name="message[content]" 
                   placeholder="Message..." 
                   autocomplete="off"
+<<<<<<< zchat2.0
+                  rows="1"
+                  class="w-full rounded-2xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-2.5 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow disabled:opacity-50 resize-none overflow-y-auto max-h-36"
+                ></textarea>
+=======
                   class="w-full rounded-2xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow disabled:opacity-50"
                 />
+>>>>>>> ui-ux
               </div>
               
               <button 

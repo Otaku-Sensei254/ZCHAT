@@ -1,0 +1,134 @@
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Verification Requests</h1>
+    <div class="flex items-center gap-2">
+      <button
+        phx-click="set_filter"
+        phx-value-filter="pending"
+        class={[
+          "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
+          @filter == "pending" &&
+            "bg-blue-600 text-white border-blue-600" ||
+            "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
+        ]}
+      >
+        Pending
+      </button>
+      <button
+        phx-click="set_filter"
+        phx-value-filter="all"
+        class={[
+          "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
+          @filter == "all" &&
+            "bg-blue-600 text-white border-blue-600" ||
+            "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
+        ]}
+      >
+        All
+      </button>
+    </div>
+  </div>
+
+  <%= if Enum.empty?(@requests) do %>
+    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 text-center text-gray-500 dark:text-gray-400">
+      No verification requests found.
+    </div>
+  <% else %>
+    <div class="space-y-5">
+      <%= for request <- @requests do %>
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <%= if request.user.avatar_url do %>
+                <img src={request.user.avatar_url} alt={request.user.username} class="w-12 h-12 rounded-full object-cover" />
+              <% else %>
+                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                  <%= String.first(request.user.username) %>
+                </div>
+              <% end %>
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                  <span class="flex items-center gap-1">
+                    <%= request.user.username %>
+                    <.verified_badge user={request.user} class="h-5 w-5" />
+                  </span>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Submitted <%= Timex.from_now(request.inserted_at) %>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class={[
+                "px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide",
+                request.status == "approved" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" ||
+                request.status == "rejected" && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" ||
+                "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+              ]}>
+                <%= request.status %>
+              </span>
+              <.link navigate={~p"/users/#{request.user.username}"} class="text-xs text-blue-600 hover:underline dark:text-blue-400">
+                View Profile
+              </.link>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <h4 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">
+              Social Links
+            </h4>
+            <div class="flex flex-wrap gap-2">
+              <%= if Enum.empty?(request.social_links || []) do %>
+                <span class="text-xs text-gray-500 dark:text-gray-400">No social links provided.</span>
+              <% else %>
+                <%= for link <- request.social_links do %>
+                  <%= if String.starts_with?(link, "http") do %>
+                    <.link
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-200 dark:hover:bg-zinc-700"
+                    >
+                      <%= link %>
+                    </.link>
+                  <% else %>
+                    <span class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-gray-200">
+                      <%= link %>
+                    </span>
+                  <% end %>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+
+          <%= if request.status == "pending" do %>
+            <div class="mt-5 flex flex-col md:flex-row md:items-center gap-3">
+              <form phx-submit="reject" phx-value-id={request.id} class="flex-1">
+                <input
+                  type="text"
+                  name="admin_notes"
+                  placeholder="Optional rejection note"
+                  class="w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm"
+                />
+                <button
+                  type="submit"
+                  class="mt-2 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-full hover:bg-red-700 transition-colors"
+                >
+                  Reject
+                </button>
+              </form>
+              <button
+                phx-click="approve"
+                phx-value-id={request.id}
+                class="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-full hover:bg-green-700 transition-colors"
+              >
+                Approve
+              </button>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

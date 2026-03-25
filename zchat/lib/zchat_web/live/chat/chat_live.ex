@@ -38,6 +38,8 @@ defmodule ZchatWeb.Chat.ChatLive do
      |> assign(:replying_to, nil)
      |> assign(:preview_entry, nil)
      |> assign(:zoomed_image, nil)
+     |> assign(:link_previews, %{})
+     |> assign(:link_preview_loading, MapSet.new())
      |> stream(:messages, [])
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
@@ -85,6 +87,7 @@ defmodule ZchatWeb.Chat.ChatLive do
    |> assign(:other_last_read_at, other_last_read_at)
    |> assign(:replying_to, nil)
    |> assign(:typing_users, %{}) # Reset typing when switching chats
+   |> schedule_link_previews(messages)
    |> stream(:messages, messages, reset: true)
    |> assign(:hide_bottom_nav, true)}
   end
@@ -288,6 +291,7 @@ end
 
         # 2. Insert message and scroll
         socket
+        |> schedule_link_previews([message])
         |> stream_insert(:messages, message)
         |> push_event("scroll-to-bottom", %{})
         # 3. Stop typing indicator for the sender (since they sent a msg)
@@ -352,10 +356,19 @@ end
       {:noreply,
        socket
        |> assign(:other_last_read_at, last_read_at)
+       |> schedule_link_previews(messages)
        |> stream(:messages, messages, reset: true)}
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:link_preview_fetched, url, preview}, socket) do
+    {:noreply,
+     socket
+     |> update(:link_preview_loading, &MapSet.delete(&1, url))
+     |> maybe_store_link_preview(url, preview)}
   end
 
   # 5. MESSAGE DELETED
@@ -391,6 +404,7 @@ end
   # ===========================================================================
   # HELPERS
   # ===========================================================================
+  @url_regex ~r/(https?:\/\/[^\s<]+)/u
 
   defp remove_typing_indicator(socket, user_id) do
     new_typing = Map.delete(socket.assigns.typing_users, user_id)
@@ -408,5 +422,180 @@ end
   defp content_cut(nil, _), do: ""
   defp content_cut(content, length) do
     if String.length(content) > length, do: String.slice(content, 0, length) <> "...", else: content
+  end
+
+  defp message_segments(nil), do: []
+
+  defp message_segments(content) when is_binary(content) do
+    @url_regex
+    |> Regex.split(content, include_captures: true, trim: true)
+    |> Enum.map(fn segment ->
+      if Regex.match?(@url_regex, segment), do: {:link, segment}, else: {:text, segment}
+    end)
+  end
+
+  defp first_link(nil), do: nil
+
+  defp first_link(content) when is_binary(content) do
+    case Regex.run(@url_regex, content) do
+      [url | _] -> url
+      _ -> nil
+    end
+  end
+
+  defp link_domain(url) when is_binary(url) do
+    uri = URI.parse(url)
+    uri.host || url
+  end
+
+  defp schedule_link_previews(socket, messages) when is_list(messages) do
+    Enum.reduce(messages, socket, fn message, acc ->
+      schedule_link_preview(acc, first_link(message.content || ""))
+    end)
+  end
+
+  defp schedule_link_preview(socket, nil), do: socket
+
+  defp schedule_link_preview(socket, url) do
+    cond do
+      not connected?(socket) ->
+        socket
+
+      Map.has_key?(socket.assigns.link_previews, url) ->
+        socket
+
+      MapSet.member?(socket.assigns.link_preview_loading, url) ->
+        socket
+
+      true ->
+        parent = self()
+
+        Task.start(fn ->
+          send(parent, {:link_preview_fetched, url, fetch_link_preview(url)})
+        end)
+
+        update(socket, :link_preview_loading, &MapSet.put(&1, url))
+    end
+  end
+
+  defp maybe_store_link_preview(socket, _url, nil), do: socket
+
+  defp maybe_store_link_preview(socket, url, preview) do
+    update(socket, :link_previews, &Map.put(&1, url, preview))
+  end
+
+  defp fetch_link_preview(url) do
+    with {:ok, uri} <- validate_preview_url(url),
+         {:ok, response} <-
+           Req.get(
+             url: url,
+             redirect: [max_redirects: 5],
+             receive_timeout: 4_000,
+             connect_options: [timeout: 3_000],
+             headers: [{"user-agent", "Mozilla/5.0 (compatible; ZchatLinkPreview/1.0)"}]
+           ),
+         true <- is_binary(response.body) do
+      html = String.slice(response.body, 0, 200_000)
+
+      title =
+        meta_content(html, ["og:title", "twitter:title"]) ||
+          extract_title(html)
+
+      description =
+        meta_content(html, ["og:description", "twitter:description", "description"])
+
+      image =
+        meta_content(html, ["og:image", "twitter:image"])
+        |> absolutize_url(uri)
+
+      if title || description || image do
+        %{
+          title: title,
+          description: description,
+          image: image,
+          domain: uri.host
+        }
+      else
+        nil
+      end
+    else
+      _ -> nil
+    end
+  end
+
+  defp validate_preview_url(url) do
+    uri = URI.parse(url)
+    host = String.downcase(uri.host || "")
+
+    cond do
+      uri.scheme not in ["http", "https"] -> :error
+      uri.host in [nil, ""] -> :error
+      host in ["localhost", "127.0.0.1", "::1"] -> :error
+      true -> {:ok, uri}
+    end
+  end
+
+  defp meta_content(html, keys) when is_list(keys) do
+    Enum.find_value(keys, fn key ->
+      escaped = Regex.escape(key)
+      property_first = ~r/<meta[^>]+(?:property|name)=["']#{escaped}["'][^>]+content=["']([^"']+)["'][^>]*>/i
+      content_first = ~r/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']#{escaped}["'][^>]*>/i
+
+      case Regex.run(property_first, html, capture: :all_but_first) ||
+             Regex.run(content_first, html, capture: :all_but_first) do
+        [content] -> content |> String.trim() |> html_unescape()
+        _ -> nil
+      end
+    end)
+  end
+
+  defp extract_title(html) do
+    case Regex.run(~r/<title[^>]*>(.*?)<\/title>/is, html, capture: :all_but_first) do
+      [title] ->
+        title
+        |> String.replace(~r/<[^>]*>/, "")
+        |> String.replace(~r/\s+/, " ")
+        |> String.trim()
+        |> html_unescape()
+
+      _ ->
+        nil
+    end
+  end
+
+  defp html_unescape(nil), do: nil
+
+  defp html_unescape(value) do
+    value
+    |> String.replace("&amp;", "&")
+    |> String.replace("&quot;", "\"")
+    |> String.replace("&#39;", "'")
+    |> String.replace("&apos;", "'")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+    |> String.replace("&nbsp;", " ")
+  end
+
+  defp absolutize_url(nil, _base_uri), do: nil
+
+  defp absolutize_url(url, base_uri) do
+    parsed = URI.parse(url)
+
+    cond do
+      parsed.scheme in ["http", "https"] ->
+        url
+
+      String.starts_with?(url, "//") ->
+        "#{base_uri.scheme}:#{url}"
+
+      true ->
+        base_uri
+        |> Map.put(:query, nil)
+        |> Map.put(:fragment, nil)
+        |> URI.merge(url)
+        |> to_string()
+    end
+  rescue
+    _ -> nil
   end
 end

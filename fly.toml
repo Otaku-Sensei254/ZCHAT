@@ -1,0 +1,39 @@
+# fly.toml app configuration file
+app = "zchat2-0"
+primary_region = "ord"
+
+[build]
+
+[env]
+  PHX_HOST = "zchat2-0.fly.dev"
+  PORT = "4004"
+  DATABASE_URL="postgresql://neondb_owner:npg_jPagN0IJ8dMX@ep-dawn-star-a4b5sxja-pooler.us-east-1.aws.neon.tech/ZCHAT"
+  SECRET_KEY_BASE = "rhUFPNl6OeSu1J7kgkI11QgJoitEfxTfNIrYOH50qTXwY244h6O9KyaOWJ+bjgC8"
+  CLOUDEX_API_KEY = "576125769822254"
+  CLOUDEX_SECRET = "yNxdsd0kWa_OtysW-x5ve8LGyEOw"
+  CLOUDEX_CLOUD_NAME = "dahpsrzjh"
+  CLOUDINARY_PRESET = "zchat_uploads"
+
+[http_service]
+  internal_port = 4004
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+  client_timeout = "300s" #chill for 5mins
+  idle_timeout = "300s" #chill for 5mins
+
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 1000
+
+[deploy]
+  #release_command = "/app/bin/migrate"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

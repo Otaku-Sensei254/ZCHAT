@@ -182,9 +182,7 @@ defmodule Vibeflow.Accounts do
     end)
   end
 
-  def list_admins do
-    list_role_users("admin")
-  end
+  def list_admins, do: list_role_users("admin")
 
   def list_moderators do
     list_role_users("moderator")
@@ -577,7 +575,7 @@ defmodule Vibeflow.Accounts do
 
   def grant_points(user_id, amount) when is_integer(user_id) and is_integer(amount) do
     from(u in User, where: u.id == ^user_id)
-    |> Repo.update_all(inc: [points: ^amount])
+    |> Repo.update_all(inc: [points: amount])
     |> case do
       {1, _} -> {:ok, :awarded}
       _ -> {:error, :user_not_found}

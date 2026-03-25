@@ -22,6 +22,7 @@ Hooks.ChatInput = {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault(); 
         this.el.form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+<<<<<<< zchat2.0
       } else if (e.key === "Escape") {
         this.hideEmojiPicker();
       }
@@ -246,6 +247,102 @@ Hooks.ChatInput = {
 //     }
 //   },
 
+=======
+      }
+      this.pushTyping();
+    });
+
+    this.handleEvent("clear-input", () => { this.el.value = ""; });
+  },
+
+  typingTimer: null,
+  pushTyping() {
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+    } else {
+      // Send "true" immediately
+      this.pushEvent("update_typing_indicator", {is_typing: true});
+    }
+
+    // Wait 2 seconds of silence before sending "false"
+    this.typingTimer = setTimeout(() => {
+      this.pushEvent("update_typing_indicator", {is_typing: false});
+      this.typingTimer = null;
+    }, 2000);
+  }
+}
+// In your app.js - replace the entire ChatHook with this:
+
+// Hooks.ChatHook = {
+//   mounted() {
+//     // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
+//     const form = this.el.querySelector("form");
+//     const input = this.el.querySelector("input[name='message[content]']");
+//     const conversationId = this.el.dataset.conversationId;
+
+//     if (!conversationId) return;
+
+//     // 2. CONNECT TO CHANNEL
+//     this.channel = userSocket.channel(`conversation:${conversationId}`, {});
+
+//     // 3. LISTEN FOR EVENTS (Server -> Client)
+    
+//     // Message received
+//     this.channel.on("new_message", (payload) => {
+//       this.pushEvent("display_new_message", payload);
+//     });
+
+//     // Typing indicator received
+//     this.channel.on("typing", (payload) => {
+//       this.pushEvent("update_typing_indicator", {
+//         user_id: payload.user.id,
+//         username: payload.user.username,
+//         is_typing: payload.typing
+//       });
+//     });
+
+//     // Join the channel
+//     this.channel.join()
+//       .receive("ok", resp => console.log("Joined conversation successfully", resp))
+//       .receive("error", resp => console.error("Unable to join conversation", resp));
+
+//     // 4. HANDLE INPUT (Client -> Server)
+    
+//   if (input) {
+//       let typingTimer;
+//       input.addEventListener("input", () => {
+//         clearTimeout(typingTimer);
+//         this.channel.push("typing", { typing: true });
+//         typingTimer = setTimeout(() => {
+//           this.channel.push("typing", { typing: false });
+//         }, 2000);
+//       });
+//     }
+
+//     // 5. HANDLE SUBMIT
+//     if (form && input) {
+//       form.addEventListener("submit", (e) => {
+//         e.preventDefault();
+//         const content = input.value.trim();
+
+//         if (content) {
+//           // Push to channel
+//           this.channel.push("new_message", { content: content })
+          
+//             .receive("ok", () => {
+//               console.log("Message sent");
+//               input.value = ""; // Clear input
+              
+//               // Stop typing indicator immediately upon send
+//               this.channel.push("typing", { typing: false });
+//             })
+//             .receive("error", (err) => console.error("Failed to send", err));
+//         }
+//       });
+//     }
+//   },
+
+>>>>>>> ui-ux
 //   destroyed() {
 //     if (this.channel) {
 //       this.channel.leave();
@@ -411,6 +508,7 @@ Hooks.InfiniteScroll = {
 
 //diva camera use for waves "stories" on the zchat
 
+<<<<<<< zchat2.0
 // 1. Add this NEW Hook for playing back the video immediately
 Hooks.LocalVideoPreview = {
   mounted() {
@@ -502,10 +600,13 @@ Hooks.ImagePreview = {
 };
 
 // 2. Updated CameraCapture Hook
+=======
+>>>>>>> ui-ux
 Hooks.CameraCapture = {
   mounted() {
     this.video = this.el.querySelector("#camera-feed");
     this.canvas = document.createElement("canvas");
+<<<<<<< zchat2.0
     this.timerEl = this.el.querySelector("#recording-timer");
     
     // Initial State
@@ -579,16 +680,63 @@ Hooks.CameraCapture = {
       recordBtn.dataset.listenerAttached = "true";
     }
     console.log("Camera record stopped" );
+=======
+    this.facingMode = "user"; // Start with Front Camera
+    this.recording = false;
+    this.mediaRecorder = null;
+    this.recordingChunks = [];
+
+    // Start camera (video-only). We'll request audio when starting a recording to avoid blocking on mic permission.
+    this.startCamera();
+
+    // Hook up UI buttons if present
+    const snapBtn = this.el.querySelector("#btn-snap");
+    if (snapBtn) snapBtn.addEventListener("click", (e) => { e.preventDefault(); this.captureImage(); });
+
+    const recordBtn = this.el.querySelector("#btn-record");
+    if (recordBtn) recordBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!this.recording) {
+        await this.startRecording(recordBtn);
+      } else {
+        this.stopRecording(recordBtn);
+      }
+    });
+
+    // Event: Capture Photo (from server)
+    this.handleEvent("trigger-capture", () => this.captureImage());
+    
+    // Event: Switch Camera (from server)
+    this.handleEvent("switch-camera-mode", () => {
+      this.facingMode = this.facingMode === "user" ? "environment" : "user";
+      this.startCamera();
+    });
+  },
+
+  destroyed() {
+    this.stopCamera();
+>>>>>>> ui-ux
   },
 
   stopCamera() {
     if (this.stream) {
+<<<<<<< zchat2.0
       this.stream.getTracks().forEach(track => track.stop());
+=======
+      try {
+        this.stream.getTracks().forEach(track => track.stop());
+      } catch (e) { /* noop */ }
+>>>>>>> ui-ux
     }
   },
 
   startCamera() {
+<<<<<<< zchat2.0
     this.stopCamera();
+=======
+    this.stopCamera(); // Stop existing before starting new
+    
+>>>>>>> ui-ux
     const constraints = { 
       video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
       audio: false 
@@ -597,6 +745,7 @@ Hooks.CameraCapture = {
     navigator.mediaDevices.getUserMedia(constraints)
       .then(stream => {
         this.stream = stream;
+<<<<<<< zchat2.0
         this.videoReady = false;
         if (this.video) {
           this.video.srcObject = stream;
@@ -624,12 +773,48 @@ Hooks.CameraCapture = {
       }
     } catch (err) {
       console.warn("Mic access denied", err);
+=======
+        this.video.srcObject = stream;
+        // Wait for metadata before playing to ensure dimensions are available
+        this.video.onloadedmetadata = () => this.video.play().catch(()=>{});
+        // Mirror effect only for front camera
+        this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
+      })
+      .catch(err => {
+        console.error("Camera Error:", err);
+        try { this.pushEvent("camera-error", {reason: err && err.name ? err.name : String(err)}); } catch(e){}
+      });
+  },
+
+  async ensureAudioForRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return this.stream;
+
+    try {
+      // If stream already has audio track, nothing to do
+      if (this.stream && this.stream.getAudioTracks && this.stream.getAudioTracks().length > 0) {
+        return this.stream;
+      }
+
+      // Try to obtain an audio-only stream and attach audio tracks to the existing stream (if possible)
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      if (this.stream && this.stream.addTrack) {
+        audioStream.getAudioTracks().forEach(t => this.stream.addTrack(t));
+        return this.stream;
+      }
+
+      return audioStream;
+    } catch (err) {
+      // If user denies mic, we still allow video-only recording
+      console.warn('Could not get audio for recording:', err);
+      return this.stream;
+>>>>>>> ui-ux
     }
   },
 
   async startRecording(btn) {
     if (!this.stream) return;
     this.recordingChunks = [];
+<<<<<<< zchat2.0
     await this.ensureAudioForRecording();
 
     let options = { mimeType: 'video/webm' };
@@ -637,21 +822,43 @@ Hooks.CameraCapture = {
       options = { mimeType: 'video/webm; codecs=vp9' };
     } else if (MediaRecorder.isTypeSupported('video/mp4')) {
       options = { mimeType: 'video/mp4' };
+=======
+
+    // Try to attach audio track if possible (won't throw if user denies)
+    await this.ensureAudioForRecording();
+
+    // Choose a mime type
+    let options = { mimeType: 'video/webm' };
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+      options.mimeType = 'video/webm;codecs=vp9';
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      options.mimeType = 'video/mp4';
+>>>>>>> ui-ux
     }
 
     try {
       this.mediaRecorder = new MediaRecorder(this.stream, options);
     } catch (err) {
+<<<<<<< zchat2.0
       console.error("Failed to create MediaRecorder", err);
+=======
+      console.error('MediaRecorder failed:', err);
+      try { this.pushEvent('camera-error', {reason: 'mediarecorder_failed'}); } catch(e){}
+>>>>>>> ui-ux
       return;
     }
 
     this.mediaRecorder.ondataavailable = (e) => {
+<<<<<<< zchat2.0
       if (e.data.size > 0) this.recordingChunks.push(e.data);
+=======
+      if (e.data && e.data.size > 0) this.recordingChunks.push(e.data);
+>>>>>>> ui-ux
     };
 
     this.mediaRecorder.onstop = () => {
       const blob = new Blob(this.recordingChunks, { type: this.recordingChunks[0]?.type || 'video/webm' });
+<<<<<<< zchat2.0
       
       if (window.recordedVideoBlobURL) URL.revokeObjectURL(window.recordedVideoBlobURL);
       window.recordedVideoBlobURL = URL.createObjectURL(blob);
@@ -669,10 +876,21 @@ Hooks.CameraCapture = {
         btn.classList.remove('animate-pulse', 'bg-red-700', 'scale-110');
         btn.innerHTML = `<div class="w-4 h-4 bg-white rounded-sm"></div>`;
       }
+=======
+      // Upload blob to LiveView upload named 'media'
+      try { this.upload('media', [blob]); } catch(e){ console.error('Upload failed', e); }
+      this.recording = false;
+      // Reset UI
+      try {
+        btn.classList.remove('animate-pulse', 'ring-4', 'ring-red-900');
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>`;
+      } catch (e) {}
+>>>>>>> ui-ux
     };
 
     this.mediaRecorder.start();
     this.recording = true;
+<<<<<<< zchat2.0
     this.startTimer();
 
     if (btn) {
@@ -682,22 +900,46 @@ Hooks.CameraCapture = {
   },
 
   stopRecording(btn) {
+=======
+    // Update UI
+    try {
+      btn.classList.add('animate-pulse', 'ring-4', 'ring-red-900');
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z" /></svg>`;
+    } catch (e) {}
+  },
+
+  stopRecording() {
+>>>>>>> ui-ux
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
   },
 
   captureImage() {
+<<<<<<< zchat2.0
     if (!this.video || !this.video.videoWidth) return;
+=======
+    // If video metadata isn't available yet, don't try to capture
+    if (!this.video || !this.video.videoWidth || !this.video.videoHeight) {
+      try { this.pushEvent('camera-error', {reason: 'video-not-ready'}); } catch(e){}
+      return;
+    }
+>>>>>>> ui-ux
 
     this.canvas.width = this.video.videoWidth;
     this.canvas.height = this.video.videoHeight;
     const ctx = this.canvas.getContext("2d");
+<<<<<<< zchat2.0
 
+=======
+    
+    // Apply mirror if front camera
+>>>>>>> ui-ux
     if (this.facingMode === "user") {
       ctx.translate(this.canvas.width, 0);
       ctx.scale(-1, 1);
     }
+<<<<<<< zchat2.0
 
     ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
@@ -747,6 +989,17 @@ Hooks.WaveVideo = {
     })
   }
 }
+=======
+    
+    ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+
+    this.canvas.toBlob((blob) => {
+      try { this.upload("media", [blob]); } catch(e) { console.error('Upload failed', e); }
+    }, "image/jpeg", 0.9);
+  }
+};
+
+>>>>>>> ui-ux
 
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {
@@ -777,12 +1030,15 @@ Hooks.WavesModal = {
         // also add an explicit hidden to ensure Tailwind hides it immediately
         nav.classList.add('hidden');
       }
+<<<<<<< zchat2.0
       // Also hide the top header so Waves is a full-bleed experience
       const header = document.querySelector('header');
       if (header) {
         header.classList.add('hidden');
         header.setAttribute('aria-hidden', 'true');
       }
+=======
+>>>>>>> ui-ux
     } catch (e) { /* noop */ }
   },
   destroyed() {
@@ -792,16 +1048,22 @@ Hooks.WavesModal = {
         nav.classList.remove('mobile-nav-hidden');
         nav.classList.remove('hidden');
       }
+<<<<<<< zchat2.0
       const header = document.querySelector('header');
       if (header) {
         header.classList.remove('hidden');
         header.removeAttribute('aria-hidden');
       }
+=======
+>>>>>>> ui-ux
     } catch (e) { /* noop */ }
   }
 }
 
+<<<<<<< zchat2.0
 
+=======
+>>>>>>> ui-ux
 // Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbacksMs: 2500,
@@ -839,6 +1101,7 @@ setOnFeedClass();
 window.addEventListener('popstate', setOnFeedClass);
 window.addEventListener('phx:page-loading-stop', setOnFeedClass);
 
+<<<<<<< zchat2.0
 // Attempt to autoplay music preview when the audio element is added to the DOM.
 function tryPlayMusicPreview() {
   try {
@@ -874,6 +1137,8 @@ window.addEventListener('phx:page-loading-stop', tryPlayMusicPreview);
 // Try immediately on load
 tryPlayMusicPreview();
 
+=======
+>>>>>>> ui-ux
 // Control mobile bottom nav visibility for index vs conversation routes.
 function setBottomNavVisibility() {
   try {
@@ -941,4 +1206,8 @@ window.addEventListener('phx:page-loading-stop', setBottomNavVisibility);
   });
 })();
 
+<<<<<<< zchat2.0
 window.liveSocket = liveSocket
+=======
+window.liveSocket = liveSocket
+>>>>>>> ui-ux

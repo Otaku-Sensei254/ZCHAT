@@ -33,6 +33,7 @@
 
     <div class="lg:col-span-2 relative">
       
+<<<<<<< zchat2.0
     <div class="bg-white dark:bg-zinc-900 rounded-lg shadow border border-gray-100 dark:border-zinc-800 p-3 mb-4">
   <div class="flex gap-3 overflow-x-auto scrollbar-hide">
     
@@ -77,6 +78,28 @@
     </div>
 </div>
 
+=======
+      <div class="bg-white dark:bg-zinc-900 rounded-lg shadow border border-gray-100 dark:border-zinc-800 p-3 mb-4">
+        <div class="flex gap-3 overflow-x-auto scrollbar-hide">
+          
+          <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" phx-click="open_create_waves">
+            <div class="relative w-14 h-14 rounded-full border-2 border-dashed border-blue-400 p-0.5 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800 transition group">
+              <img src={@current_user.avatar_url} class="w-full h-full rounded-full object-cover opacity-60 group-hover:opacity-100 transition" />
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
+                  <.icon name="hero-plus" class="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center">You</span>
+          </div>
+
+          <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
+
+        </div>
+      </div>
+
+>>>>>>> ui-ux
       <div class="sticky top-[62px] z-30 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 bg-gray-50/95 dark:bg-[rgb(9,9,11)] backdrop-blur-sm transition-colors">
         
         <div class="bg-white dark:bg-zinc-900 rounded-lg shadow mb-2 p-2 relative z-20 border border-gray-100 dark:border-zinc-800">
@@ -194,6 +217,7 @@
   </div>
 
   <%= if @show_share_modal do %>
+<<<<<<< zchat2.0
     <div class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" phx-click="close_share_modal"></div>
 
@@ -242,3 +266,19 @@
   <% end %>
 
   </div>
+=======
+    <% end %>
+
+  <%= if @live_action == :new_story do %>
+    <.live_component module={ZchatWeb.Waves.Waves} id="create-story" current_user={@current_user} return_to={~p"/feed"} />
+  <% end %>
+
+  <%= if @show_waves_modal do %>
+  <.live_component 
+    module={ZchatWeb.Waves.Waves} 
+    id="waves-creator" 
+    current_user={@current_user} 
+  />
+<% end %>
+</div>
+>>>>>>> ui-ux

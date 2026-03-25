@@ -7,9 +7,17 @@
     <div class="text-right">
       <span class="block text-sm uppercase font-semibold opacity-75">Your Balance</span>
       <div class="flex items-center gap-2">
-        <span class="text-4xl font-black">2,450</span>
+        <span class="text-4xl font-black"><%= @points_display %></span>
         <span class="text-2xl">🌊</span>
       </div>
+      <p class="text-xs opacity-70 mt-1">
+        Points track your likes, ripples, and post creations.
+        <%= if @current_user do %>
+          Keep creating to unlock more waves.
+        <% else %>
+          <span class="font-semibold">Log in</span> to start earning.
+        <% end %>
+      </p>
     </div>
   </header>
 

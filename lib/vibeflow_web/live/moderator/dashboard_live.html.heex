@@ -7,7 +7,7 @@
       <div>
         <strong class="text-lg text-gray-900 dark:text-gray-100 inline-flex items-center gap-1">
           Welcome, <%= @current_user.username %>!
-          <.verified_badge user={@current_user} class="h-6 w-6" />
+          <.verified_badge user={@current_user} class="h-5 w-5" />
         </strong>
         <p class="text-sm text-gray-500 dark:text-gray-400">Last login: <%= Timex.format!(Timex.now(), "%B %d, %Y at %I:%M %p", :strftime) %></p>
       </div>

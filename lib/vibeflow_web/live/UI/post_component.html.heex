@@ -24,7 +24,7 @@
                       <%= @post.user.username %>
                       
                     </.link>
-                    <.verified_badge user={@post.user} class="h-6 w-6" />
+                    <.verified_badge user={@post.user} class="h-5 w-5" />
                   </span>
                   </div>            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">
               · <%= Timex.from_now(@post.inserted_at) %>

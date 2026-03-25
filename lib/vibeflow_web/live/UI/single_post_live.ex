@@ -3,6 +3,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
 
   alias Vibeflow.Posts
   alias Vibeflow.Posts.Comment
+  alias Vibeflow.Accounts
   alias VibeflowWeb.UserAuth
 
   # Use the app layout
@@ -15,6 +16,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     {:ok,
      socket
      |> assign(:replying_to, nil)
+     |> assign(:open_comment_menu_id, nil)
      |> assign(:editing_comment_id, nil)
      |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> assign(:current_like, nil)
@@ -38,6 +40,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "post:#{post.id}")
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "post_comments:#{post.id}")
       if socket.assigns.current_user && socket.assigns.current_user.id != post.user_id do
         Posts.track_view(post.id, socket.assigns.current_user.id)
       end
@@ -50,9 +53,19 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         nil
       end
 
+    seeded_users =
+      if socket.assigns.current_user &&
+           (Accounts.user_has_role?(socket.assigns.current_user, "admin") ||
+              Accounts.user_has_role?(socket.assigns.current_user, "moderator")) do
+        Posts.list_seeded_users_for_post(post.id, 50)
+      else
+        []
+      end
+
     {:noreply,
      socket
      |> assign(:post, post)
+     |> assign(:seeded_users, seeded_users)
      |> assign(:current_media_index, 0)
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:current_like, current_like)
@@ -175,6 +188,148 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   @impl true
   def handle_event("close_comments_modal", _, socket), do: {:noreply, assign(socket, :show_comments_modal, false)}
 
+  @impl true
+  def handle_event("toggle_comment_menu", %{"comment-id" => comment_id}, socket) do
+    id = String.to_integer(comment_id)
+    new_id = if socket.assigns.open_comment_menu_id == id, do: nil, else: id
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+
+    {:noreply,
+     socket
+     |> assign(:open_comment_menu_id, new_id)
+     |> stream_insert(:comments, comment)
+     |> stream_insert(:mobile_comments, comment)}
+  end
+
+  @impl true
+  def handle_event("close_comment_menu", _params, socket) do
+    socket =
+      if socket.assigns.open_comment_menu_id do
+        comment =
+          Posts.get_comment!(socket.assigns.open_comment_menu_id, preload: [:user])
+
+        socket
+        |> stream_insert(:comments, comment)
+        |> stream_insert(:mobile_comments, comment)
+      else
+        socket
+      end
+
+    {:noreply, assign(socket, :open_comment_menu_id, nil)}
+  end
+
+  @impl true
+  #delete post
+  def handle_event("delete_comment", %{"comment-id" => comment_id}, socket) do
+    comment = Posts.get_comment!(comment_id)
+
+    if socket.assigns.current_user && (socket.assigns.current_user.id == comment.user_id || Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
+      case Posts.delete_comment(comment) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Comment deleted successfully")
+           |> stream_delete(:comments, comment)}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not delete comment")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Unauthorized")}
+    end
+  end
+  @impl true
+  # edit comment (with content submitted)
+  def handle_event("edit_comment", %{"comment-id" => comment_id, "content" => new_content}, socket) do
+    update_comment_content(comment_id, new_content, socket)
+  end
+
+  @impl true
+  # edit comment (with content submitted - nested params)
+  def handle_event("edit_comment", %{"comment-id" => comment_id, "edit_comment" => %{"content" => new_content}}, socket) do
+    update_comment_content(comment_id, new_content, socket)
+  end
+
+  # edit comment (click only: no content submitted yet)
+  def handle_event("edit_comment", %{"comment-id" => comment_id}, socket) do
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+
+    {:noreply,
+     socket
+     |> assign(:editing_comment_id, comment.id)
+     |> stream_insert(:comments, comment)
+     |> stream_insert(:mobile_comments, comment)}
+  end
+
+  @impl true
+  def handle_event("cancel_edit", %{"comment-id" => comment_id}, socket) do
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+
+    {:noreply,
+     socket
+     |> assign(:editing_comment_id, nil)
+     |> stream_insert(:comments, comment)
+     |> stream_insert(:mobile_comments, comment)}
+  end
+
+  defp update_comment_content(comment_id, new_content, socket) do
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+    trimmed = String.trim(new_content || "")
+
+    can_edit =
+      socket.assigns.current_user &&
+        (socket.assigns.current_user.id == comment.user_id ||
+           Accounts.user_has_role?(socket.assigns.current_user, "admin") ||
+           Accounts.user_has_role?(socket.assigns.current_user, "moderator"))
+
+    if can_edit do
+      if trimmed == "" do
+        {:noreply, put_flash(socket, :error, "Comment cannot be blank")}
+      else
+        case Posts.update_comment(comment, %{"content" => trimmed}) do
+        {:ok, updated_comment} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Comment updated successfully")
+           |> assign(:editing_comment_id, nil)
+           |> stream_insert(:comments, updated_comment)
+           |> stream_insert(:mobile_comments, updated_comment)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not update comment")}
+      end
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Unauthorized")}
+    end
+  end
+  #pin a comment
+  @impl true
+  def handle_event("pin_comment", %{"comment-id" => comment_id}, socket ) do
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+    if socket.assigns.current_user && (socket.assigns.current_user.id == socket.assigns.post.user_id || Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
+      case Posts.pin_comment(comment) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Comment pinned successfully")
+           |> assign(:open_comment_menu_id, nil)
+           |> stream_insert(:comments, comment)
+           |> stream_insert(:mobile_comments, comment)}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not pin comment")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Unauthorized")}
+    end
+  end
+
+  #reply to a comment
+  @impl true
+  def handle_event("reply_to_comment", %{"comment-id" => comment_id}, socket) do
+    comment = Posts.get_comment!(comment_id, preload: [:user])
+  end
+
+
   # --- REALTIME UPDATES ---
 
   @impl true
@@ -184,6 +339,26 @@ defmodule VibeflowWeb.UI.SinglePostLive do
       |> stream_insert(:comments, comment, at: 0)
       |> stream_insert(:mobile_comments, comment, at: 0)
       |> update(:comment_count, &(&1 + 1))
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:comment_updated, comment}, socket) do
+    socket =
+      socket
+      |> stream_insert(:comments, comment)
+      |> stream_insert(:mobile_comments, comment)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:comment_pinned, comment}, socket) do
+    socket =
+      socket
+      |> stream_insert(:comments, comment)
+      |> stream_insert(:mobile_comments, comment)
+
     {:noreply, socket}
   end
 

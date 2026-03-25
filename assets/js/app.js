@@ -634,6 +634,13 @@ Hooks.VideoPreview = {
   }
 };
 
+// Post card hook (no-op for now, keeps console clean if attribute is present)
+Hooks.PostComponent = {
+  mounted() {},
+  updated() {},
+  destroyed() {}
+};
+
 // Hook used by the Waves LiveView image preview element
 Hooks.ImagePreview = {
   mounted() {

@@ -163,7 +163,14 @@ end
         Vibeflow.Search.global_search(query)
         |> Enum.filter(fn result -> Map.get(result, :type) == :user end)
         |> Enum.filter(&(&1.id != current_user_id))
-        |> Enum.map(fn r -> %{id: r.id, username: r.title, avatar_url: r.image} end)
+        |> Enum.map(fn r ->
+          %{
+            id: r.id,
+            username: r.title,
+            avatar_url: r.image,
+            is_verified: Map.get(r, :is_verified, false)
+          }
+        end)
 
       {:noreply, assign(socket, user_search_results: results, user_search_query: query)}
     else

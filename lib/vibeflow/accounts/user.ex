@@ -243,6 +243,7 @@ defmodule Vibeflow.Accounts.User do
     user
     # No direct fields to cast, only associations
     |> cast(%{}, [])
+    
     |> cast_assoc(:roles)
   end
 end

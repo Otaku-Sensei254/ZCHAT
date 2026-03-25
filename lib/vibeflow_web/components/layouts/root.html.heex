@@ -8,6 +8,13 @@
     <.live_title suffix=" · Vibeflow">
       <%= assigns[:page_title] || "Vibeflow" %>
     </.live_title>
+    <% asset_vsn =
+      if Application.get_env(:vibeflow, VibeflowWeb.Endpoint)[:code_reloader] do
+        "?vsn=" <> Integer.to_string(System.system_time(:second))
+      else
+        ""
+      end
+    %>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
     <script>

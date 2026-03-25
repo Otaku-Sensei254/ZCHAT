@@ -7,8 +7,8 @@ module.exports = {
   darkMode: 'class',
   content: [
     "./js/**/*.js",
-    "../lib/*_web.ex",
-    "../lib/*_web/**/*.*ex"
+    "../lib/vibeflow_web.ex",
+    "../lib/vibeflow_web/**/*.*ex"
   ],
   theme: {
     extend: {
@@ -17,15 +17,14 @@ module.exports = {
         dark: {
           800: '#1f2937',
           900: '#111827',
-        },
-        bg: {
-          DEFAULT: "",
-          light: ""
         }
       },
       transitionProperty: {
         'theme': 'background-color, border-color, color',
       },
+      spacing: {
+        'safe': 'env(safe-area-inset-left)',
+      }
     },
   },
   plugins: [

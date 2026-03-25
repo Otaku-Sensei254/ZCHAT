@@ -337,13 +337,19 @@ defmodule VibeflowWeb.UI.FeedLive do
     %{page: page, per_page: per_page} = socket.assigns
 
     posts =
-      Posts.list_posts(
-        page: page,
-        per_page: per_page,
-        category: socket.assigns[:category],
-        search: socket.assigns[:search_term],
-        preload: [:user, :likes, comments: :user]
-      )
+      if socket.assigns[:current_user] do
+        _ = Vibeflow.Posts.Seeder.backfill_followed_posts_for_user(socket.assigns.current_user.id, per_page * 3)
+
+        Posts.list_feed_for_user(
+          socket.assigns.current_user.id,
+          page: page,
+          per_page: per_page,
+          category: socket.assigns[:category],
+          search: socket.assigns[:search_term]
+        )
+      else
+        []
+      end
       |> Enum.map(&Post.ensure_media_files/1)
 
     has_more = length(posts) == per_page

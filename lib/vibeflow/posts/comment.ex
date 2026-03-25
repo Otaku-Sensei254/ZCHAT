@@ -7,6 +7,7 @@ defmodule Vibeflow.Posts.Comment do
   schema "comments" do
     field :content, :string
     field :likes_count, :integer, default: 0
+    field :pinned, :boolean, default: false
     belongs_to :user, Vibeflow.Accounts.User
     belongs_to :post, Vibeflow.Posts.Post
     belongs_to :parent, __MODULE__
@@ -24,7 +25,7 @@ defmodule Vibeflow.Posts.Comment do
   """
   def changeset(comment, attrs) do
     comment
-    |> cast(attrs, [:content, :user_id, :post_id, :parent_id, :likes_count])
+    |> cast(attrs, [:content, :user_id, :post_id, :parent_id, :likes_count, :pinned])
     |> validate_required([:content, :user_id, :post_id])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:post_id)

@@ -4,6 +4,11 @@
 
 /* This file is for your main application CSS */
 
+/* Ensure smooth dark mode transitions */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
 /* Home Page Animations */
 @keyframes fadeInUp {
   from {

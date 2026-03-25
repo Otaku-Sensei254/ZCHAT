@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="max-w-7xl mx-auto py-6">
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
     
     <div class="hidden lg:block lg:col-span-1">
@@ -79,16 +79,16 @@
               </div>
               <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 w-14 text-center flex items-center justify-center gap-0.5">
                 <span class="truncate"><%= wave_group.user.username %></span>
-                <.verified_badge user={wave_group.user} class="h-6 w-6 shrink-0" />
+                <.verified_badge user={wave_group.user} class="h-5 w-5 shrink-0" />
               </span>
             </.link>
           <% end %>
         </div>
       </div>
 
-      <div class="sticky top-[62px] z-30 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 bg-gray-50/95 dark:bg-[rgb(9,9,11)] backdrop-blur-sm transition-colors">
+      <div class="sticky top-[62px] z-30 pb-2 bg-gray-50/95 dark:bg-zinc-900/95 backdrop-blur-sm transition-colors border-b border-gray-100 dark:border-zinc-800">
         
-        <div class="bg-white dark:bg-zinc-900 rounded-lg shadow mb-2 p-2 relative z-20 border border-gray-100 dark:border-zinc-800">
+        <div class="bg-white dark:bg-zinc-900 rounded-lg shadow-sm mb-2 p-2 relative z-20 border border-gray-100 dark:border-zinc-800 mt-2">
           <div class="relative" phx-click-away="close_search">
             <form phx-submit="search" onsubmit="return false;">
               <div class="relative">
@@ -100,29 +100,30 @@
                 <input
                   type="text"
                   name="search"
-                  value={@search_term || ""}
-                  placeholder="Search..."
-                  phx-debounce="300"
+                  value={@search_term}
                   phx-change="live_search"
+                  phx-debounce="300"
+                  placeholder="Search posts..."
                   autocomplete="off"
-                  class="w-full pl-10 pr-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-md bg-gray-50 dark:bg-zinc-800/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 transition-colors"
+                  class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-md leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
                 />
-                
+
                 <%= if @show_search and @search_results != [] do %>
                   <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden z-50">
+                    <div class="grid grid-cols-3 gap-2 p-2">
                     <%= for result <- @search_results do %>
                       <.link 
                         navigate={if result.type == :user, do: ~p"/users/#{result.title}", else: ~p"/posts/#{result.uuid}"}
-                        class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
+                        class="flex flex-col gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border border-gray-100 dark:border-zinc-700"
                         phx-click="close_search" 
                       >
                         <div class="shrink-0">
                           <%= if result.type == :user do %>
                             <%= if result.image do %>
-                              <img src={result.image} class="w-8 h-8 rounded-full object-cover" />
+                              <img src={result.image} class="w-10 h-10 rounded-full object-cover" />
                             <% else %>
-                              <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-700 flex items-center justify-center">
-                                <.icon name="hero-user" class="w-4 h-4 text-gray-500" />
+                              <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-700 flex items-center justify-center">
+                                <.icon name="hero-user" class="w-5 h-5 text-gray-500" />
                               </div>
                             <% end %>
                           <% else %>
@@ -130,7 +131,7 @@
                               <%= if result.media_type == "video" do %>
                                 <video 
                                   src={result.image} 
-                                  class="w-8 h-8 rounded object-cover" 
+                                  class="w-full h-20 rounded object-cover" 
                                   autoplay 
                                   muted 
                                   loop 
@@ -138,29 +139,32 @@
                                   preload="metadata"
                                 />
                               <% else %>
-                                <img src={result.image} class="w-8 h-8 rounded object-cover" />
+                                <img src={result.image} class="w-full h-20 rounded object-cover" />
                               <% end %>
                             <% else %>
                               <%= if result.media_type == "video" do %>
-                                <div class="w-8 h-8 rounded bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                  <.icon name="hero-video-camera" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                <div class="w-full h-20 rounded bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                  <.icon name="hero-video-camera" class="w-6 h-6 text-purple-600 dark:text-purple-400" />
                                 </div>
                               <% else %>
-                                <div class="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <.icon name="hero-document-text" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <div class="w-full h-20 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                  <.icon name="hero-document-text" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                               <% end %>
                             <% end %>
                           <% end %>
                         </div>
-                        <div class="flex flex-col">
+                        <div class="flex flex-col min-w-0">
                           <%= if result.type == :user do %>
-                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100"><%= result.title %></span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1 truncate">
+                              <%= result.title %>
+                              <.verified_badge user={%{is_verified: Map.get(result, :is_verified, false)}} class="h-5 w-5" />
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                               <%= if result.sub && result.sub != "", do: result.sub, else: "No bio" %>
                             </span>
                           <% else %>
-                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[200px]"><%= result.title %></span>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"><%= result.title %></span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
                               <%= case result.type do %>
                                 <% :post -> %>
@@ -176,6 +180,7 @@
                         </div>
                       </.link>
                     <% end %>
+                    </div>
                   </div>
                 <% end %>
               </div>
@@ -209,7 +214,7 @@
           </div>
         <% end %>
         
-        <div class="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-transparent to-gray-50/10 dark:to-zinc-950/10 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-transparent to-gray-50/10 dark:to-zinc-900/10 pointer-events-none"></div>
       </div>
 
       <div id="posts" phx-update="stream" class="space-y-4 pt-2">
@@ -327,7 +332,7 @@
 
                   <span class={"text-xs text-center w-full px-1 transition-colors duration-200 flex items-center justify-center gap-0.5 " <> if(is_selected, do: "text-white font-medium", else: "text-zinc-400 group-hover:text-zinc-300")}>
                     <span class="truncate"><%= friend.username || friend.name %></span>
-                    <.verified_badge user={friend} class="h-6 w-6 shrink-0" />
+                    <.verified_badge user={friend} class="h-5 w-5 shrink-0" />
                   </span>
                 </label>
               <% end %>

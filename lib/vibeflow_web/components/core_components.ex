@@ -95,10 +95,10 @@ def icon(%{name: "hero-user"} = assigns) do
   ## Examples
 
       <.verified_badge user={@user} />
-      <.verified_badge user={@user} class="h-6 w-6" />
+      <.verified_badge user={@user} class="h-5 w-5" />
   """
   attr :user, :any, required: true
-  attr :class, :string, default: "h-6 w-6"
+  attr :class, :string, default: "h-5 w-5"
 
   def verified_badge(assigns) do
     assigns =
@@ -107,7 +107,7 @@ def icon(%{name: "hero-user"} = assigns) do
     ~H"""
     <%= if @verified? do %>
       <img
-        src="/images/vibeflow_verified.png"
+        src="/images/vibeflow_verified2.png"
         alt="Verified"
         title="Verified"
         class={["inline-block align-middle", @class]}

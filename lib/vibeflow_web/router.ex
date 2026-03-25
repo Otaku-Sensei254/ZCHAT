@@ -181,6 +181,7 @@ end
       live "/waves", Waves.WavesLive, :index
       live "/waves/view/:username", Waves.ViewWavesLive, :show
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      live "/users/:username/creator-hub", Profiles.CreatorHubLive, :show
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive
       live "/posts/:uuid/edit", CreatePostLive, :edit

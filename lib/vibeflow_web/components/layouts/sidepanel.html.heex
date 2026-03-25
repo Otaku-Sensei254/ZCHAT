@@ -1,6 +1,6 @@
 <!-- MAIN CONTAINER -->
 <div id="notifications-hook" phx-hook="NotificationsHook" class="hidden"></div>
-<div class="flex h-screen bg-gray-50 dark:bg-zinc-950 overflow-hidden">
+<div class="flex h-screen bg-white dark:bg-zinc-900 overflow-hidden">
 
   <!-- 
     MOBILE BACKDROP OVERLAY 
@@ -38,16 +38,36 @@
         Vibeflow Admin
       </span>
       
-      <!-- Mobile Close Button (X) -->
-      <button 
-        class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        phx-click={
-          JS.add_class("-translate-x-full", to: "#admin-sidebar") 
-          |> JS.hide(to: "#sidebar-overlay")
-        }
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
+      <div class="flex items-center gap-2">
+        <!-- Theme Toggle Button -->
+        <button 
+          type="button"
+          id="admin-desktop-theme-toggle"
+          phx-hook="ThemeToggle"
+          aria-label="Toggle dark mode"
+          class="p-2 text-gray-500 hover:text-indigo-500 dark:text-gray-300 dark:hover:text-indigo-400 rounded-full hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <!-- Sun icon (shown in dark mode) -->
+          <svg class="w-5 h-5 dark:block hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+        
+        <!-- Mobile Close Button (X) -->
+        <button 
+          class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          phx-click={
+            JS.add_class("-translate-x-full", to: "#admin-sidebar") 
+            |> JS.hide(to: "#sidebar-overlay")
+          }
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
     </div>
 
     <!-- NAVIGATION LIST -->
@@ -106,7 +126,7 @@
   </aside>
 
   <!-- MAIN CONTENT WRAPPER -->
-  <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100">
     
     <!-- MOBILE HEADER (Visible < md) -->
     <div class="md:hidden flex items-center justify-between bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-20">
@@ -125,9 +145,29 @@
         <span class="font-bold text-gray-900 dark:text-white">Admin Panel</span>
       </div>
       
-      <!-- Optional: Mobile User Icon -->
-      <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
-         <%= String.at(@current_user.username, 0) |> String.upcase() %>
+      <div class="flex items-center gap-2">
+        <!-- Theme Toggle Button -->
+        <button 
+          type="button"
+          id="admin-mobile-theme-toggle"
+          phx-hook="ThemeToggle"
+          aria-label="Toggle dark mode"
+          class="p-2 text-gray-500 hover:text-indigo-500 dark:text-gray-300 dark:hover:text-indigo-400 rounded-full hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <!-- Sun icon (shown in dark mode) -->
+          <svg class="w-5 h-5 dark:block hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+        
+        <!-- User Avatar -->
+        <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
+           <%= String.at(@current_user.username, 0) |> String.upcase() %>
+        </div>
       </div>
     </div>
 

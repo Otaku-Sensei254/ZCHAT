@@ -113,7 +113,6 @@ defmodule VibeflowWeb.UI.PostComponent do
           max(0, socket.assigns.like_count - 1)
         end
 
-      # 2. FIRE AND FORGET DB CALL
       # We don't wait for the result to update the UI. We assume it works.
       Vibeflow.Posts.toggle_like(user.id, "Post", post.id)
 

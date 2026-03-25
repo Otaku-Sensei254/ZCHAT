@@ -55,7 +55,7 @@
               <div>
                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1">
                   <%= user.username %>
-                  <.verified_badge user={user} class="h-6 w-6" />
+                  <.verified_badge user={user} class="h-5 w-5" />
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
               </div>
@@ -122,7 +122,7 @@
               <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base flex items-center gap-1">
                 <%= display_name %>
                 <%= if !is_group && other_member && other_member.user do %>
-                  <.verified_badge user={other_member.user} class="h-6 w-6" />
+                  <.verified_badge user={other_member.user} class="h-5 w-5" />
                 <% end %>
               </p>
               <%= if conv.unread_count > 0 do %>
@@ -192,7 +192,7 @@
             <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight inline-flex items-center gap-1">
               <%= header_name %>
               <%= if @conversation.type != "group" && header_user do %>
-                <.verified_badge user={header_user} class="h-6 w-6" />
+                <.verified_badge user={header_user} class="h-5 w-5" />
               <% end %>
             </span>
             <%= if other_user_online do %>
@@ -248,7 +248,7 @@
                     <% end %>
                       <span class="text-xs font-bold text-white shadow-sm flex items-center gap-1">
                         <%= post.user.username %>
-                        <.verified_badge user={post.user} class="h-6 w-6" />
+                        <.verified_badge user={post.user} class="h-5 w-5" />
                       </span>
                     </div>
                     <%= if post.content do %>
@@ -270,7 +270,7 @@
                       >
                         <p class="font-bold opacity-100 mb-0.5 flex items-center gap-1">
                           <%= message.reply_to.user.username %>
-                          <.verified_badge user={message.reply_to.user} class="h-6 w-6" />
+                          <.verified_badge user={message.reply_to.user} class="h-5 w-5" />
                         </p>
                         
                         <%= if message.reply_to.media_files && message.reply_to.media_files != [] && (!message.reply_to.content || message.reply_to.content == "") do %>
@@ -401,7 +401,7 @@
               <div class="flex-1 min-w-0 flex flex-col justify-center text-sm">
                 <span class="text-blue-500 font-bold text-xs mb-0.5 truncate flex items-center gap-1">
                   Replying to <%= @replying_to.user.username %>
-                  <.verified_badge user={@replying_to.user} class="h-6 w-6" />
+                  <.verified_badge user={@replying_to.user} class="h-5 w-5" />
                 </span>
                 <p class="text-gray-500 dark:text-gray-400 truncate opacity-90">
                   <%= cond do %>

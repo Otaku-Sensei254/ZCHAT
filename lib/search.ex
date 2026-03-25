@@ -13,7 +13,14 @@ defmodule Vibeflow.Search do
     users = from(u in User,
       where: ilike(u.username, ^search_term),
       limit: 5,
-      select: %{type: :user, id: u.id, title: u.username, image: u.avatar_url, sub: u.bio}
+      select: %{
+        type: :user,
+        id: u.id,
+        title: u.username,
+        image: u.avatar_url,
+        sub: u.bio,
+        is_verified: u.is_verified
+      }
     )
     |> Repo.all()
 

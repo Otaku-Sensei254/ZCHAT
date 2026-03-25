@@ -126,7 +126,7 @@ defmodule VibeflowWeb.UserActivityHook do
     try do
       # Format the text like "Batman liked your post" (defensive)
       text = format_notification_text(notif)
-      browser_notification = build_browser_notification(notif, text)
+      browser_notification = build_browser_notification(notif, text, socket.assigns[:current_user])
 
       # We use :cont so the specific page (Feed/Chat) can also update its UI if needed
       {:cont,
@@ -177,13 +177,19 @@ defmodule VibeflowWeb.UserActivityHook do
     end
   end
 
-  defp build_browser_notification(notif, text) do
+  defp build_browser_notification(notif, text, current_user) do
     actor = Map.get(notif || %{}, :actor) || %{}
+    url =
+      try do
+        VibeflowWeb.Components.NotificationsModal.notification_link(notif, current_user)
+      rescue
+        _ -> "/notifications"
+      end
 
     %{
       title: "Vibeflow",
       body: text,
-      url: "/notifications",
+      url: url,
       tag: "notif-#{Map.get(notif || %{}, :id, System.unique_integer([:positive]))}",
       icon: Map.get(actor, :avatar_url)
     }

@@ -4,10 +4,18 @@ defmodule Vibeflow.Posts do
   """
   import Ecto.Query, warn: false
   alias Vibeflow.Repo
+  alias Vibeflow.Accounts
   alias Vibeflow.Notifications
   alias Vibeflow.Posts.{Post, Like, Comment, PostSeed, View}
   alias Vibeflow.Posts.Seeder
   require Logger
+
+  @post_creation_points 20
+  @daily_post_bonus_limit 3
+  @like_points 2
+  @post_author_like_points 3
+  @ripple_points 5
+  @post_author_ripple_points 3
 
   # --- TRENDING ---
 
@@ -290,6 +298,7 @@ defmodule Vibeflow.Posts do
           {:ok, _} -> :ok
           {:error, reason} -> Logger.error("Post seeding failed: #{inspect(reason)}")
         end
+        _ = maybe_award_daily_post_points(post.user_id)
         {:ok, post}
       error -> error
     end
@@ -321,6 +330,26 @@ defmodule Vibeflow.Posts do
 
   def change_post(%Post{} = post, attrs \\ %{}) do
     Post.changeset(post, attrs)
+  end
+
+  defp maybe_award_daily_post_points(user_id) do
+    if daily_posts_created_today(user_id) <= @daily_post_bonus_limit do
+      Accounts.grant_points(user_id, @post_creation_points)
+    else
+      {:ok, :limit_reached}
+    end
+  end
+
+  defp daily_posts_created_today(user_id) do
+    from(p in Post,
+      where: p.user_id == ^user_id and p.inserted_at >= ^today_start()
+    )
+    |> Repo.aggregate(:count, :id)
+  end
+
+  defp today_start do
+    Date.utc_today()
+    |> NaiveDateTime.new!(~T[00:00:00])
   end
 
 
@@ -537,9 +566,30 @@ defmodule Vibeflow.Posts do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{like: like}} -> {:ok, like}
+      {:ok, %{post: post, like: like, ripple: ripple_status}} ->
+        award_like_points(post, user_id, ripple_status)
+        {:ok, like}
       {:error, _step, reason, _changes} -> {:error, reason}
     end
+  end
+
+
+  defp award_like_points(%Post{} = post, user_id, ripple_status) do
+    Accounts.grant_points(user_id, @like_points)
+    maybe_award_author_points(post.user_id, user_id, @post_author_like_points)
+
+    if ripple_status == :rippled do
+      Accounts.grant_points(user_id, @ripple_points)
+      maybe_award_author_points(post.user_id, user_id, @post_author_ripple_points)
+    end
+  end
+
+  defp award_like_points(_, _, _), do: :ok
+
+  defp maybe_award_author_points(nil, _user_id, _points), do: {:ok, :no_author}
+  defp maybe_award_author_points(author_id, user_id, _points) when author_id == user_id, do: {:ok, :self_action}
+  defp maybe_award_author_points(author_id, _user_id, points) do
+    Accounts.grant_points(author_id, points)
   end
 
 

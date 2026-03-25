@@ -570,4 +570,19 @@ defmodule Vibeflow.Accounts do
     |> Ecto.Changeset.put_assoc(:following, [user_b | user_a.following])
     |> Repo.update()
   end
+
+  # --- POINTS MANAGEMENT ---
+
+  def grant_points(_user_id, 0), do: {:ok, :no_change}
+
+  def grant_points(user_id, amount) when is_integer(user_id) and is_integer(amount) do
+    from(u in User, where: u.id == ^user_id)
+    |> Repo.update_all(inc: [points: ^amount])
+    |> case do
+      {1, _} -> {:ok, :awarded}
+      _ -> {:error, :user_not_found}
+    end
+  end
+
+  def grant_points(_, _), do: {:error, :invalid_input}
 end

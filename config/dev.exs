@@ -31,11 +31,11 @@ config :vibeflow, VibeflowWeb.Endpoint,
   secret_key_base: "8gjJqzyWVc0zO9d4050vu+owlK9JCRn6jYOP5QROMEBYtbN7W18q9V7MjkieMtYT",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]},
-    transport_options: [
-      socket_opts: [:inet6],
-      num_acceptors: 100
-    ]
+    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+  ],
+  transport_options: [
+    socket_opts: [:inet6],
+    num_acceptors: 100
   ]
 
 # ## SSL Support
@@ -92,3 +92,7 @@ config :cloudex,
   secret: "yNxdsd0kWa_OtysW-x5ve8LGyEOw",
   cloud_name: "dahpsrzjh",
   upload_preset: "zchat_uploads"
+
+if File.exists?("config/dev.local.exs") do
+  import_config "dev.local.exs"
+end

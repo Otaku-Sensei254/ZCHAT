@@ -717,36 +717,63 @@ Hooks.CameraCapture = {
   setupButtons() {
     const snapBtn = this.el.querySelector("#btn-snap");
     if (snapBtn && snapBtn.dataset.listenerAttached !== "true") {
-      snapBtn.addEventListener("click", (e) => { 
-        e.preventDefault(); 
-        console.log("Snap button clicked");
-        if (!this.videoReady) {
-          this.forceVideoPlay().then(() => this.captureImage());
-        } else {
-          this.captureImage(); 
+      let holdTimeout;
+      let isHolding = false;
+      let recordingStarted = false;
+
+      const handlePointerDown = (e) => {
+        if (e.button && e.button !== 0) return; 
+        e.preventDefault();
+        isHolding = false;
+        recordingStarted = false;
+
+        holdTimeout = setTimeout(async () => {
+          isHolding = true;
+          recordingStarted = true;
+          console.log("Snap button held - starting recording");
+          if (!this.videoReady) await this.forceVideoPlay();
+          if (!this.recording) await this.startRecording(snapBtn);
+        }, 400); 
+      };
+
+      const handlePointerUpOrLeave = (e) => {
+        e.preventDefault();
+        clearTimeout(holdTimeout);
+
+        if (recordingStarted) {
+          // We were recording, so stop and ensure we don't trigger a tap
+          if (this.recording) {
+            this.stopRecording(snapBtn);
+            console.log("Snap button released - stopped recording");
+          }
+          recordingStarted = false;
+          isHolding = false;
+        } else if (!isHolding && (e.type === "pointerup" || e.type === "mouseup" || e.type === "touchend")) {
+          // Pure tap (didn't reach the hold threshold)
+          console.log("Snap button tapped - capturing image");
+          if (!this.videoReady) {
+            this.forceVideoPlay().then(() => this.captureImage());
+          } else {
+            this.captureImage(); 
+          }
         }
-      });
+        
+        isHolding = false;
+      };
+
+      // Consolidate to pointer events (modern standard for touch/mouse)
+      snapBtn.addEventListener("pointerdown", handlePointerDown);
+      snapBtn.addEventListener("pointerup", handlePointerUpOrLeave);
+      snapBtn.addEventListener("pointerleave", handlePointerUpOrLeave);
+      
+      // Prevent default click and context menu to avoid interference on mobile
+      snapBtn.addEventListener("click", (e) => e.preventDefault());
+      snapBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+      
       snapBtn.dataset.listenerAttached = "true";
     }
     
-    const recordBtn = this.el.querySelector("#btn-record");
-    if (recordBtn && recordBtn.dataset.listenerAttached !== "true") {
-      recordBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        if (!this.videoReady) {
-          this.forceVideoPlay().then(() => {
-            if (!this.recording) this.startRecording(recordBtn);
-            else this.stopRecording(recordBtn);
-          });
-          console.log("Camera record started" );
-        } else {
-          if (!this.recording) await this.startRecording(recordBtn);
-          else this.stopRecording(recordBtn);
-        }
-      });
-      recordBtn.dataset.listenerAttached = "true";
-    }
-    console.log("Camera record stopped" );
+    console.log("Camera buttons setup complete");
   },
 
   stopCamera() {

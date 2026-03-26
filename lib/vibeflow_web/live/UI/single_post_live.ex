@@ -326,7 +326,18 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   #reply to a comment
   @impl true
   def handle_event("reply_to_comment", %{"comment-id" => comment_id}, socket) do
-    comment = Posts.get_comment!(comment_id, preload: [:user])
+    {:noreply, assign(socket, :replying_to, String.to_integer(comment_id))}
+  end
+
+  @impl true
+  def handle_event("cancel_edit_comment", _params, socket) do
+    {:noreply, assign(socket, :editing_comment_id, nil)}
+  end
+
+  @impl true
+  def handle_event(event, params, socket) do
+    IO.inspect({event, params}, label: "Unhandled Event in SinglePostLive")
+    {:noreply, socket}
   end
 
 

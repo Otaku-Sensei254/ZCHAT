@@ -8,7 +8,7 @@ defmodule Vibeflow.Posts.Seeder do
   alias Vibeflow.Socials.Follow
   alias Vibeflow.Posts.PostSeed
 
-  @default_seed_count 10
+  @default_seed_count 15
 
   def assign_initial_seeds(post_id, creator_id) do
     user_ids =

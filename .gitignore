@@ -46,3 +46,9 @@ Git SSH.TXT
 /dev.local.exs
 
 /.superpowers
+
+# Ignore live uploads directory
+/live_uploads/
+
+# Ignore live_view_upload files in uploads directory
+/priv/static/uploads/live_view_upload-*

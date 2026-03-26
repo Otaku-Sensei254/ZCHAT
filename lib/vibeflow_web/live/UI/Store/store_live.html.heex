@@ -1,4 +1,7 @@
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-4xl mx-auto p-6 pl-safe pr-safe">
+    <.back navigate={~p"/users/#{@current_user.username}"}>
+        Back to user profile
+    </.back>
   <header class="flex justify-between items-center mb-10 bg-gradient-to-r from-blue-600 to-cyan-500 p-8 rounded-3xl text-white shadow-xl">
     <div>
       <h1 class="text-3xl font-bold italic tracking-tight">The Wave Store</h1>

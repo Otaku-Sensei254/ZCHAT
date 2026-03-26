@@ -183,7 +183,7 @@ end
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username/creator-hub", Profiles.CreatorHubLive, :show
       live "/users/:username", Profiles.UserProfileLive, :show
-      live "/store", UI.Store.StoreLive, :index
+      live "/wave-store", UI.Store.StoreLive, :index
       live "/notifications", UI.NotificationsLive
       live "/posts/:uuid/edit", CreatePostLive, :edit
     end

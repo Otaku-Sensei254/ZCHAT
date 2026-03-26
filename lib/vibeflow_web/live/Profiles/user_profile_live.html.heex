@@ -238,7 +238,30 @@
         </div>
       </div>
 
-      <%!-- RIGHT: Actions Buttons --%>
+      <%!-- Wave Store Button --%>
+      <div class="mt-4 md:mt-0"> 
+        <.link navigate={~p"/wave-store"} class="group relative flex items-center gap-3 px-6 py-3 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-2xl shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(79,70,229,0.6)] transition-all duration-300 transform hover:-translate-y-1 active:scale-95 overflow-hidden">
+          <%!-- Background glow effect --%>
+          <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          
+          <%!-- Icon with accent --%>
+          <div class="relative flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+              <path fill-rule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.86 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.86-2.071l-1.263-12a1.875 1.875 0 0 0-1.86-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm7.5.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" clip-rule="evenodd" />
+            </svg>
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-indigo-600 animate-pulse shadow-sm"></div>
+          </div>
+
+          <div class="flex flex-col items-start leading-tight">
+            <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-100/80">Exciting Stuff</span>
+            <span class="text-base font-black tracking-wide">Wave Store</span>
+          </div>
+
+          <%!-- Subtle Shimmer --%>
+          <div class="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"></div>
+        </.link>
+      </div>
+
       <div class="flex flex-row md:flex-col gap-3 justify-center w-full md:w-auto mt-6 md:mt-2">
         <%= if @current_user.id == @user.id do %>
           <.link

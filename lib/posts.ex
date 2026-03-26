@@ -14,8 +14,8 @@ defmodule Vibeflow.Posts do
   @daily_post_bonus_limit 3
   @like_points 2
   @post_author_like_points 3
-  @ripple_points 5
-  @post_author_ripple_points 3
+  @ripple_points 3
+  @post_author_ripple_points 5
 
   # --- TRENDING ---
 

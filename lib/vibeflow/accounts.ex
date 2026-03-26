@@ -577,7 +577,14 @@ defmodule Vibeflow.Accounts do
     from(u in User, where: u.id == ^user_id)
     |> Repo.update_all(inc: [points: amount])
     |> case do
-      {1, _} -> {:ok, :awarded}
+      {1, _} ->
+        # Broadcast for real-time UI updates
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "notifications:#{user_id}",
+          {:points_awarded, %{user_id: user_id, amount: amount}}
+        )
+        {:ok, :awarded}
       _ -> {:error, :user_not_found}
     end
   end

@@ -152,6 +152,19 @@ defmodule VibeflowWeb.UserActivityHook do
     end
   end
 
+  # --- HANDLER 4: POINTS AWARDED ---
+  defp handle_global_event({:points_awarded, %{amount: amount}}, socket) do
+    # Update the user points in the current socket if needed
+    user = socket.assigns.current_user
+    new_points = (user.points || 0) + amount
+    updated_user = %{user | points: new_points}
+
+    {:cont,
+     socket
+     |> assign(:current_user, updated_user)
+     |> put_flash(:info, "You earned +#{amount} points! ✨")}
+  end
+
   # Catch-all
   defp handle_global_event(_event, socket), do: {:cont, socket}
 

@@ -192,7 +192,7 @@ defmodule VibeflowWeb.UserSettingsLive do
 @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-4xl mx-auto py-8">
+    <div class="max-w-4xl mx-auto py-8 px-4">
       <div class="mb-8">
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
           Account Settings

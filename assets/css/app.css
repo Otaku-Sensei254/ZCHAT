@@ -9,6 +9,10 @@
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+body {
+  font-family: 'Geist', sans-serif !important;
+}
+
 /* Home Page Animations */
 @keyframes fadeInUp {
   from {

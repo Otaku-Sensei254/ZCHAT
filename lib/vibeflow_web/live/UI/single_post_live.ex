@@ -21,6 +21,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> assign(:current_like, nil)
      |> assign(:like_count, 0)
+    |> assign(:wide_layout, true)
     #  |> assign(:hide_bottom_nav, true)
      |> assign(:show_comments_modal, false)
      |> assign(:current_media_index, 0)
@@ -336,7 +337,6 @@ defmodule VibeflowWeb.UI.SinglePostLive do
 
   @impl true
   def handle_event(event, params, socket) do
-    IO.inspect({event, params}, label: "Unhandled Event in SinglePostLive")
     {:noreply, socket}
   end
 

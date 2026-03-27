@@ -25,7 +25,7 @@ defmodule VibeflowWeb.UI.FeedLive do
       |> assign(:show_waves_modal, false)
       |> assign(
         page: 1,
-        per_page: 10,
+        per_page: 20,
         loading: false,
         has_more: true,
         search_term: nil,
@@ -404,7 +404,7 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   defp load_trending(socket) do
-    trending = Posts.list_trending_posts(5)
+    trending = Posts.list_trending_posts(20)
     stream(socket, :trending, trending, reset: true)
   end
 

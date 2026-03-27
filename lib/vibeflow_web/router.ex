@@ -28,7 +28,6 @@ defmodule VibeflowWeb.Router do
 
     live_session :public,
       on_mount: [{VibeflowWeb.UserAuth, :mount_current_user}, VibeflowWeb.UserActivityHook] do
-      live "/", HomeLive, :home
       live "/feed", UI.FeedLive, :index
       live "/posts/new", CreatePostLive, :new
       live "/posts/:uuid", UI.SinglePostLive, :show
@@ -160,6 +159,7 @@ end
     # 1. Keep Register and Reset Password here (Standard behavior)
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{VibeflowWeb.UserAuth, :redirect_if_user_is_authenticated}] do
+      live "/", HomeLive, :home
       live "/users/log_in", UserLoginLive, :new
       live "/users/register", UserRegistrationLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new

@@ -19,31 +19,58 @@ defmodule Vibeflow.Posts do
 
   # --- TRENDING ---
 
-  def list_trending_posts(limit \\ 5)
+  def list_trending_posts(limit \\ 20)
 
   def list_trending_posts(limit) when is_integer(limit) and limit > 0 do
-    one_day_ago = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60, :second)
+    seven_days_ago = DateTime.utc_now() |> DateTime.add(-7 * 24 * 60 * 60, :second)
 
-    from(p in Post,
-      where: p.inserted_at >= ^one_day_ago,
-      left_join: l in assoc(p, :likes),
-      left_join: c in assoc(p, :comments),
-      join: u in assoc(p, :user),
-      group_by: [p.id, u.id],
-      order_by: [desc: count(l.id, :distinct), desc: p.inserted_at],
-      limit: ^limit,
-      select_merge: %{
-        likes_count: count(l.id, :distinct),
-        comments_count: count(c.id, :distinct)
-      },
-      preload: [:user, :likes, comments: :user]
-    )
-    |> Repo.all()
+    posts_query =
+      from(p in Post,
+        where: p.inserted_at >= ^seven_days_ago,
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        join: u in assoc(p, :user),
+        group_by: [p.id, u.id],
+        order_by: [desc: count(l.id, :distinct), desc: p.inserted_at],
+        limit: ^limit,
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        },
+        preload: [:user, :likes, comments: :user]
+      )
+
+    posts = Repo.all(posts_query)
+
+    # If no posts from last 7 days, get most recent posts (30 days)
+    if Enum.empty?(posts) do
+      thirty_days_ago = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
+
+      fallback_query =
+        from(p in Post,
+          where: p.inserted_at >= ^thirty_days_ago,
+          left_join: l in assoc(p, :likes),
+          left_join: c in assoc(p, :comments),
+          join: u in assoc(p, :user),
+          group_by: [p.id, u.id],
+          order_by: [desc: p.inserted_at],
+          limit: ^limit,
+          select_merge: %{
+            likes_count: count(l.id, :distinct),
+            comments_count: count(c.id, :distinct)
+          },
+          preload: [:user, :likes, comments: :user]
+        )
+
+      Repo.all(fallback_query)
+    else
+      posts
+    end
   end
 
   def list_trending_posts(opts) when is_list(opts) do
     opts
-    |> Keyword.get(:limit, 5)
+    |> Keyword.get(:limit, 20)
     |> list_trending_posts()
   end
 
@@ -51,7 +78,7 @@ defmodule Vibeflow.Posts do
 
   def list_posts(opts \\ []) do
     page = opts[:page] || 1
-    per_page = opts[:per_page] || opts[:limit] || 10
+    per_page = opts[:per_page] || opts[:limit] || 20
     search_term = opts[:search]
     category = opts[:category]
     user_id = opts[:user_id]
@@ -89,7 +116,7 @@ defmodule Vibeflow.Posts do
 
   def list_feed_for_user(user_id, opts) do
     page = opts[:page] || 1
-    per_page = opts[:per_page] || opts[:limit] || 10
+    per_page = opts[:per_page] || opts[:limit] || 20
     search_term = opts[:search]
     category = opts[:category]
 
@@ -159,13 +186,46 @@ defmodule Vibeflow.Posts do
 
     posts = query |> Repo.all() |> Repo.preload([:user, :likes, comments: :user])
 
-    # Auto-seed these fallback posts so they appear in future personalized feeds
-    if Enum.any?(posts) do
-      post_ids = Enum.map(posts, & &1.id)
-      Seeder.insert_seeds_for_user(user_id, post_ids)
-    end
+    # If no posts from last 7 days, get all recent posts (30 days)
+    if Enum.empty?(posts) do
+      thirty_days_ago = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
 
-    posts
+      fallback_query =
+        from(p in Post,
+          left_join: ps in PostSeed,
+          on: ps.post_id == p.id and ps.user_id == ^user_id,
+          join: u in assoc(p, :user),
+          left_join: l in assoc(p, :likes),
+          left_join: c in assoc(p, :comments),
+          where: p.inserted_at >= ^thirty_days_ago and is_nil(ps.post_id),
+          group_by: [p.id, u.id],
+          order_by: [desc: p.inserted_at],
+          limit: ^per_page,
+          select_merge: %{
+            likes_count: count(l.id, :distinct),
+            comments_count: count(c.id, :distinct)
+          }
+        )
+        |> apply_filters(search_term, category)
+
+      final_posts = fallback_query |> Repo.all() |> Repo.preload([:user, :likes, comments: :user])
+
+      # Auto-seed these fallback posts so they appear in future personalized feeds
+      if Enum.any?(final_posts) do
+        post_ids = Enum.map(final_posts, & &1.id)
+        Seeder.insert_seeds_for_user(user_id, post_ids)
+      end
+
+      final_posts
+    else
+      # Auto-seed these fallback posts so they appear in future personalized feeds
+      if Enum.any?(posts) do
+        post_ids = Enum.map(posts, & &1.id)
+        Seeder.insert_seeds_for_user(user_id, post_ids)
+      end
+
+      posts
+    end
   end
 
   def list_seeded_users_for_post(post_id, limit \\ 50) do

@@ -1,4 +1,4 @@
-<div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 pl-safe pr-safe">
+<div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 pl-safe pr-safe" phx-window-keydown="close_modals" phx-key="Escape">
   
   <div class={[  
     "border-r border-gray-200 dark:border-zinc-800 flex-col",
@@ -107,7 +107,7 @@
               <% true -> %>
                 <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-lg border border-gray-200 dark:border-gray-800">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
             <% end %>
@@ -229,7 +229,7 @@
                           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
                         </button>
                       <% else %>
-                        <img src={media["url"]} class="absolute inset-0 w-full h-full object-cover" />
+                        <img phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" src={media["url"]} class="absolute inset-0 w-full h-full object-cover cursor-pointer" />
                         <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" type="button" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
                           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
                         </button>
@@ -534,14 +534,14 @@
 
   <%!-- NEW: LIGHTBOX MODAL FOR PREVIEW --%>
   <%= if @preview_entry do %>
-    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" phx-click="close_preview">
       
       <%!-- Close Button --%>
-      <button type="button" phx-click="close_preview" aria-label="Close media preview" class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-50">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      <button type="button" phx-click="close_preview" aria-label="Close media preview" class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
 
-      <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+      <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center" onclick="event.stopPropagation()">
         <.live_img_preview entry={@preview_entry} class="max-h-[85vh] w-auto rounded-lg shadow-2xl object-contain" />
         
         <div class="mt-4 flex items-center gap-4">
@@ -569,10 +569,10 @@
   <%= if @zoomed_image do %>
     <% url = if is_map(@zoomed_image), do: @zoomed_image["url"], else: @zoomed_image %>
     <% type = if is_map(@zoomed_image), do: @zoomed_image["type"], else: "image" %>
-    <div class="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4" phx-click="close_zoom">
+    <div class="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4" phx-click="close_zoom">
       <div class="relative max-w-[95vw] max-h-[95vh]" onclick="event.stopPropagation()">
-        <button type="button" phx-click="close_zoom" aria-label="Close media view" class="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        <button type="button" phx-click="close_zoom" aria-label="Close media view" class="absolute top-3 right-3 z-[130] p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
         <%= if type == "video" do %>

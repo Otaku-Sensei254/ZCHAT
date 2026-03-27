@@ -280,7 +280,7 @@ defmodule VibeflowWeb.UserSettingsLive do
           </div>
         </section>
 
-        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
           <div class="px-4 py-6 sm:p-8 ">
             <div class="max-w-2xl">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Email Address</h2>
@@ -374,7 +374,7 @@ defmodule VibeflowWeb.UserSettingsLive do
           </div>
         </section>
 
-        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
           <div class="px-4 py-6 sm:p-8">
             <div class="max-w-2xl" id="notification-settings" phx-hook="NotificationSettings">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Browser Notifications</h2>

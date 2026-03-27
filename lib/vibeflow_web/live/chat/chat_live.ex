@@ -246,30 +246,43 @@ end
 
 
   @impl true
-  #======to check out the media shared=====
-    def handle_event("preview_entry", %{"ref" => ref}, socket) do
-      check =
-        socket.assigns.uploads.media_file.entries
-        |> Enum.find(fn ck -> ck.ref == ref end)
-        {:noreply, assign(socket, preview_entry: check)}
-    end
+  # ======to check out the media shared=====
+  def handle_event("preview_entry", %{"ref" => ref}, socket) do
+    check =
+      socket.assigns.uploads.media_file.entries
+      |> Enum.find(fn ck -> ck.ref == ref end)
 
-    #close the preview modal
-     def handle_event("close_preview", _params, socket) do
-      {:noreply, assign(socket, preview_entry: nil)}
-     end
-
-     # Handle clicking an image in the chat history
-  @impl true
-  def handle_event("zoom_image", %{"url" => url}, socket) do
-    {:noreply, assign(socket, zoomed_image: url)}
+    {:noreply, assign(socket, preview_entry: check)}
   end
 
-  # Handle closing the full-screen view
   @impl true
+  # close the preview modal
+  def handle_event("close_preview", _params, socket) do
+    {:noreply, assign(socket, preview_entry: nil)}
+  end
+
+  @impl true
+  # Handle clicking an image in the chat history
+  def handle_event("zoom_image", params, socket) do
+    {:noreply, assign(socket, zoomed_image: params)}
+  end
+
+  @impl true
+  # Handle closing the full-screen view
   def handle_event("close_zoom", _params, socket) do
     {:noreply, assign(socket, zoomed_image: nil)}
   end
+
+  @impl true
+  def handle_event("close_modals", %{"key" => "Escape"}, socket) do
+    {:noreply,
+     socket
+     |> assign(:zoomed_image, nil)
+     |> assign(:preview_entry, nil)}
+  end
+
+  @impl true
+  def handle_event("close_modals", _, socket), do: {:noreply, socket}
   # ===========================================================================
   # HANDLE INFO - All grouped together
   # ===========================================================================

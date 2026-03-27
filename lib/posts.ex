@@ -6,7 +6,7 @@ defmodule Vibeflow.Posts do
   alias Vibeflow.Repo
   alias Vibeflow.Accounts
   alias Vibeflow.Notifications
-  alias Vibeflow.Posts.{Post, Like, Comment, PostSeed, View}
+  alias Vibeflow.Posts.{Post, Like, Comment, PostSeed, View, Repost}
   alias Vibeflow.Posts.Seeder
   require Logger
 
@@ -93,6 +93,18 @@ defmodule Vibeflow.Posts do
     search_term = opts[:search]
     category = opts[:category]
 
+    # Get personalized posts (seeded + own)
+    personalized_posts = get_personalized_posts(user_id, page, per_page, search_term, category)
+
+    # If no personalized posts and it's the first page, show trending as fallback
+    if Enum.empty?(personalized_posts) and page == 1 do
+      get_fallback_posts(user_id, per_page, search_term, category)
+    else
+      personalized_posts
+    end
+  end
+
+  defp get_personalized_posts(user_id, page, per_page, search_term, category) do
     base_query =
       from(p in Post,
         left_join: ps in PostSeed,
@@ -118,6 +130,42 @@ defmodule Vibeflow.Posts do
     query
     |> Repo.all()
     |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  defp get_fallback_posts(user_id, per_page, search_term, category) do
+    # Show trending posts that user hasn't seen yet
+    one_week_ago = DateTime.utc_now() |> DateTime.add(-7 * 24 * 60 * 60, :second)
+
+    base_query =
+      from(p in Post,
+        left_join: ps in PostSeed,
+        on: ps.post_id == p.id and ps.user_id == ^user_id,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        where: p.inserted_at >= ^one_week_ago and is_nil(ps.post_id),
+        group_by: [p.id, u.id],
+        order_by: [desc: count(l.id, :distinct), desc: p.inserted_at],
+        limit: ^per_page,
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        }
+      )
+
+    query =
+      base_query
+      |> apply_filters(search_term, category)
+
+    posts = query |> Repo.all() |> Repo.preload([:user, :likes, comments: :user])
+
+    # Auto-seed these fallback posts so they appear in future personalized feeds
+    if Enum.any?(posts) do
+      post_ids = Enum.map(posts, & &1.id)
+      Seeder.insert_seeds_for_user(user_id, post_ids)
+    end
+
+    posts
   end
 
   def list_seeded_users_for_post(post_id, limit \\ 50) do
@@ -261,6 +309,16 @@ defmodule Vibeflow.Posts do
     end
   rescue
     _ -> nil
+  end
+
+  def get_repost_by_user_and_target(user_id, "Post", post_id) do
+    Repo.get_by(Repost, user_id: user_id, post_id: post_id)
+  end
+
+  def get_repost_by_user_and_target(_user_id, _target_type, _target_id), do: nil
+
+  def get_post_seed(post_id, user_id) do
+    Repo.get_by(PostSeed, post_id: post_id, user_id: user_id)
   end
 
   def categories do
@@ -592,6 +650,79 @@ defmodule Vibeflow.Posts do
     Accounts.grant_points(author_id, points)
   end
 
+
+   #adding repost functions for posts
+    def toggle_repost(user_id, post_id) do
+    case Repo.get(Post, post_id) do
+      nil -> {:error, :post_not_found}
+      post ->
+        existing_repost = Repo.get_by(Repost, user_id: user_id, post_id: post_id)
+
+        Repo.transaction(fn ->
+          if existing_repost do
+            # Remove repost and decrease count
+            Repo.delete(existing_repost)
+            from(p in Post, where: p.id == ^post_id)
+            |> Repo.update_all(inc: [reposts_count: -1])
+
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:unreposted, post})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:unreposted, post})
+            {:unreposted, post}
+          else
+            # Add repost and increase count
+            repost_changeset = Repost.changeset(%Repost{}, %{user_id: user_id, post_id: post_id})
+            {:ok, repost} = Repo.insert(repost_changeset)
+            from(p in Post, where: p.id == ^post_id)
+            |> Repo.update_all(inc: [reposts_count: 1])
+
+            # Send notification to original post owner (if not self-repost)
+            if post.user_id != user_id do
+              {:ok, notification} = Notifications.create_notification(%{
+                user_id: post.user_id,
+                actor_id: user_id,
+                type: "repost",
+                post_id: post_id
+              })
+
+              # Send specific broadcast for repost notifications with flash
+              actor = Repo.get(Vibeflow.Accounts.User, user_id)
+              notification_with_actor = %{notification | actor: actor}
+              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{post.user_id}",
+                %{event: "repost_notification", notification: notification_with_actor})
+            end
+
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:repost_added, repost})
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:repost_added, repost})
+            {:reposted, repost}
+          end
+        end)
+    end
+  end
+
+  def repost_post(user_id, post_id) do
+      case Repo.get(Post, post_id) do
+        nil -> {:error, :post_not_found}
+        post ->
+          # Check if user already reposted this post
+          existing_repost = Repo.get_by(Repost, user_id: user_id, post_id: post_id)
+          if existing_repost do
+            {:error, :already_reposted}
+          else
+            # make the repost
+            repost_changeset = Repost.changeset(%Repost{}, %{user_id: user_id, post_id: post_id})
+            Repo.transaction(fn ->
+              # Insert repost record
+              {:ok, repost} = Repo.insert(repost_changeset)
+              # Increase repost count on original post
+              from(p in Post, where: p.id == ^post_id)
+              |> Repo.update_all(inc: [reposts_count: 1])
+              # Broadcast the repost activity
+              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:repost_added, repost})
+              repost
+            end)
+          end
+      end
+    end
 
   # --- ANALYTICS / STATS ---
 

@@ -14,3 +14,7 @@
     - Corrected HTML syntax error (mismatched tags) in Feed search form.
 - Logic Updates: Adjusted Ripple point allocation to 3 points for the rippler and 5 points for the author.
 - Deployment: Successfully pushed code to Gigalixir and migrated production database to Neon DB.
+
+2026-03-27 09:10hrs
+- Cleaned up the `Vibeflow.Accounts.grant_points/2` clause boundaries and added the `:invalid_input` fallback so the module compiles without the `def/2 outside module` error.
+- Verified `mix compile` but it still fails inside this sandbox with a `Mix.PubSub` socket permission error; please rerun the command in a normal shell (or just `iex -S mix phx.server`) to cover the new logic.

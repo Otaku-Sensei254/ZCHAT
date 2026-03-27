@@ -100,9 +100,9 @@ defmodule Vibeflow.Posts.Seeder do
     {:ok, count}
   end
 
-  defp insert_seeds_for_user(_user_id, []), do: {:ok, 0}
+  def insert_seeds_for_user(_user_id, []), do: {:ok, 0}
 
-  defp insert_seeds_for_user(user_id, post_ids) do
+  def insert_seeds_for_user(user_id, post_ids) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     entries =

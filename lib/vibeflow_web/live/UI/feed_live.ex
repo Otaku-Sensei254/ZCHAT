@@ -11,6 +11,7 @@ defmodule VibeflowWeb.UI.FeedLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "feed:global")
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "posts")
 
       if socket.assigns[:current_user] do
         Phoenix.PubSub.subscribe(Vibeflow.PubSub, "notifications:#{socket.assigns.current_user.id}")
@@ -309,6 +310,18 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
+  def handle_info({:repost_added, repost}, socket) do
+    post = Posts.get_post!(repost.post_id, preload: [:user, :likes, comments: :user])
+    {:noreply, stream_insert(socket, :posts, post)}
+  end
+
+  @impl true
+  def handle_info({:unreposted, post_struct}, socket) do
+    post = Posts.get_post!(post_struct.id, preload: [:user, :likes, comments: :user])
+    {:noreply, stream_insert(socket, :posts, post)}
+  end
+
+  @impl true
   def handle_info({:new_notification, _notif}, socket) do
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
@@ -359,9 +372,21 @@ defmodule VibeflowWeb.UI.FeedLive do
 
     has_more = length(posts) == per_page
 
+    # Check if this might be fallback content for a new user
+    is_fallback_content = page == 1 and not is_nil(socket.assigns[:current_user]) and
+                        length(posts) > 0 and
+                        not has_content_from_followed_users(posts, socket.assigns.current_user.id)
+
     socket
-    |> assign(loading: false, has_more: has_more, page: page + 1)
+    |> assign(loading: false, has_more: has_more, page: page + 1, is_fallback_content: is_fallback_content)
     |> update_stream_based_on_page(page, posts)
+  end
+
+  defp has_content_from_followed_users(posts, user_id) do
+    Enum.any?(posts, fn post ->
+      post.user_id == user_id or
+      Vibeflow.Posts.get_post_seed(post.id, user_id) != nil
+    end)
   end
 
   defp update_stream_based_on_page(socket, 1, posts) do

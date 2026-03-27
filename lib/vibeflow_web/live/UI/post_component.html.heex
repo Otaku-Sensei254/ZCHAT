@@ -227,14 +227,22 @@
       <span class="text-sm font-medium hidden sm:inline">Share</span>
     </button>
     
-      <button class="flex items-center gap-2 rounded-full py-1.5 px-3 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <button 
+        phx-click="repost_post" 
+        phx-target={@myself}
+        class={"flex items-center gap-2 rounded-full py-1.5 px-3 transition-all duration-150 #{
+          if @current_repost, do: "text-green-500 bg-green-50 dark:bg-green-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+        }"}
+        title={if @current_repost, do: "Remove repost", else: "Repost this post"}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill={if @current_repost, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
         </svg>
         <span class="text-sm font-medium">
-          <%= @post.reposts_count || 0 %>
+          <%= @repost_count %>
         </span>
       </button>
+   
     </div>
 
     <div class="text-xs text-gray-400 dark:text-gray-500">

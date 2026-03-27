@@ -182,8 +182,6 @@ defmodule Vibeflow.Accounts do
     end)
   end
 
-  def list_admins, do: list_role_users("admin")
-
   def list_moderators do
     list_role_users("moderator")
   end
@@ -280,20 +278,6 @@ defmodule Vibeflow.Accounts do
     })
 
     {:ok, updated_request}
-  end
-
-  def reject_verification_request(%VerificationRequest{} = request) do
-    case request
-         |> VerificationRequest.changeset(%{"status" => "rejected"})
-         |> Repo.update() do
-      {:ok, request} ->
-        user = get_user!(request.user_id)
-        Notifications.notify_verification_rejected(user, request.id)
-        {:ok, request}
-
-      error ->
-        error
-    end
   end
 
   # defp create
@@ -569,6 +553,14 @@ defmodule Vibeflow.Accounts do
     |> Repo.update()
   end
 
+    #Adding mentions to posts and comments
+  def mention_user_in_post(user_id, post_id) do
+    # This is a placeholder function. You would implement the logic to create a mention record in the database.
+    # For example, you might have a PostMention schema that tracks which users are mentioned in which posts.
+    # You would create a new PostMention record here linking the user_id and post_id.
+     {:ok, :mentioned}
+  end
+
   # --- POINTS MANAGEMENT ---
 
   def grant_points(_user_id, 0), do: {:ok, :no_change}
@@ -584,8 +576,11 @@ defmodule Vibeflow.Accounts do
           "notifications:#{user_id}",
           {:points_awarded, %{user_id: user_id, amount: amount}}
         )
+
         {:ok, :awarded}
-      _ -> {:error, :user_not_found}
+
+      _ ->
+        {:error, :user_not_found}
     end
   end
 

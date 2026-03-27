@@ -191,7 +191,6 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
       timer_ref = Process.send_after(self(), :next_slide, 5000)
       assign(socket, :timer_ref, timer_ref)
     else
-      # If video, wait for JS hook (WaveVideo)
       socket
     end
     end

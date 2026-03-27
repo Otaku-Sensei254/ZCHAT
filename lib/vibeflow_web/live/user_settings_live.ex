@@ -4,7 +4,6 @@ defmodule VibeflowWeb.UserSettingsLive do
   alias Vibeflow.Accounts
   require Logger
 
-
   def mount(%{"token" => token}, _session, socket) do
     socket =
       case Accounts.update_user_email(socket.assigns.current_user, token) do
@@ -34,7 +33,11 @@ defmodule VibeflowWeb.UserSettingsLive do
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:profile_form, to_form(profile_changeset))
       |> assign(:trigger_submit, false)
-      |> allow_upload(:avatar, accept: ~w(.jpg .jpeg .png .webp), max_entries: 1, max_file_size: 5_000_000)
+      |> allow_upload(:avatar,
+        accept: ~w(.jpg .jpeg .png .webp),
+        max_entries: 1,
+        max_file_size: 5_000_000
+      )
 
     {:ok, socket}
   end
@@ -60,7 +63,9 @@ defmodule VibeflowWeb.UserSettingsLive do
     uploaded_urls =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
         case UploadCloudinary.upload_file(path) do
-          {:ok, result} -> {:ok, result.url}
+          {:ok, result} ->
+            {:ok, result.url}
+
           {:error, reason} ->
             Logger.error("Failed to upload avatar: #{inspect(reason)}")
             {:error, reason}
@@ -78,6 +83,7 @@ defmodule VibeflowWeb.UserSettingsLive do
     case Accounts.update_user_profile(user, user_params) do
       {:ok, updated_user} ->
         info = "Profile updated successfully."
+
         {:noreply,
          socket
          |> put_flash(:info, info)
@@ -189,10 +195,10 @@ defmodule VibeflowWeb.UserSettingsLive do
     {:noreply, socket}
   end
 
-@impl true
+  @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="max-w-4xl mx-auto py-8 px-4 rounded-lg sm:px-6 lg:px-8">
       <div class="mb-8">
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
           Account Settings
@@ -203,8 +209,8 @@ defmodule VibeflowWeb.UserSettingsLive do
       </div>
 
       <div class="space-y-8">
-        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
-          <div class="px-4 py-6 sm:p-8">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8 ">
             <div class="max-w-2xl">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Public Profile</h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">This information will be displayed publicly so be careful what you share.</p>
@@ -275,7 +281,7 @@ defmodule VibeflowWeb.UserSettingsLive do
         </section>
 
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
-          <div class="px-4 py-6 sm:p-8">
+          <div class="px-4 py-6 sm:p-8 ">
             <div class="max-w-2xl">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Email Address</h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Update the email associated with your account.</p>
@@ -313,9 +319,9 @@ defmodule VibeflowWeb.UserSettingsLive do
           </div>
         </section>
 
-        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl overflow-hidden">
-          <div class="px-4 py-6 sm:p-8">
-            <div class="max-w-2xl">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8 rounded-lg">
+            <div class="max-w-2xl ">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Change Password</h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Ensure your account is using a long, random password to stay secure.</p>
 
@@ -400,5 +406,4 @@ defmodule VibeflowWeb.UserSettingsLive do
   defp error_to_string(:too_many_files), do: "You have selected too many files"
   defp error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
   defp error_to_string(_), do: "Something went wrong"
-
 end

@@ -348,7 +348,12 @@ defmodule VibeflowWeb.UI.FeedLive do
           search: socket.assigns[:search_term]
         )
       else
-        []
+        Posts.list_posts(
+          page: page,
+          per_page: per_page,
+          category: socket.assigns[:category],
+          search: socket.assigns[:search_term]
+        )
       end
       |> Enum.map(&Post.ensure_media_files/1)
 

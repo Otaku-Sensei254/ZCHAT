@@ -5,6 +5,7 @@ defmodule VibeflowWeb.HomeLive do
     {:ok, socket |> assign(:hide_bottom_nav, true)}
   end
 
+  @impl true
   def handle_event("toggle_theme", _params, socket) do
     # This is handled client-side, so we just return the socket
     {:noreply, socket}

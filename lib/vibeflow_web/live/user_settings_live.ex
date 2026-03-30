@@ -4,6 +4,7 @@ defmodule VibeflowWeb.UserSettingsLive do
   alias Vibeflow.Accounts
   require Logger
 
+  @impl true
   def mount(%{"token" => token}, _session, socket) do
     socket =
       case Accounts.update_user_email(socket.assigns.current_user, token) do
@@ -18,6 +19,7 @@ defmodule VibeflowWeb.UserSettingsLive do
     {:ok, push_navigate(socket, to: ~p"/users/settings")}
   end
 
+  @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     email_changeset = Accounts.change_user_email(user)

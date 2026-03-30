@@ -47,18 +47,6 @@ defmodule VibeflowWeb.Components.NotificationsModal do
     {:noreply, socket}
   end
 
-  def handle_info(%{event: "notification_updated"}, socket) do
-    {:noreply, assign_notifications(socket)}
-  end
-
-  # Handle repost notifications with flash message
-  def handle_info(%{event: "repost_notification", notification: notification}, socket) do
-    {:noreply,
-     socket
-     |> assign_notifications()
-     |> put_flash(:info, "#{notification.actor.username} reposted your post!")}
-  end
-
   # --- VIEW HELPERS ---
   def notification_link(%{type: "shared_post", conversation: %{uuid: uuid}}, _current_user) do
     ~p"/chat/#{uuid}"

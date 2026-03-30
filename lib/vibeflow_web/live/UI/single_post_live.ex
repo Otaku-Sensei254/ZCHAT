@@ -1,11 +1,13 @@
 defmodule VibeflowWeb.UI.SinglePostLive do
   use VibeflowWeb, :live_view
 
+  # Only import the functions you need from Ecto.Query to avoid conflicts
+  import Ecto.Query, only: [from: 2]
+
   alias Vibeflow.Posts
   alias Vibeflow.Posts.Comment
   alias Vibeflow.Accounts
   alias VibeflowWeb.UserAuth
-  alias Phoenix.PubSub
 
   # Use the app layout
   def layout(_assigns), do: {VibeflowWeb.Layouts, :app}
@@ -22,10 +24,13 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
      |> assign(:current_like, nil)
      |> assign(:like_count, 0)
-    |> assign(:wide_layout, true)
+     |> assign(:wide_layout, true)
     #  |> assign(:hide_bottom_nav, true)
      |> assign(:show_comments_modal, false)
      |> assign(:current_media_index, 0)
+     |> assign(:show_mention_modal, false)
+     |> assign(:mention_search_results, [])
+     |> assign(:mention_search_query, "")
     #  FIX: Initialize BOTH streams here
      |> stream(:comments, [])
 
@@ -55,6 +60,13 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         nil
       end
 
+    current_repost =
+      if socket.assigns.current_user do
+        Posts.get_repost_by_user_and_post(socket.assigns.current_user.id, post.id)
+      else
+        nil
+      end
+
     seeded_users =
       if socket.assigns.current_user &&
            (Accounts.user_has_role?(socket.assigns.current_user, "admin") ||
@@ -72,6 +84,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:repost_count, post.reposts_count || 0)
      |> assign(:current_like, current_like)
+     |> assign(:current_repost, current_repost)
      |> assign(:comment_count, length(comments))
 
      # 1. Desktop Stream: Uses standard IDs (e.g., "comments-1")
@@ -152,14 +165,14 @@ defmodule VibeflowWeb.UI.SinglePostLive do
  @impl true
  def handle_event("share_post", _, socket) do
    post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.uuid}"
-    {:noreply,
+   {:noreply,
      socket
      |> push_event("share_post", %{
-       title: "Check out this post by #{socket.assigns.post.user.username}",
-       text: socket.assigns.post.content,
-       url: post_url
-     })}
-  end
+         title: "Check out this post by #{socket.assigns.post.user.username}",
+         text: socket.assigns.post.content,
+         url: post_url
+       })}
+ end
 
   @impl true
   def handle_event("toggle_follow", %{"user-id" => user_id}, socket) do
@@ -326,11 +339,53 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   end
 
   @impl true
-  def handle_event(event, params, socket) do
+  def handle_event("show_mention_modal", _, socket) do
+    {:noreply, assign(socket, show_mention_modal: true)}
+  end
+
+  @impl true
+  def handle_event(_event, _params, socket) do
     {:noreply, socket}
   end
 
-  # --- REALTIME UPDATES ---
+  # --- MENTION MODAL EVENTS ---
+  @impl true
+  def handle_event("close_mention_modal", _, socket) do
+    {:noreply, assign(socket, show_mention_modal: false, mention_search_results: [], mention_search_query: "")}
+  end
+
+  @impl true
+  def handle_event("search_mentions", %{"query" => query}, socket) do
+    if String.length(query) >= 2 do
+      users = search_users_by_username(query)
+      {:noreply, assign(socket, mention_search_results: users, mention_search_query: query)}
+    else
+      {:noreply, assign(socket, mention_search_results: [])}
+    end
+  end
+
+  @impl true
+  def handle_event("select_mention", %{"username" => _username}, socket) do
+    # This will be handled by JavaScript to insert the username
+    {:noreply, assign(socket, show_mention_modal: false)}
+  end
+
+  @impl true
+  def handle_event("stop_propagation", _, socket) do
+    # Prevent modal from closing when clicking inside
+    {:noreply, socket}
+  end
+
+  # --- HELPER FUNCTIONS ---
+  defp search_users_by_username(query) do
+    query_prefix = query <> "%"
+    from(u in Vibeflow.Accounts.User,
+      where: ilike(u.username, ^query_prefix),
+      limit: 10,
+      select: [:id, :username, :avatar_url, :bio]
+    )
+    |> Vibeflow.Repo.all()
+  end
 
   @impl true
   def handle_info({:repost_added, repost}, socket) do
@@ -392,7 +447,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         socket
         |> stream_insert(:comments, comment, at: 0)
         |> stream_insert(:mobile_comments, comment, at: 0)
-        |> update(:comment_count, &(&1 + 1))
+        |> Phoenix.Component.update(:comment_count, &(&1 + 1))
 
       {:noreply, socket}
     else
@@ -455,5 +510,20 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     else
       {:noreply, put_flash(socket, :error, "Unauthorized")}
     end
+  end
+
+  defp assign_current_repost(socket) do
+    current_user = socket.assigns[:current_user]
+    post = socket.assigns[:post]
+
+    # Example logic: check if current_user has reposted this post
+    has_reposted =
+      if current_user && post && Map.has_key?(post, :reposts) && is_list(post.reposts) do
+        Enum.any?(post.reposts, fn r -> r.user_id == current_user.id end)
+      else
+        false
+      end
+
+    assign(socket, :current_repost, has_reposted)
   end
 end

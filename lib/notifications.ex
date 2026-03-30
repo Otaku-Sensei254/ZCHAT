@@ -42,6 +42,15 @@ defmodule Vibeflow.Notifications do
     # |> put_flash(:info , "New notification")
   end
 
+  def create_mention_notification(recipient, comment, author) do
+    create_notification(%{
+      type: "mention",
+      user_id: recipient.id,
+      actor_id: author.id,
+      post_id: comment.post_id
+    })
+  end
+
   def mark_as_read(notification_id) do
     case Repo.get(Notification, notification_id) do
       nil -> {:error, :not_found}

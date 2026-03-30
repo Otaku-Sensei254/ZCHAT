@@ -245,6 +245,42 @@ defmodule VibeflowWeb.Waves.WavesLive do
     end
   end
 
+  @impl true
+  def handle_event("switch_camera", _, socket), do: {:noreply, push_event(socket, "switch-camera-mode", %{})}
+
+  @impl true
+  def handle_event("open_music", _, socket), do: {:noreply, assign(socket, step: 2)}
+
+  @impl true
+  def handle_event("close_music", _, socket), do: {:noreply, assign(socket, step: 3)}
+
+  @impl true
+  def handle_event("remove_music", _, socket), do: {:noreply, assign(socket, selected_music: nil)}
+
+  @impl true
+  def handle_event("prevent_submit", _, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("cancel_upload", _, socket) do
+     socket = Enum.reduce(socket.assigns.uploads.media.entries, socket, fn entry, acc ->
+      cancel_upload(acc, :media, entry.ref)
+    end)
+    {:noreply, assign(socket, step: 1, selected_music: nil, caption: "")}
+  end
+
+  @impl true
+  def handle_event("search_music", %{"query" => query}, socket) do
+    results = search_itunes(query)
+    {:noreply, assign(socket, music_results: results, search_query: query)}
+  end
+
+  @impl true
+  def handle_event("select_music", %{"id" => track_id}, socket) do
+    track_id = String.to_integer(track_id)
+    song = Enum.find(socket.assigns.music_results, &(&1.track_id == track_id))
+    {:noreply, assign(socket, selected_music: song)}
+  end
+
   # This allows us to track the upload progress in the UI
   def handle_progress(:media, entry, socket) do
     if entry.done? do
@@ -254,29 +290,6 @@ defmodule VibeflowWeb.Waves.WavesLive do
       # Just let the UI re-render to show new progress bar width
       {:noreply, socket}
     end
-  end
-
-  # Helper Event Handlers (Music, Camera, etc)
-  @impl true
-  def handle_event("switch_camera", _, socket), do: {:noreply, push_event(socket, "switch-camera-mode", %{})}
-  def handle_event("open_music", _, socket), do: {:noreply, assign(socket, step: 2)}
-  def handle_event("close_music", _, socket), do: {:noreply, assign(socket, step: 3)}
-  def handle_event("remove_music", _, socket), do: {:noreply, assign(socket, selected_music: nil)}
-  def handle_event("prevent_submit", _, socket), do: {:noreply, socket}
-  def handle_event("cancel_upload", _, socket) do
-     socket = Enum.reduce(socket.assigns.uploads.media.entries, socket, fn entry, acc ->
-      cancel_upload(acc, :media, entry.ref)
-    end)
-    {:noreply, assign(socket, step: 1, selected_music: nil, caption: "")}
-  end
-  def handle_event("search_music", %{"query" => query}, socket) do
-    results = search_itunes(query)
-    {:noreply, assign(socket, music_results: results, search_query: query)}
-  end
-  def handle_event("select_music", %{"id" => track_id}, socket) do
-    track_id = String.to_integer(track_id)
-    song = Enum.find(socket.assigns.music_results, &(&1.track_id == track_id))
-    {:noreply, assign(socket, selected_music: song)}
   end
 
   defp search_itunes(query) when byte_size(query) > 0 do

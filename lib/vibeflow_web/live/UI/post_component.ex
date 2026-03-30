@@ -22,6 +22,13 @@ defmodule VibeflowWeb.UI.PostComponent do
     post = socket.assigns.post
     current_user = socket.assigns[:current_user]
 
+    # Initialize mention modal state
+    socket = assign(socket, [
+      show_mention_modal: false,
+      mention_search_results: [],
+      mention_search_query: ""
+    ])
+
     # Check if current user has liked this post
     current_like =
       if current_user && post.likes && Ecto.assoc_loaded?(post.likes) do
@@ -67,7 +74,7 @@ defmodule VibeflowWeb.UI.PostComponent do
     current = socket.assigns.current_media_index
 
     # Calculate prev index, looping to the last item if at 0
-    new_index = 
+    new_index =
       if total_media > 0 do
         if current - 1 < 0, do: total_media - 1, else: current - 1
       else
@@ -174,6 +181,34 @@ defmodule VibeflowWeb.UI.PostComponent do
     {:noreply, socket}
   end
 
+  # --- MENTION MODAL EVENTS ---
+  @impl true
+  def handle_event("close_mention_modal", _, socket) do
+    {:noreply, assign(socket, show_mention_modal: false, mention_search_results: [], mention_search_query: "")}
+  end
+
+  @impl true
+  def handle_event("search_mentions", %{"query" => query}, socket) do
+    if String.length(query) >= 2 do
+      users = search_users_by_username(query)
+      {:noreply, assign(socket, mention_search_results: users, mention_search_query: query)}
+    else
+      {:noreply, assign(socket, mention_search_results: [])}
+    end
+  end
+
+  @impl true
+  def handle_event("select_mention", %{"username" => username}, socket) do
+    # This will be handled by JavaScript to insert the username
+    {:noreply, assign(socket, show_mention_modal: false)}
+  end
+
+  @impl true
+  def handle_event("stop_propagation", _, socket) do
+    # Prevent modal from closing when clicking inside
+    {:noreply, socket}
+  end
+
   # --- HELPER FUNCTIONS ---
   defp content_cut(content, length \\ 250) do
     if String.length(content) > length do
@@ -181,5 +216,14 @@ defmodule VibeflowWeb.UI.PostComponent do
     else
       content
     end
+  end
+
+  defp search_users_by_username(query) do
+    from(u in Vibeflow.Accounts.User,
+      where: ilike(u.username, ^"#{query}%"),
+      limit: 10,
+      select: [:id, :username, :avatar_url, :bio]
+    )
+    |> Vibeflow.Repo.all()
   end
 end

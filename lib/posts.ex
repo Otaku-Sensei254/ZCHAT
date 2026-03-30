@@ -123,11 +123,27 @@ defmodule Vibeflow.Posts do
     # Get personalized posts (seeded + own)
     personalized_posts = get_personalized_posts(user_id, page, per_page, search_term, category)
 
-    # If no personalized posts and it's the first page, show trending as fallback
-    if Enum.empty?(personalized_posts) and page == 1 do
-      get_fallback_posts(user_id, per_page, search_term, category)
+    # Check if user has follows or engagement
+    user_has_engagement = has_user_engagement?(user_id)
+
+    # If user has no engagement (new user), show all content like logged out
+    if not user_has_engagement do
+      list_posts(opts)
     else
-      personalized_posts
+      # For engaged users: always include some recent general content
+      # Reserve 25% of feed for recent general content (minimum 5 posts)
+      general_slots = max(5, div(per_page, 4))
+      personalized_slots = per_page - general_slots
+
+      # Get recent general content (newest posts)
+      recent_general = get_recent_general_content(user_id, general_slots, search_term, category, personalized_posts)
+
+      # Get personalized content to fill remaining slots
+      personalized = get_personalized_posts(user_id, page, personalized_slots, search_term, category)
+
+      # Combine: recent general first, then personalized
+      (recent_general ++ personalized)
+      |> Enum.take(per_page)
     end
   end
 
@@ -410,6 +426,14 @@ defmodule Vibeflow.Posts do
       {:ok, post} ->
         post = Repo.preload(post, :user)
         Notifications.notify_followers_of_new_post(post)
+
+        # Process mentions in post content
+        Task.start(fn ->
+          post.content
+          |> Vibeflow.Utils.Mentions.extract()
+          |> notify_mentioned_users_in_post(post)
+        end)
+
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:new_post, post})
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_created, post})
         case Seeder.assign_initial_seeds(post.id, post.user_id) do
@@ -513,9 +537,43 @@ defmodule Vibeflow.Posts do
           })
         end
 
+        Task.start(fn ->
+          comment.content
+          |> Vibeflow.Utils.Mentions.extract()
+          |> notify_mentioned_users(comment)
+        end)
+
         {:ok, comment}
       error -> error
     end
+  end
+
+  defp notify_mentioned_users_in_post(usernames, post) do
+    # Find valid users from the list of extracted usernames
+    users = Repo.all(from u in Accounts.User, where: u.username in ^usernames)
+    author = post.user
+
+    Enum.each(users, fn recipient ->
+      # Don't notify yourself!
+      if recipient.id != author.id do
+        Notifications.create_mention_notification(recipient, post, author)
+        # Vibeflow.Accounts.add_points(recipient.id, 5)
+      end
+    end)
+  end
+
+  defp notify_mentioned_users(usernames, comment) do
+    # Find valid users from the list of extracted usernames
+    users = Repo.all(from u in Accounts.User, where: u.username in ^usernames)
+    author = comment.user
+
+    Enum.each(users, fn recipient ->
+      # Don't notify yourself!
+      if recipient.id != author.id do
+        Notifications.create_mention_notification(recipient, comment, author)
+        # Vibeflow.Accounts.add_points(recipient.id, 5)
+      end
+    end)
   end
 
   def update_comment(%Comment{} = comment, attrs) do
@@ -620,6 +678,12 @@ defmodule Vibeflow.Posts do
 
   def get_like_by_user_and_target(user_id, target_type, target_id) do
     Repo.get_by(Like, user_id: user_id, likeable_type: target_type, likeable_id: target_id)
+  end
+
+  def get_repost_by_user_and_post(user_id, post_id) do
+    from(r in Repost,
+      where: r.user_id == ^user_id and r.post_id == ^post_id)
+    |> Repo.one()
   end
 
   def toggle_like(user_id, likeable_type, likeable_id) do
@@ -806,6 +870,91 @@ defmodule Vibeflow.Posts do
     |> Repo.all()
   end
 
+  # --- TAG FUNCTIONS ---
+
+  def list_posts_by_tag(tag, opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+    search_term = opts[:search]
+    category = opts[:category]
+
+    base_query =
+      from(p in Post,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        where: fragment("? = ANY(?)", ^tag, p.tags),
+        group_by: [p.id, u.id],
+        order_by: [desc: p.inserted_at],
+        limit: ^per_page,
+        offset: ^((page - 1) * per_page),
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        }
+      )
+
+    query =
+      base_query
+      |> apply_filters(search_term, category)
+
+    query
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  def list_posts_by_tags(tags, opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+    search_term = opts[:search]
+    category = opts[:category]
+    exclude_tag = opts[:exclude_tag]
+
+    base_query =
+      from(p in Post,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        where: fragment("? && ?", p.tags, ^tags)
+      )
+
+    # Add exclude tag condition if provided
+    base_query =
+      if exclude_tag do
+        from(p in base_query, where: fragment("? != ALL(?)", ^exclude_tag, p.tags))
+      else
+        base_query
+      end
+
+    final_query =
+      base_query
+      |> where([p, u], true)  # Keep the joins
+      |> group_by([p, u], [p.id, u.id])
+      |> order_by([p, u], [desc: p.inserted_at])
+      |> limit(^per_page)
+      |> offset(^((page - 1) * per_page))
+      |> select_merge([p, u, l, c], %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        })
+
+    query =
+      final_query
+      |> apply_filters(search_term, category)
+
+    query
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  def list_all_tags do
+    from(p in Post,
+      select: fragment("unnest(?)", p.tags),
+      distinct: true
+    )
+    |> Repo.all()
+  end
+
   def get_system_stats do
     %{
       total_posts: Repo.aggregate(Post, :count),
@@ -960,7 +1109,7 @@ defmodule Vibeflow.Posts do
     case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
       {:ok, result} ->
         %{
-          "url" => result.secure_url,
+          "url" => result.url,
           "type" => result.resource_type || "image"
         }
       {:error, reason} ->
@@ -968,5 +1117,82 @@ defmodule Vibeflow.Posts do
         IO.inspect(reason, label: "CLOUDINARY UPLOAD ERROR")
         nil
     end
+  end
+
+  # Check if user has any engagement (follows, likes, comments, or own posts)
+  defp has_user_engagement?(user_id) do
+    # Check if user follows anyone
+    follows_count =
+      from(f in "follows", where: f.follower_id == ^user_id)
+      |> Repo.aggregate(:count, :id)
+
+    # Check if user has any posts
+    posts_count =
+      from(p in Post, where: p.user_id == ^user_id)
+      |> Repo.aggregate(:count, :id)
+
+    # Check if user has any likes
+    likes_count =
+      from(l in "likes", where: l.user_id == ^user_id)
+      |> Repo.aggregate(:count, :id)
+
+    # User is considered "engaged" if they have follows, posts, or likes
+    follows_count > 0 or posts_count > 0 or likes_count > 0
+  end
+
+  # Get recent general content for user, excluding already shown personalized posts
+  defp get_recent_general_content(user_id, limit, search_term, category, exclude_posts) do
+    exclude_ids = exclude_posts |> Enum.map(& &1.id)
+
+    base_query =
+      from(p in Post,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        where: p.id not in ^exclude_ids and p.user_id != ^user_id,
+        group_by: [p.id, u.id],
+        order_by: [desc: p.inserted_at],
+        limit: ^limit,
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        }
+      )
+
+    query =
+      base_query
+      |> apply_filters(search_term, category)
+
+    query
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  # Get general content for user, excluding already shown personalized posts
+  defp get_general_content_for_user(user_id, limit, search_term, category, exclude_posts) do
+    exclude_ids = exclude_posts |> Enum.map(& &1.id)
+
+    base_query =
+      from(p in Post,
+        join: u in assoc(p, :user),
+        left_join: l in assoc(p, :likes),
+        left_join: c in assoc(p, :comments),
+        where: p.id not in ^exclude_ids,
+        group_by: [p.id, u.id],
+        order_by: [desc: p.inserted_at],
+        limit: ^limit,
+        select_merge: %{
+          likes_count: count(l.id, :distinct),
+          comments_count: count(c.id, :distinct)
+        }
+      )
+
+    query =
+      base_query
+      |> apply_filters(search_term, category)
+
+    query
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
   end
 end

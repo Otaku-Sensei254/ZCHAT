@@ -528,8 +528,8 @@ defmodule Vibeflow.Accounts do
     # We simply pass the path.
     case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
       {:ok, result} ->
-        IO.puts("-> SUCCESS: Cloudinary returned URL: #{result.secure_url}")
-        Map.put(attrs, field_name, result.secure_url)
+        IO.puts("-> SUCCESS: Cloudinary returned URL: #{result.url}")
+        Map.put(attrs, field_name, result.url)
 
       {:error, reason} ->
         IO.inspect(reason, label: "-> FAILURE: Cloudinary Error")

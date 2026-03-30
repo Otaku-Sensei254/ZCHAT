@@ -78,7 +78,7 @@ defmodule Vibeflow.Waves do
 
       %{user: user, waves: user_waves, has_unseen: has_unseen}
     end)
-    |> Enum.partition(fn map -> map.user.id == current_user_id end)
+    |> Enum.split_with(fn map -> map.user.id == current_user_id end)
     |> (fn {current_user_waves, other_waves} ->
       current_user_waves ++ Enum.sort_by(other_waves, fn map -> map.has_unseen end, :desc)
     end).()

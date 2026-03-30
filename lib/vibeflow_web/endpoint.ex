@@ -57,8 +57,6 @@ socket "/live", Phoenix.LiveView.Socket,
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
-  plug Plug.SSL, config[:force_ssl]
-
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],

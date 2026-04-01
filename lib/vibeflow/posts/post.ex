@@ -12,7 +12,8 @@ defmodule Vibeflow.Posts.Post do
 
   use Ecto.Schema
   import Ecto.Changeset
-
+  alias Vibeflow.Posts.SavedPosts
+  alias Vibeflow.Repo
   @categories ["Tech", "Drama", "Action", "Fiction","Music", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
 
   @type t :: %__MODULE__{
@@ -143,8 +144,9 @@ defmodule Vibeflow.Posts.Post do
     end
   end
 
+
+
   # Validates the media_files field.
-  #
   # - Must be a list
   # - Each media file must be a map with url and type
   # - Maximum of 20 media files allowed
@@ -212,4 +214,5 @@ defmodule Vibeflow.Posts.Post do
     post
     |> change(view_count: post.view_count + 1)
   end
-end
+
+  end

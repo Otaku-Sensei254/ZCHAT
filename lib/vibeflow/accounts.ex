@@ -553,6 +553,7 @@ defmodule Vibeflow.Accounts do
     |> Repo.update()
   end
 
+
     #Adding mentions to posts and comments
   def mention_user_in_post(user_id, post_id) do
     # This is a placeholder function. You would implement the logic to create a mention record in the database.

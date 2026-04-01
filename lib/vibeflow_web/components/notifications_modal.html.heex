@@ -58,6 +58,17 @@
               </p>
             </div>
 
+            <%= if follow_back?(notif, @current_user) do %>
+              <button
+                phx-click="follow_back"
+                phx-value-user-id={notif.actor_id}
+                phx-target={@myself}
+                class="self-center flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-full bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+              >
+                Follow Back
+              </button>
+            <% end %>
+
             <.link 
               navigate={notification_link(notif, @current_user)}
               phx-click="mark_as_read"

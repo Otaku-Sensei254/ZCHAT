@@ -242,6 +242,20 @@
           <%= @repost_count %>
         </span>
       </button>
+
+      <button 
+        phx-click="toggle_save" 
+        phx-target={@myself}
+        class={"flex items-center gap-2 rounded-full py-1.5 px-3 transition-all duration-150 #{
+          if @current_save, do: "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+        }"}
+        title={if @current_save, do: "Remove from saved", else: "Save this post"}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill={if @current_save, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+        <span class="text-sm font-medium hidden sm:inline">Save</span>
+      </button>
    
     </div>
 

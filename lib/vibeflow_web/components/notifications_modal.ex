@@ -2,6 +2,7 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   use VibeflowWeb, :live_component
   alias Vibeflow.Accounts
   alias Vibeflow.Notifications
+  alias Vibeflow.Socials
 
   @impl true
   def update(assigns, socket) do
@@ -45,6 +46,25 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   def handle_event("mark_all_read", _, socket) do
     Notifications.mark_all_read(socket.assigns.current_user.id)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("follow_back", %{"user-id" => user_id}, socket) do
+    current_user = socket.assigns.current_user
+
+    with %{} <- current_user,
+         {actor_id, ""} <- Integer.parse(user_id),
+         true <- actor_id != current_user.id do
+      case Socials.create_follow(%{follower_id: current_user.id, following_id: actor_id}) do
+        {:ok, _follow} ->
+          {:noreply, assign_notifications(socket)}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Unable to follow user")}
+      end
+    else
+      _ -> {:noreply, socket}
+    end
   end
 
   # --- VIEW HELPERS ---
@@ -120,4 +140,13 @@ defmodule VibeflowWeb.Components.NotificationsModal do
       _ -> "sent a notification"
     end
   end
+
+  def follow_back?(%{type: "follow", actor_id: actor_id}, current_user) do
+    current_user &&
+      actor_id &&
+      actor_id != current_user.id &&
+      !Socials.following?(current_user.id, actor_id)
+  end
+
+  def follow_back?(_notif, _current_user), do: false
 end

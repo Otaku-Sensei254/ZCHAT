@@ -6,7 +6,7 @@ defmodule Vibeflow.Posts do
   alias Vibeflow.Repo
   alias Vibeflow.Accounts
   alias Vibeflow.Notifications
-  alias Vibeflow.Posts.{Post, Like, Comment, PostSeed, View, Repost}
+  alias Vibeflow.Posts.{Post, Like, Comment, PostSeed, View, Repost, SavedPosts}
   alias Vibeflow.Posts.Seeder
   require Logger
 
@@ -684,6 +684,47 @@ defmodule Vibeflow.Posts do
     from(r in Repost,
       where: r.user_id == ^user_id and r.post_id == ^post_id)
     |> Repo.one()
+  end
+
+  # --- SAVED POSTS ---
+
+  def get_saved_post_by_user_and_post(user_id, post_id) do
+    Repo.get_by(SavedPosts, user_id: user_id, post_id: post_id)
+  end
+
+  def save_post(user_id, post_id) do
+    %SavedPosts{}
+    |> SavedPosts.changeset(%{user_id: user_id, post_id: post_id})
+    |> Repo.insert()
+  end
+
+  def unsave_post(user_id, post_id) do
+    case get_saved_post_by_user_and_post(user_id, post_id) do
+      nil -> {:ok, nil}
+      saved_post -> Repo.delete(saved_post)
+    end
+  end
+
+  def toggle_save_post(user_id, post_id) do
+    case get_saved_post_by_user_and_post(user_id, post_id) do
+      nil -> save_post(user_id, post_id)
+      saved_post -> unsave_post(user_id, post_id)
+    end
+  end
+
+  def list_saved_posts(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+    offset = Keyword.get(opts, :offset, 0)
+
+    from(sp in SavedPosts,
+      join: p in Post, on: sp.post_id == p.id,
+      where: sp.user_id == ^user_id,
+      order_by: [desc: sp.inserted_at],
+      limit: ^limit,
+      offset: ^offset,
+      preload: [:post])
+    |> Repo.all()
+    |> Enum.map(& &1.post)
   end
 
   def toggle_like(user_id, likeable_type, likeable_id) do

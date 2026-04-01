@@ -45,10 +45,19 @@ defmodule VibeflowWeb.UI.PostComponent do
         nil
       end
 
+    # Check if current user has saved this post
+    current_save =
+      if current_user do
+        Posts.get_saved_post_by_user_and_post(current_user.id, post.id)
+      else
+        nil
+      end
+
     {:ok,
      socket
      |> assign(:current_like, current_like)
      |> assign(:current_repost, current_repost)
+     |> assign(:current_save, current_save)
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:repost_count, post.reposts_count || 0)
      |> assign(:comment_count, post.comments_count || 0)
@@ -179,6 +188,25 @@ defmodule VibeflowWeb.UI.PostComponent do
     # We send a message to the process (FeedLive) identified by self()
     send(self(), {:open_share_modal, socket.assigns.post.id})
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_save", _, socket) do
+    user = socket.assigns.current_user
+    post = socket.assigns.post
+
+    if user do
+      Posts.toggle_save_post(user.id, post.id)
+
+      {:noreply,
+       socket
+       |> assign(:current_save, !socket.assigns.current_save)}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, "Log in to save posts")
+       |> push_navigate(to: ~p"/users/log_in")}
+    end
   end
 
   # --- MENTION MODAL EVENTS ---

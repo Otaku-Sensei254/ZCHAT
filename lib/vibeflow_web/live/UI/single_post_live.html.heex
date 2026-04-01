@@ -164,6 +164,24 @@
                    <%= @repost_count %>
                  </span>
                </button>
+
+               <%!-- Save --%>
+               <button
+                 phx-click="toggle_save"
+                 class={
+                   "flex items-center gap-1 " <>
+                   if @current_save do
+                     "text-indigo-600 bg-indigo-50 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 font-semibold px-3 py-1.5 rounded-full shadow-sm"
+                   else
+                     "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-3 py-1.5 rounded-full"
+                   end
+                 }
+                 title={if @current_save, do: "Remove from saved", else: "Save this post"}
+               >
+                 <svg class="w-5 h-5" fill={if @current_save, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                 </svg>
+               </button>
             
              </div>
               <%!-- TAGS (MOBILE) --%>
@@ -259,6 +277,22 @@
             >
               <svg class="w-5 h-5" fill={if @current_repost, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </button>
+            <button
+              phx-click="toggle_save"
+              class={
+                "flex items-center justify-center w-10 h-10 rounded-full border transition-all " <>
+                if @current_save do
+                  "border-indigo-200 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 font-semibold"
+                else
+                  "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
+                end
+              }
+              title={if @current_save, do: "Remove from saved", else: "Save this post"}
+            >
+              <svg class="w-5 h-5" fill={if @current_save, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
             </button>
           </div>

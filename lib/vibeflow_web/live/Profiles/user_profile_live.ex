@@ -25,14 +25,17 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
 
       user ->
         posts = Posts.list_posts(user_id: user.id, limit: 20)
+        saved_posts =
+          if socket.assigns.current_user && socket.assigns.current_user.id == user.id do
+            Posts.list_saved_posts(user.id, limit: 20)
+          else
+            []
+          end
+
         follow_stats = Socials.get_follow_stats(user.id)
 
-        is_following =
-          if socket.assigns.current_user do
-            Socials.following?(socket.assigns.current_user.id, user.id)
-          else
-            false
-          end
+        {is_following, _is_followed_by, follow_state} =
+          follow_relationship(socket.assigns.current_user, user)
 
         # Check for pending verification request if it's the current user's profile
         pending_verification =
@@ -47,8 +50,10 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
          |> assign(:page_title, "#{user.username}'s Profile")
          |> assign(:user, user)
          |> assign(:posts, posts)
+         |> assign(:saved_posts, saved_posts)
          |> assign(:follow_stats, follow_stats)
          |> assign(:is_following, is_following)
+         |> assign(:follow_state, follow_state)
          |> assign(:hide_bottom_nav, true)
          |> assign(:show_followers_modal, false)
          |> assign(:show_following_modal, false)
@@ -58,7 +63,8 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
          |> assign(:followers, [])
          |> assign(:following, [])
          |> assign(:search_query, "")
-         |> assign(:modal_type, nil)}
+         |> assign(:modal_type, nil)
+         |> assign(:active_tab, "posts")}
     end
   end
 
@@ -96,6 +102,11 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
       {:error, changeset} ->
         {:noreply, assign(socket, social_form: to_form(changeset))}
     end
+  end
+
+  @impl true
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :active_tab, tab)}
   end
 
   @impl true
@@ -151,7 +162,14 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
       }) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
-          {:noreply, assign(socket, is_following: true, follow_stats: follow_stats)}
+          {is_following, _is_followed_by, follow_state} =
+            follow_relationship(current_user, profile_user)
+
+          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+
+          {:noreply,
+           assign(socket, is_following: is_following, follow_state: follow_state, follow_stats: follow_stats)}
 
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, "Unable to follow user")}
@@ -170,7 +188,14 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
       case Socials.delete_follow(current_user.id, profile_user.id) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
-          {:noreply, assign(socket, is_following: false, follow_stats: follow_stats)}
+          {is_following, _is_followed_by, follow_state} =
+            follow_relationship(current_user, profile_user)
+
+          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+
+          {:noreply,
+           assign(socket, is_following: is_following, follow_state: follow_state, follow_stats: follow_stats)}
 
         {:error, :not_found} ->
           {:noreply, socket}
@@ -178,6 +203,23 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     else
       {:noreply, socket}
     end
+  end
+
+  defp follow_relationship(nil, _profile_user), do: {false, false, "follow"}
+
+  defp follow_relationship(current_user, profile_user) do
+    is_following = Socials.following?(current_user.id, profile_user.id)
+    is_followed_by = Socials.following?(profile_user.id, current_user.id)
+
+    follow_state =
+      cond do
+        current_user.id == profile_user.id -> "self"
+        is_followed_by && !is_following -> "follow_back"
+        is_following -> "following"
+        true -> "follow"
+      end
+
+    {is_following, is_followed_by, follow_state}
   end
 
   #message the user

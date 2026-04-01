@@ -67,6 +67,13 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         nil
       end
 
+    current_save =
+      if socket.assigns.current_user do
+        Posts.get_saved_post_by_user_and_post(socket.assigns.current_user.id, post.id)
+      else
+        nil
+      end
+
     seeded_users =
       if socket.assigns.current_user &&
            (Accounts.user_has_role?(socket.assigns.current_user, "admin") ||
@@ -85,6 +92,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:repost_count, post.reposts_count || 0)
      |> assign(:current_like, current_like)
      |> assign(:current_repost, current_repost)
+     |> assign(:current_save, current_save)
      |> assign(:comment_count, length(comments))
 
      # 1. Desktop Stream: Uses standard IDs (e.g., "comments-1")
@@ -157,6 +165,16 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     if socket.assigns.current_user do
       Posts.toggle_like(socket.assigns.current_user.id, "Post", socket.assigns.post.id)
       {:noreply, socket}
+    else
+      {:noreply, push_navigate(socket, to: ~p"/users/log_in")}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_save", _, socket) do
+    if socket.assigns.current_user do
+      Posts.toggle_save_post(socket.assigns.current_user.id, socket.assigns.post.id)
+      {:noreply, assign(socket, :current_save, !socket.assigns.current_save)}
     else
       {:noreply, push_navigate(socket, to: ~p"/users/log_in")}
     end

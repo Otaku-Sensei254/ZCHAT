@@ -2,6 +2,7 @@ defmodule VibeflowWeb.UserSettingsLive do
   use VibeflowWeb, :live_view
   alias Vibeflow.Infrastructure.UploadCloudinary
   alias Vibeflow.Accounts
+  alias Vibeflow.Socials
   require Logger
 
   @impl true
@@ -34,6 +35,8 @@ defmodule VibeflowWeb.UserSettingsLive do
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:profile_form, to_form(profile_changeset))
+      |> assign(:social_form, to_form(%{"platform" => "youtube", "username" => ""}))
+      |> assign(:socials, Socials.list_social_accounts(user.id))
       |> assign(:trigger_submit, false)
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -42,6 +45,46 @@ defmodule VibeflowWeb.UserSettingsLive do
       )
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("validate_social", %{"platform" => platform, "username" => username}, socket) do
+    {:noreply, assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
+  end
+
+  @impl true
+  def handle_event("add_social", %{"platform" => platform, "username" => username}, socket) do
+    case Socials.create_social_account(socket.assigns.current_user, %{
+           "platform" => platform,
+           "username" => username
+         }) do
+      {:ok, _social} ->
+        socials = Socials.list_social_accounts(socket.assigns.current_user.id)
+
+        {:noreply,
+         socket
+         |> assign(:socials, socials)
+         |> assign(:social_form, to_form(%{"platform" => platform, "username" => ""}))
+         |> put_flash(:info, "Social account added successfully")}
+
+      {:error, :social_limit_reached} ->
+        {:noreply, put_flash(socket, :error, "You can only add up to 3 social accounts.")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, social_form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_social", %{"id" => id}, socket) do
+    case Socials.delete_social_account(id) do
+      {:ok, _} ->
+        socials = Socials.list_social_accounts(socket.assigns.current_user.id)
+        {:noreply, assign(socket, :socials, socials) |> put_flash(:info, "Social account removed")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Could not remove social account")}
+    end
   end
 
   # --- PROFILE HANDLERS ---
@@ -278,6 +321,113 @@ defmodule VibeflowWeb.UserSettingsLive do
                   <.button phx-disable-with="Saving..." class="bg-indigo-600 hover:bg-indigo-500">Save Profile</.button>
                 </div>
               </.simple_form>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Social Accounts</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Add up to 3 socials to display on your profile and use for verification.
+              </p>
+
+              <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Add Social</h3>
+
+                  <div class="mt-3 grid grid-cols-3 gap-3">
+                    <%= for platform <- ["youtube", "instagram", "x", "twitch", "tiktok", "discord"] do %>
+                      <% active = @social_form[:platform].value == platform %>
+                      <button
+                        type="button"
+                        phx-click="validate_social"
+                        phx-value-platform={platform}
+                        phx-value-username={@social_form[:username].value || ""}
+                        class={[
+                          "h-12 rounded-lg border text-xs font-semibold uppercase tracking-wide transition-all",
+                          active &&
+                            "border-indigo-500/80 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-[0_0_12px_-6px_rgba(99,102,241,0.8)]" ||
+                            "border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-400"
+                        ]}
+                      >
+                        <span class="block text-[10px]"><%= String.upcase(platform) %></span>
+                      </button>
+                    <% end %>
+                  </div>
+
+                  <div class="mt-5">
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase mb-2">
+                      Username
+                    </label>
+                    <form phx-change="validate_social">
+                      <input type="hidden" name="platform" value={@social_form[:platform].value || "youtube"} />
+                      <div class="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 overflow-hidden">
+                        <span class="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 dark:bg-zinc-900/60 border-r border-gray-200 dark:border-zinc-700">
+                          <%= Vibeflow.Socials.get_social_prefix(@social_form[:platform].value || "youtube") %>
+                        </span>
+                        <input
+                          type="text"
+                          name="username"
+                          value={@social_form[:username].value || ""}
+                          placeholder="username"
+                          class="w-full px-3 py-2.5 text-sm bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
+                        />
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="mt-4">
+                    <button
+                      type="button"
+                      phx-click="add_social"
+                      phx-value-platform={@social_form[:platform].value || "youtube"}
+                      phx-value-username={@social_form[:username].value || ""}
+                      class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                    >
+                      + Add Social
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Linked</h3>
+                    <span class="text-xs text-gray-400"><%= length(@socials || []) %>/3</span>
+                  </div>
+
+                  <div class="mt-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-4 min-h-[180px]">
+                    <%= if Enum.empty?(@socials || []) do %>
+                      <div class="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+                        No socials linked yet
+                      </div>
+                    <% else %>
+                      <div class="space-y-3">
+                        <%= for social <- @socials do %>
+                          <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2">
+                            <div class="min-w-0">
+                              <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                                <%= social.platform %>
+                              </p>
+                              <p class="text-xs text-gray-400 truncate">
+                                <%= social.username %>
+                              </p>
+                            </div>
+                            <button
+                              phx-click="remove_social"
+                              phx-value-id={social.id}
+                              class="text-xs text-red-500 hover:text-red-600 font-semibold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

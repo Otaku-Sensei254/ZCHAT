@@ -148,6 +148,13 @@ defmodule Vibeflow.Socials do
   end
 
   def create_social_account(user, attrs) do
+    current_count =
+      from(sa in SocialAccount, where: sa.user_id == ^user.id, select: count(sa.id))
+      |> Repo.one()
+
+    if current_count >= 3 do
+      {:error, :social_limit_reached}
+    else
     platform = attrs["platform"] || attrs[:platform]
     username = attrs["username"] || attrs[:username]
 
@@ -163,6 +170,7 @@ defmodule Vibeflow.Socials do
     %SocialAccount{}
     |> SocialAccount.changeset(attrs)
     |> Repo.insert()
+    end
   end
 
   def delete_social_account(id) do

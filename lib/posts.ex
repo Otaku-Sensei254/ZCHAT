@@ -812,6 +812,10 @@ defmodule Vibeflow.Posts do
   end
 
 
+  defp award_like_points(%Post{} = post, user_id, _ripple_status) when post.user_id == user_id do
+    :ok
+  end
+
   defp award_like_points(%Post{} = post, user_id, ripple_status) do
     Accounts.grant_points(user_id, @like_points)
     maybe_award_author_points(post.user_id, user_id, @post_author_like_points)

@@ -204,7 +204,13 @@
                  <input type="hidden" name="post_id" value={@post.id} />
                  <input type="hidden" name="parent_id" value={@replying_to} />
                  
-                 <img src={@current_user && @current_user.avatar_url || "/images/default_avatar.png"} class="w-8 h-8 rounded-full object-cover">
+                 <%= if @current_user && @current_user.avatar_url && @current_user.avatar_url != "" do %>
+                   <img src={@current_user.avatar_url} class="w-8 h-8 rounded-full object-cover">
+                 <% else %>
+                   <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+                     <%= VibeflowWeb.CoreComponents.initials(@current_user) %>
+                   </div>
+                 <% end %>
                  
                  <div class="flex-1 relative">
                    <.input 
@@ -603,7 +609,13 @@
             <input type="hidden" name="post_id" value={@post.id} />
             <input type="hidden" name="parent_id" value={@replying_to} />
             
-            <img src={if @current_user, do: @current_user.avatar_url, else: "/images/default_avatar.png"} class="w-8 h-8 rounded-full border border-gray-200">
+            <%= if @current_user && @current_user.avatar_url && @current_user.avatar_url != "" do %>
+              <img src={@current_user.avatar_url} class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+            <% else %>
+              <div class="w-8 h-8 rounded-full border border-gray-200 bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+                <%= VibeflowWeb.CoreComponents.initials(@current_user) %>
+              </div>
+            <% end %>
             
             <div class="flex-1 bg-gray-100 dark:bg-zinc-800 rounded-3xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
                <.input field={f[:content]} type="text" placeholder={"Comment on #{@post.user.username} post..."} class="w-full bg-transparent border-none p-0 text-sm focus:ring-0 placeholder-gray-500" autocomplete="off" />

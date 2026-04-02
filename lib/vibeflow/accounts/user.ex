@@ -18,6 +18,7 @@ defmodule Vibeflow.Accounts.User do
     has_many(:social_accounts, Vibeflow.Socials.SocialAccount)
     has_many(:verification_requests, Vibeflow.Accounts.VerificationRequest)
 
+    has_many(:user_roles, Vibeflow.Accounts.UserRole)
     many_to_many(:roles, Vibeflow.Accounts.Role, join_through: "user_roles", on_replace: :delete)
 
     many_to_many(:following, Vibeflow.Accounts.User,

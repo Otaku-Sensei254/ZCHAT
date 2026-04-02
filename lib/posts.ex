@@ -88,11 +88,26 @@ defmodule Vibeflow.Posts do
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
+        left_join: ur in assoc(u, :user_roles),
+        left_join: r in assoc(ur, :role),
         group_by: [p.id, u.id],
-        order_by: [desc: p.inserted_at],
+        order_by: [
+          desc: fragment(
+            "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN 1 ELSE 0 END",
+            r.name,
+            r.name
+          ),
+          desc: p.inserted_at
+        ],
         select_merge: %{
           likes_count: count(l.id, :distinct),
-          comments_count: count(c.id, :distinct)
+          comments_count: count(c.id, :distinct),
+          is_featured:
+            fragment(
+              "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN true ELSE false END",
+              r.name,
+              r.name
+            )
         }
       )
 

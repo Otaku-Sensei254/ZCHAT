@@ -157,12 +157,16 @@
 </header>
 <% end %>
 
-<main class="pt-16 pb-20 md:pb-0 min-h-screen bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-  <div class="hidden md:block absolute top-0 left-0 w-full h-16 bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 z-10"> 
+<main class={["min-h-screen text-zinc-900 dark:text-zinc-100", 
+  if(assigns[:hide_header] && assigns[:hide_bottom_nav], do: "bg-black p-0 m-0", else: "bg-slate-50 dark:bg-zinc-900"),
+  if(assigns[:hide_header], do: "pt-0", else: "pt-16"), 
+  if(assigns[:hide_bottom_nav], do: "pb-0", else: "pb-20 md:pb-0")]}>
+  <div class={["hidden md:block absolute top-0 left-0 w-full h-16 bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 z-10", if(assigns[:hide_header], do: "hidden")]}> 
     <%= wide_layout = Map.get(assigns, :wide_layout, false) %>
 
   </div>
-  <div class={["mx-auto", if(wide_layout, do: "w-full px-0", else: "px-0 sm:px-6 lg:px-8")]} >
+  <div class={["mx-auto", if(wide_layout, do: "w-full px-0", else: "px-0 sm:px-6 lg:px-8"), 
+    if(assigns[:hide_header] && assigns[:hide_bottom_nav], do: "p-0 m-0")]}>
     <.flash_group flash={@flash} />
     <%= @inner_content %>
   </div>

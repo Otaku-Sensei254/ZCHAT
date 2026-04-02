@@ -222,6 +222,34 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     {is_following, is_followed_by, follow_state}
   end
 
+  defp linkify_bio(nil), do: nil
+
+  defp linkify_bio(text) when is_binary(text) do
+    regex = ~r/(https?:\/\/[^\s<]+|www\.[^\s<]+)/i
+
+    regex
+    |> Regex.split(text, include_captures: true, trim: true)
+    |> Enum.map(fn part ->
+      if Regex.match?(regex, part) do
+        url = if String.starts_with?(part, "http"), do: part, else: "https://" <> part
+
+        Phoenix.HTML.Tag.content_tag(
+          :a,
+          part,
+          href: url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          class: "text-indigo-600 hover:text-indigo-700 underline underline-offset-2"
+        )
+      else
+        Phoenix.HTML.html_escape(part)
+      end
+    end)
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+    |> Phoenix.HTML.raw()
+  end
+
   #message the user
     @impl true
   def handle_event("message_user", _, socket) do

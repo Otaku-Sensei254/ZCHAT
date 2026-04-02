@@ -282,7 +282,12 @@ defmodule VibeflowWeb.UI.FeedLive do
   @impl true
   def handle_info({:post_created, post}, socket) do
     post = Vibeflow.Repo.preload(post, [:user, :likes, comments: :user])
-    {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
+    # If the current user created the post, insert it at the top immediately
+    if socket.assigns[:current_user] && post.user_id == socket.assigns.current_user.id do
+      {:noreply, stream_insert(socket, :posts, post, at: 0)}
+    else
+      {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
+    end
   end
 
   @impl true
@@ -357,6 +362,7 @@ defmodule VibeflowWeb.UI.FeedLive do
           category: socket.assigns[:category],
           search: socket.assigns[:search_term]
         )
+        |> maybe_promote_own_posts(page, socket.assigns.current_user.id)
       else
         Posts.list_posts(
           page: page,
@@ -378,6 +384,13 @@ defmodule VibeflowWeb.UI.FeedLive do
     |> assign(loading: false, has_more: has_more, page: page + 1, is_fallback_content: is_fallback_content)
     |> update_stream_based_on_page(page, posts)
   end
+
+  defp maybe_promote_own_posts(posts, 1, user_id) do
+    {own, rest} = Enum.split_with(posts, fn post -> post.user_id == user_id end)
+    own ++ rest
+  end
+
+  defp maybe_promote_own_posts(posts, _page, _user_id), do: posts
 
   defp has_content_from_followed_users(posts, user_id) do
     Enum.any?(posts, fn post ->

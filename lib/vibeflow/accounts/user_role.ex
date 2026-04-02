@@ -4,9 +4,9 @@ defmodule Vibeflow.Accounts.UserRole do
   import Ecto.Changeset
 
   schema "user_roles" do
-     field :user_id, :integer
-    field :role_id, :integer
-  
+    belongs_to :user, Vibeflow.Accounts.User
+    belongs_to :role, Vibeflow.Accounts.Role
+
     timestamps()
   end
 

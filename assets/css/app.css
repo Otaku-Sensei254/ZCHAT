@@ -158,6 +158,114 @@
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
+/* Hide all default audio elements in chat */
+[id^="voice-note-"] audio,
+.message audio,
+.chat-message audio {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+}
+
+/* Ensure custom audio player is visible */
+[id^="voice-note-"] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Custom Wave Player Styling */
+[id^="voice-note-"] {
+  position: relative;
+  overflow: hidden;
+}
+
+[id^="voice-note-"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  pointer-events: none;
+}
+
+.play-btn {
+  position: relative;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.play-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.play-btn.playing {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.play-btn.playing:hover {
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  transition: width 0.1s ease-out;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+[id^="voice-note-"] .current-time,
+[id^="voice-note-"] .duration {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Audio waveform animation */
+@keyframes waveAnimation {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+[id^="voice-note-"].playing .progress-bar {
+  animation: waveAnimation 2s ease-in-out infinite;
+}
+
+/* Dark mode adjustments */
+.dark [id^="voice-note-"] {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .play-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.dark .play-btn.playing {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Chat audio bubble */
+.audio-bubble .audio-wave {
+  display: inline-block;
+  width: 6px;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(226, 232, 240, 0.5);
+}
+
+.audio-bubble .audio-wave:nth-child(2) { height: 14px; }
+.audio-bubble .audio-wave:nth-child(3) { height: 8px; }
+.audio-bubble .audio-wave:nth-child(4) { height: 16px; }
+.audio-bubble .audio-wave:nth-child(5) { height: 9px; }
+.audio-bubble .audio-wave:nth-child(6) { height: 12px; }
+
 /* Ensure portrait video orientation */
 #wave-viewer video {
   object-fit: contain;

@@ -67,3 +67,11 @@
   - Show initials for current user when avatar is missing.
 - Likes/points:
   - Prevented points (including ripple points) on self-like of own posts.
+
+## 2026-04-07 Chat Voice Notes & Audio Player
+
+- Added custom WavePlayer audio message UI (play/pause, progress, single timer).
+- Normalized media type detection so audio isn't misclassified as video.
+- Updated Cloudinary upload routing for audio to use `raw/upload`.
+- Refined recorder UI and behavior (stable hook wrapper, tap-to-start, stop button in recording bar).
+- Increased chat scroll padding so fixed composer doesn't cover messages on mobile.

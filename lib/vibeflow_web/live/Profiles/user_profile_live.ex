@@ -357,6 +357,11 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     {:noreply, socket}
   end
     @impl true
+  def handle_info(:update_sidebar, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:update_sidebar, _message}, socket) do
     {:noreply, socket}
   end

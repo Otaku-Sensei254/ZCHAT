@@ -5,15 +5,24 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
   require Logger
 
   # 1. We take the temporary file path from the LiveView upload
-  def upload_file(file_path) do
+  def upload_file(file_path, upload_kind \\ :auto) do
     # Get config (defined in config.exs)
     cloud_name = config()[:cloud_name]
     upload_preset = config()[:upload_preset]
 
     Logger.info("Uploading to Cloudinary with cloud_name: #{cloud_name}, upload_preset: #{upload_preset}")
 
-    # 2. Use the "auto" endpoint so Cloudinary detects if it's video or image
-    url = "https://api.cloudinary.com/v1_1/#{cloud_name}/auto/upload"
+    # 2. Choose endpoint
+    endpoint =
+      case upload_kind do
+        :video -> "video/upload"
+        :audio -> "raw/upload"
+        :raw -> "raw/upload"
+        :image -> "image/upload"
+        _ -> "auto/upload"
+      end
+
+    url = "https://api.cloudinary.com/v1_1/#{cloud_name}/#{endpoint}"
 
     # 3. Construct the multipart body
     body = {:multipart, [

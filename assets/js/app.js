@@ -998,9 +998,9 @@ Hooks.AudioRecorder = {
       if (this.recording) return;
       try {
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-                         ? 'audio/webm;codecs=opus' 
-                         : 'audio/ogg;codecs=opus';
+        const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') 
+                         ? 'audio/ogg;codecs=opus' 
+                         : 'audio/webm;codecs=opus';
                          
         this.recorder = new MediaRecorder(this.stream, { mimeType });
         this.chunks = [];
@@ -1076,26 +1076,11 @@ Hooks.AudioRecorder = {
     };
 
     if (this.startBtn) {
-      if (this.isMobile) {
-        // MOBILE: Press and Hold on mic button
-        this.startBtn.addEventListener("pointerdown", e => {
-          if (e.button && e.button !== 0) return;
-          e.preventDefault();
-          startRecording();
-          
-          this._onPointerUp = () => {
-            stopRecording();
-            window.removeEventListener("pointerup", this._onPointerUp);
-          };
-          window.addEventListener("pointerup", this._onPointerUp);
-        });
-      } else {
-        // DESKTOP: Tap mic to start
-        this.startBtn.addEventListener("click", e => {
-          e.preventDefault();
-          if (!this.recording) startRecording();
-        });
-      }
+      // Mobile + Desktop: tap to start (stop via stop button)
+      this.startBtn.addEventListener("click", e => {
+        e.preventDefault();
+        if (!this.recording) startRecording();
+      });
     }
 
     if (this.stopBtn) {
@@ -1148,6 +1133,101 @@ Hooks.WaveAudio = {
     this.el.currentTime = 0;
   }
 }
+
+Hooks.WavePlayer = {
+  mounted() {
+    console.log("WavePlayer mounted for:", this.el.id);
+    
+    this.audio = this.el.querySelector("audio");
+    this.playBtn = this.el.querySelector(".play-btn");
+    this.iconPlay = this.el.querySelector(".play-icon");
+    this.iconPause = this.el.querySelector(".pause-icon");
+    this.bar = this.el.querySelector(".progress-bar")?.parentElement;
+    this.progress = this.el.querySelector(".progress-bar");
+    this.timerEl = this.el.querySelector(".timer");
+
+    if (!this.audio) {
+      console.error("Audio element not found in WavePlayer");
+      return;
+    }
+
+    const src = this.el.dataset.url;
+    if (src) {
+      this.audio.src = src;
+      console.log("Audio src set to:", src);
+    }
+
+    const fmt = (sec) => {
+      if (!Number.isFinite(sec)) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    };
+
+    const updateProgress = () => {
+      if (!this.audio.duration) return;
+      const pct = (this.audio.currentTime / this.audio.duration) * 100;
+      this.progress.style.width = `${pct}%`;
+      this.timerEl.textContent = fmt(this.audio.currentTime);
+    };
+
+    const setPlaying = (playing) => {
+      console.log("Setting playing state to:", playing);
+      if (playing) {
+        this.iconPlay.classList.add("hidden");
+        this.iconPause.classList.remove("hidden");
+        this.playBtn.classList.add("playing");
+        this.el.classList.add("playing");
+      } else {
+        this.iconPause.classList.add("hidden");
+        this.iconPlay.classList.remove("hidden");
+        this.playBtn.classList.remove("playing");
+        this.el.classList.remove("playing");
+      }
+    };
+
+    this.audio.addEventListener("loadedmetadata", () => {
+      console.log("Audio metadata loaded, duration:", this.audio.duration);
+      this.timerEl.textContent = fmt(this.audio.duration);
+    });
+
+    this.audio.addEventListener("timeupdate", updateProgress);
+    this.audio.addEventListener("ended", () => {
+      console.log("Audio ended");
+      setPlaying(false);
+      this.progress.style.width = "0%";
+      this.timerEl.textContent = fmt(this.audio.duration);
+    });
+
+    this.playBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("Play button clicked, audio.paused:", this.audio.paused);
+      if (this.audio.paused) {
+        this.audio.play();
+        setPlaying(true);
+      } else {
+        this.audio.pause();
+        setPlaying(false);
+      }
+    });
+
+    if (this.bar) {
+      this.bar.addEventListener("click", (e) => {
+        const rect = this.bar.getBoundingClientRect();
+        const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+        if (this.audio.duration) {
+          this.audio.currentTime = this.audio.duration * pct;
+          updateProgress();
+        }
+      });
+    }
+
+    console.log("WavePlayer fully initialized");
+  },
+  destroyed() {
+    if (this.audio) this.audio.pause();
+  }
+};
 
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {

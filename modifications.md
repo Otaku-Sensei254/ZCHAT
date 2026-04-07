@@ -18,3 +18,11 @@
 2026-03-27 09:10hrs
 - Cleaned up the `Vibeflow.Accounts.grant_points/2` clause boundaries and added the `:invalid_input` fallback so the module compiles without the `def/2 outside module` error.
 - Verified `mix compile` but it still fails inside this sandbox with a `Mix.PubSub` socket permission error; please rerun the command in a normal shell (or just `iex -S mix phx.server`) to cover the new logic.
+
+2026-04-07 16:56hrs
+- Chat voice notes and audio UI:
+  - Added custom WavePlayer audio message UI (play/pause, progress, single timer) for all audio messages.
+  - Fixed audio type detection so audio files aren't treated as videos (normalize media type from client MIME/ext).
+  - Updated Cloudinary upload routing for audio to use `raw/upload` to avoid unsupported video errors.
+  - Reworked recorder UI/behavior: mic button outside input, stable hook wrapper, tap-to-start on all devices, stop button in recording bar.
+  - Adjusted chat scroll padding to prevent the fixed composer from covering messages on mobile.

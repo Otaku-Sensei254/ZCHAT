@@ -124,10 +124,13 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
     # 1. Handle Uploads
     uploaded_files =
-      consume_uploaded_entries(socket, :media_file, fn %{path: path}, _entry ->
-        case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
-          {:ok, %{url: url, resource_type: type}} -> {:ok, %{"url" => url, "type" => type}}
-          {:error, _reason} -> {:ok, nil}
+      consume_uploaded_entries(socket, :media_file, fn %{path: path}, entry ->
+        case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+          {:ok, %{url: url, resource_type: type}} ->
+            {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
+
+          {:error, _reason} ->
+            {:ok, nil}
         end
       end)
       |> Enum.filter(&(&1 != nil))
@@ -188,15 +191,48 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   defp consume_audio_uploads(socket) do
-    consume_uploaded_entries(socket, :audio, fn %{path: path}, _entry ->
-      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
-        {:ok, %{url: url, resource_type: type}} -> {:ok, %{"url" => url, "type" => type}}
+    consume_uploaded_entries(socket, :audio, fn %{path: path}, entry ->
+      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+        {:ok, %{url: url, resource_type: type}} ->
+          {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
+
         {:error, reason} ->
           Logger.error(">>> VOICENOTE: Cloudinary failed: #{inspect(reason)}")
           {:ok, nil}
       end
     end)
     |> Enum.filter(&(&1 != nil))
+  end
+
+  defp upload_kind_for(entry) do
+    client_type = entry.client_type || ""
+    client_name = entry.client_name || ""
+    ext = client_name |> String.downcase() |> Path.extname()
+
+    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
+    image_exts = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif"]
+
+    cond do
+      String.starts_with?(client_type, "audio/") -> :raw
+      ext in audio_exts -> :raw
+      String.starts_with?(client_type, "image/") -> :image
+      ext in image_exts -> :image
+      true -> :auto
+    end
+  end
+
+  defp normalize_media_type(resource_type, entry) do
+    client_type = entry.client_type || ""
+    client_name = entry.client_name || ""
+    ext = client_name |> String.downcase() |> Path.extname()
+
+    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
+
+    cond do
+      String.starts_with?(client_type, "audio/") -> "audio"
+      ext in audio_exts -> "audio"
+      true -> resource_type
+    end
   end
 
   defp send_audio_message(socket) do
@@ -274,6 +310,7 @@ end
 
   @impl true
   def handle_event("start_new_chat", %{"user_id" => target_user_id}, socket) do
+    target_user_id = String.to_integer(target_user_id)
     {:ok, conversation} = Chat.get_or_create_private_conversation(socket.assigns.current_user.id, target_user_id)
     {:noreply,
      socket

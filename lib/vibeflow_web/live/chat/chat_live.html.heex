@@ -201,7 +201,7 @@
           </div>
         </div>
 
-        <div id="chat-scroll-container" phx-hook="ScrollToBottom" class="flex-1 min-w-full overflow-y-auto p-4 space-y-4 bg-white dark:bg-zinc-900 min-h-0">
+        <div id="chat-scroll-container" phx-hook="ScrollToBottom" class="flex-1 min-w-full overflow-y-auto p-4 pb-28 sm:pb-4 space-y-4 bg-white dark:bg-zinc-900 min-h-0">
           <div id="messages" phx-update="stream" class="flex flex-col space-y-2 min-h-0">
             <%= for {dom_id, message} <- @streams.messages do %>
               <% is_me = message.user_id == @current_user.id %>
@@ -300,7 +300,49 @@
                             <% end %>
                             <%= if media["type"] == "audio" do %>
                               <div class="py-1">
-                                <audio src={media["url"]} controls class="w-full h-10"></audio>
+                                <div class="flex items-center bg-emerald-900/40 p-3 rounded-2xl w-full max-w-sm border border-emerald-500/20 backdrop-blur-sm"
+                                     id={"voice-note-#{message.id}"}
+                                     phx-hook="WavePlayer"
+                                     data-url={media["url"]}>
+                                  
+                                  <!-- Play Button with Visual Feedback -->
+                                  <button class="play-btn w-10 h-10 flex items-center justify-center rounded-full text-white shadow-lg active:scale-90 transition-all duration-200 relative overflow-hidden group">
+                                    <div class="absolute inset-0 bg-white/20 rounded-full transform scale-0 group-hover:scale-100 transition-transform"></div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 play-icon relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 pause-icon hidden relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                                    </svg>
+                                  </button>
+
+                                  <!-- Audio Info Section -->
+                                  <div class="flex-1 flex flex-col gap-2">
+                                    <!-- Progress Bar -->
+                                    <div class="relative w-full h-2 bg-emerald-800/50 rounded-full overflow-hidden cursor-pointer group">
+                                      <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 to-emerald-300 w-0 transition-all duration-100"></div>
+                                      <!-- Hover effect -->
+                                      <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    </div>
+                                    
+                                    <!-- Time Display -->
+                                    <div class="flex justify-between items-center">
+                                      <!-- Voice Indicator -->
+                                      <div class="flex items-center gap-1 opacity-70">
+                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse"></div>
+                                        <div class="w-1 h-3 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.1s"></div>
+                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                                        <div class="w-1 h-4 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.3s"></div>
+                                        <div class="w-1 h-3 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.5s"></div>
+                                      </div>
+                                      <span class="timer text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider">0:00</span>
+                                    </div>
+                                  </div>
+
+                                  <!-- Hidden Audio Element -->
+                                  <audio class="hidden-audio" preload="metadata" style="display: none !important;"></audio>
+                                </div>
                               </div>
                             <% end %>
                  <% end %>
@@ -467,7 +509,7 @@
           <% end %>
 
           <%!-- INPUT AREA --%>
-          <div class="fixed sm:sticky bottom-0 p-4 pb-4 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
+          <div class={"fixed sm:sticky bottom-0 p-4 " <> if(@recording, do: "pb-2", else: "pb-4") <> " bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800"}>
             <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
             
             <form phx-submit="send_message" phx-change="validate" class="flex gap-3 items-end">

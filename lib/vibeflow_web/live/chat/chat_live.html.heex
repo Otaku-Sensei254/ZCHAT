@@ -297,7 +297,12 @@
                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
                                  </button>
                                </div>
-                   <% end %>
+                            <% end %>
+                            <%= if media["type"] == "audio" do %>
+                              <div class="py-1">
+                                <audio src={media["url"]} controls class="w-full h-10"></audio>
+                              </div>
+                            <% end %>
                  <% end %>
                 </div>
                     <% end %>
@@ -465,9 +470,9 @@
           <div class="fixed sm:sticky bottom-0 p-4 pb-4 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
             <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
             
-            <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
+            <form phx-submit="send_message" phx-change="validate" class="flex gap-3 items-end">
               
-              <label class="mb-1 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95">
+              <label class="mb-1 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -478,7 +483,7 @@
                 <button
                   type="button"
                   data-emoji-toggle
-                  class="flex h-9 w-9 items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95"
+                  class="flex h-9 w-9 items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95"
                   title="Choose an emoji"
                   aria-label="Choose an emoji"
                 >
@@ -496,17 +501,91 @@
               </div>
 
               <div class="flex-1 relative">
-                <textarea
-                  id="chat-input"
-                  phx-hook="ChatInput"
-                  name="message[content]" 
-                  placeholder="Message..." 
-                  autocomplete="off"
-                  rows="1"
-                  class="w-full rounded-2xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-2.5 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow disabled:opacity-50 resize-none overflow-y-auto max-h-36"
-                ></textarea>
+                <!-- Audio Recording Interface (hook stays mounted) -->
+                <div id="audio-recorder" phx-hook="AudioRecorder" class="relative flex items-end gap-2">
+                  <!-- Recording State (rec2.png style) -->
+                  <div class={"recording-state rounded-2xl p-3 flex items-center gap-3 flex-1 " <> if(@recording, do: "", else: "hidden")}>
+                    <!-- Animated Waveform -->
+                    <div class="recording-waveform flex gap-1 items-center">
+                      <div class="w-1 h-4 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 0ms;"></div>
+                      <div class="w-1 h-6 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 100ms;"></div>
+                      <div class="w-1 h-3 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 200ms;"></div>
+                      <div class="w-1 h-5 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 300ms;"></div>
+                      <div class="w-1 h-4 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 400ms;"></div>
+                      <div class="w-1 h-6 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 500ms;"></div>
+                      <div class="w-1 h-3 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 600ms;"></div>
+                    </div>
+                    
+                    <!-- Timer -->
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <span id="recording-timer" class="recording-timer">0:00</span>
+                    </div>
+
+                    <!-- Stop Button -->
+                    <button type="button" data-rec-action="stop" class="ml-auto p-2 text-gray-500 hover:text-red-500 transition-colors">
+                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+                    </button>
+                  </div>
+
+                  <!-- Normal Text Input State (rec.png style) -->
+                  <div class={if(@recording, do: "hidden", else: "relative flex-1")}>
+                    <textarea
+                      id="chat-input"
+                      phx-hook="ChatInput"
+                      name="message[content]" 
+                      placeholder="Message..." 
+                      autocomplete="off"
+                      rows="1"
+                      class="w-full rounded-2xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-2.5 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow disabled:opacity-50 resize-none overflow-y-auto max-h-36"
+                    ></textarea>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-rec-action="start"
+                    class={"mb-1 p-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white shadow-md transition-all active:scale-95 " <> if(@recording, do: "hidden", else: "")}
+                  >
+                    <.live_file_input upload={@uploads.audio} class="hidden" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <!-- Audio Preview State (rec3.png style) -->
+                <%= if @preview_entry && @preview_entry.client_type == "audio" do %>
+                  <div class="audio-preview rounded-2xl p-3 flex items-center gap-3">
+                    <!-- Static Waveform -->
+                    <div class="flex gap-1 items-center">
+                      <div class="w-1 h-4 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-6 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-3 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-5 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-4 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-6 waveform-bar rounded-full"></div>
+                      <div class="w-1 h-3 waveform-bar rounded-full"></div>
+                    </div>
+                    
+                    <!-- Audio Info -->
+                    <div class="flex-1">
+                      <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Voice Message</div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">0:05</div>
+                    </div>
+                    
+                    <!-- Send Button -->
+                    <button 
+                      type="submit" 
+                      class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                    >
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                      </svg>
+                    </button>
+                  </div>
+                <% end %>
               </div>
               
+              <%= if !@recording && !(@preview_entry && @preview_entry.client_type == "audio") do %>
               <button 
                 type="submit" 
                 disabled={is_uploading}
@@ -528,7 +607,10 @@
                   </svg>
                 <% end %>
               </button>
+            <% end %>
+            
             </form>
+            
           </div>
         </div>
 

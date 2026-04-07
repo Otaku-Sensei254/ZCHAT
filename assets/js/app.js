@@ -980,8 +980,138 @@ Hooks.MediaControl = {
   }
 };
 
-//waves checker HOok
-// Inside your existing Hooks object
+
+Hooks.AudioRecorder = {
+  mounted() {
+    this.recorder = null;
+    this.chunks = [];
+    this.recording = false;
+    this.isMobile = window.matchMedia("(pointer: coarse)").matches;
+    this.holdTimeout = null;
+    this.stream = null;
+    this.startTime = null;
+    this.timerInterval = null;
+    this.startBtn = this.el.querySelector('[data-rec-action="start"]');
+    this.stopBtn = this.el.querySelector('[data-rec-action="stop"]');
+
+    const startRecording = async () => {
+      if (this.recording) return;
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+                         ? 'audio/webm;codecs=opus' 
+                         : 'audio/ogg;codecs=opus';
+                         
+        this.recorder = new MediaRecorder(this.stream, { mimeType });
+        this.chunks = [];
+        this.recording = true;
+        this.startTime = Date.now();
+        
+        // Start timer
+        this.timerInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          const timerElement = document.getElementById('recording-timer');
+          if (timerElement) {
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }, 100);
+        
+        this.recorder.ondataavailable = e => {
+          if (e.data.size > 0) this.chunks.push(e.data);
+        };
+        
+        this.recorder.onstop = async () => {
+          // Clear timer
+          if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+          }
+          
+          if (this.chunks.length === 0) return;
+          
+          const blob = new Blob(this.chunks, { type: mimeType });
+          const extension = mimeType.includes('webm') ? 'webm' : 'ogg';
+          const filename = `voice_note_${Date.now()}.${extension}`;
+          const file = new File([blob], filename, { type: mimeType });
+          
+          this.chunks = [];
+          console.log("Audio captured:", filename, "Size:", file.size);
+
+          // 1. Upload the file
+          this.upload("audio", [file]);
+          
+          // 2. Force a validation event to ensure the server sees the upload entry
+          this.pushEvent("validate", {});
+
+          // 3. Wait for the upload to actually be registered on the server
+          setTimeout(() => {
+            this.pushEvent("stop_recording", {});
+          }, 600);
+        };
+
+        this.recorder.start();
+        this.pushEvent("start_recording", {});
+      } catch (err) {
+        console.error("Mic error:", err);
+      }
+    };
+
+    const stopRecording = () => {
+      if (!this.recording) return;
+      if (this.recorder && this.recorder.state === "recording") {
+        this.recorder.stop();
+      }
+      if (this.stream) {
+        this.stream.getTracks().forEach(track => track.stop());
+      }
+      this.recording = false;
+      
+      // Clear timer
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+    };
+
+    if (this.startBtn) {
+      if (this.isMobile) {
+        // MOBILE: Press and Hold on mic button
+        this.startBtn.addEventListener("pointerdown", e => {
+          if (e.button && e.button !== 0) return;
+          e.preventDefault();
+          startRecording();
+          
+          this._onPointerUp = () => {
+            stopRecording();
+            window.removeEventListener("pointerup", this._onPointerUp);
+          };
+          window.addEventListener("pointerup", this._onPointerUp);
+        });
+      } else {
+        // DESKTOP: Tap mic to start
+        this.startBtn.addEventListener("click", e => {
+          e.preventDefault();
+          if (!this.recording) startRecording();
+        });
+      }
+    }
+
+    if (this.stopBtn) {
+      this.stopBtn.addEventListener("click", e => {
+        e.preventDefault();
+        if (this.recording) stopRecording();
+      });
+    }
+  },
+  
+  destroyed() {
+    if (this._onPointerUp) window.removeEventListener("pointerup", this._onPointerUp);
+    if (this.stream) this.stream.getTracks().forEach(track => track.stop());
+    if (this.timerInterval) clearInterval(this.timerInterval);
+  }
+}
 
 Hooks.WaveVideo = {
   mounted() {

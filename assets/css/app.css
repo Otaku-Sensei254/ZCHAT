@@ -90,6 +90,74 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Audio recording animations */
+@keyframes recordingPulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.recording-waveform {
+  animation: recordingPulse 1.5s ease-in-out infinite;
+}
+
+.recording-timer {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+/* Audio message preview styling */
+.audio-preview {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.dark .audio-preview {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+.audio-preview .waveform-bar {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+}
+
+.dark .audio-preview .waveform-bar {
+  background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+}
+
+/* Microphone button hover effects */
+.microphone-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.microphone-btn:hover {
+  transform: scale(1.1);
+  color: #3b82f6;
+}
+
+.microphone-btn:active {
+  transform: scale(0.95);
+}
+
+/* Recording state styling */
+.recording-state {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fca5a5;
+}
+
+.dark .recording-state {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border: 1px solid #dc2626;
+}
+
+.recording-waveform-bar {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
 /* Ensure portrait video orientation */
 #wave-viewer video {
   object-fit: contain;

@@ -1,5 +1,6 @@
 defmodule VibeflowWeb.Chat.ChatLive do
   use VibeflowWeb, :live_view
+  require Logger
 
   alias Vibeflow.Chat
   alias VibeflowWeb.Presence
@@ -40,12 +41,21 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:zoomed_image, nil)
      |> assign(:link_previews, %{})
      |> assign(:link_preview_loading, MapSet.new())
+     |> assign(:recording, false)
+     |> assign(:audio_retry_count, 0)
      |> stream(:messages, [])
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
        max_entries: 3,
        chunk_size: 64_000,
        max_file_size: 50_000_000,
+       auto_upload: true
+     )
+     |> allow_upload(:audio,
+       accept: ~w(.mp3 .wav .ogg .flac .webm),
+       max_entries: 1,
+       chunk_size: 64_000,
+       max_file_size: 20_000_000,
        auto_upload: true
      )
     }
@@ -148,6 +158,85 @@ defmodule VibeflowWeb.Chat.ChatLive do
       end
     else
       {:noreply, socket}
+    end
+  end
+  def handle_event("start_recording", _params, socket) do
+    {:noreply, assign(socket, :recording, true)}
+  end
+
+  def handle_event("stop_recording", _params, socket) do
+
+    entries = socket.assigns.uploads.audio.entries
+    ready = Enum.filter(entries, & &1.progress == 100)
+    Logger.debug(">>> VOICENOTE: stop_recording triggered. Total: #{length(entries)}, Ready: #{length(ready)}")
+
+    socket =
+      if length(ready) > 0 do
+        send_audio_message(socket)
+      else
+        if length(entries) > 0 do
+          Process.send_after(self(), :retry_audio_upload, 300)
+        end
+        socket
+      end
+
+    {:noreply, socket |> assign(:recording, false) |> assign(:audio_retry_count, 0)}
+  end
+
+  def handle_event("cancel_recording", _params, socket) do
+    {:noreply, assign(socket, :recording, false)}
+  end
+
+  defp consume_audio_uploads(socket) do
+    consume_uploaded_entries(socket, :audio, fn %{path: path}, _entry ->
+      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path) do
+        {:ok, %{url: url, resource_type: type}} -> {:ok, %{"url" => url, "type" => type}}
+        {:error, reason} ->
+          Logger.error(">>> VOICENOTE: Cloudinary failed: #{inspect(reason)}")
+          {:ok, nil}
+      end
+    end)
+    |> Enum.filter(&(&1 != nil))
+  end
+
+  defp send_audio_message(socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_user
+    audio_files = consume_audio_uploads(socket)
+
+    if audio_files != [] do
+      Chat.create_message(%{
+        "conversation_id" => conversation.id,
+        "user_id" => current_user.id,
+        "media_files" => audio_files,
+        "content" => ""
+      })
+    end
+
+    socket
+  end
+
+  def handle_info(:retry_audio_upload, socket) do
+    entries = socket.assigns.uploads.audio.entries
+    ready = Enum.filter(entries, & &1.progress == 100)
+
+    cond do
+      length(ready) > 0 ->
+        socket = send_audio_message(socket)
+        {:noreply, assign(socket, :audio_retry_count, 0)}
+
+      length(entries) > 0 and socket.assigns.audio_retry_count < 20 ->
+        Process.send_after(self(), :retry_audio_upload, 300)
+        {:noreply, assign(socket, :audio_retry_count, socket.assigns.audio_retry_count + 1)}
+
+      length(entries) > 0 ->
+        {:noreply,
+         socket
+         |> assign(:audio_retry_count, 0)
+         |> put_flash(:error, "Audio upload still processing. Please try again.")}
+
+      true ->
+        {:noreply, assign(socket, :audio_retry_count, 0)}
     end
   end
 #get to the replied messo

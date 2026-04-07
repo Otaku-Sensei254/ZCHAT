@@ -46,3 +46,24 @@
   - New incoming chat messages with deep-link target to chat conversation.
 - Build verification:
   - `mix compile` completed successfully (existing warnings remain; no new compile errors from this change).
+
+## 2026-04-02 Feed, Profiles, Socials, and Likes
+
+- Feed behavior:
+  - Inserted current user’s new posts at top in LiveView.
+  - Promoted current user’s posts to top of page 1 feed without changing ripple logic.
+- Roles/likes query fixes:
+  - Added `user_roles` association on users and proper `belongs_to` links on user roles.
+  - Fixed role-based featured ordering fragment to use bound parameters.
+- Profile page:
+  - Restored centered layout (padding instead of overriding `mx-auto`).
+  - Bio linkification (URL detection + clickable links).
+  - Socials display as icons with handles underneath.
+  - Added “Add Socials” CTA on profile when none exist.
+- User settings:
+  - Added Social Accounts section (add/remove).
+  - Enforced max 3 socials per user (server-side check).
+- Single post comments:
+  - Show initials for current user when avatar is missing.
+- Likes/points:
+  - Prevented points (including ripple points) on self-like of own posts.

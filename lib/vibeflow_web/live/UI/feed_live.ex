@@ -362,7 +362,6 @@ defmodule VibeflowWeb.UI.FeedLive do
           category: socket.assigns[:category],
           search: socket.assigns[:search_term]
         )
-        |> maybe_promote_own_posts(page, socket.assigns.current_user.id)
       else
         Posts.list_posts(
           page: page,
@@ -372,6 +371,7 @@ defmodule VibeflowWeb.UI.FeedLive do
         )
       end
       |> Enum.map(&Post.ensure_media_files/1)
+      |> maybe_shuffle_first_page(page)
 
     has_more = length(posts) == per_page
 
@@ -385,12 +385,8 @@ defmodule VibeflowWeb.UI.FeedLive do
     |> update_stream_based_on_page(page, posts)
   end
 
-  defp maybe_promote_own_posts(posts, 1, user_id) do
-    {own, rest} = Enum.split_with(posts, fn post -> post.user_id == user_id end)
-    own ++ rest
-  end
-
-  defp maybe_promote_own_posts(posts, _page, _user_id), do: posts
+  defp maybe_shuffle_first_page(posts, 1), do: Enum.shuffle(posts)
+  defp maybe_shuffle_first_page(posts, _page), do: posts
 
   defp has_content_from_followed_users(posts, user_id) do
     Enum.any?(posts, fn post ->

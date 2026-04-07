@@ -33,7 +33,7 @@ defmodule ZchatWeb.Waves.ViewWavesLive do
   # --- RENDER ---
   def render(assigns) do
     ~H"""
-    <div id="story-viewer" class="fixed inset-0 bg-black z-50 flex flex-col text-white select-none">
+    <div id="wave-viewer" class="fixed inset-0 bg-black z-50 flex flex-col text-white select-none">
 
       <div class="absolute top-0 left-0 right-0 z-20 flex gap-1 p-2 pt-4">
         <%= for {_, index} <- Enum.with_index(@waves) do %>

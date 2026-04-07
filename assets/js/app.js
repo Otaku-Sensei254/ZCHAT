@@ -956,6 +956,30 @@ Hooks.CameraCapture = {
   }
 };
 
+// Media control hook for toggle events
+Hooks.MediaControl = {
+  mounted() {
+    this.handleEvent("toggle_media", ({ video_id, audio_id, muted }) => {
+      const video = document.getElementById(video_id);
+      const audio = document.getElementById(audio_id);
+      
+      if (video) video.muted = muted;
+      if (audio) audio.muted = muted;
+    });
+    
+    this.handleEvent("toggle_video", ({ video_id, paused }) => {
+      const video = document.getElementById(video_id);
+      if (video) {
+        if (paused) {
+          video.pause();
+        } else {
+          video.play();
+        }
+      }
+    });
+  }
+};
+
 //waves checker HOok
 // Inside your existing Hooks object
 
@@ -963,7 +987,7 @@ Hooks.WaveVideo = {
   mounted() {
     this.el.addEventListener("ended", () => {
       // Only stop audio players that specifically belong to this wave's viewer
-      const viewer = this.el.closest("#story-viewer");
+      const viewer = this.el.closest("#wave-viewer");
       if (viewer) {
         const audios = viewer.querySelectorAll("audio");
         audios.forEach(a => { a.pause(); a.currentTime = 0; });

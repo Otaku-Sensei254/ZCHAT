@@ -20,6 +20,7 @@ defmodule Vibeflow.Release do
 
   def seed do
     load_app()
+    ensure_repos_started()
 
     seed_path =
       :vibeflow
@@ -38,5 +39,9 @@ defmodule Vibeflow.Release do
 
   defp load_app do
     Application.load(@app)
+  end
+
+  defp ensure_repos_started do
+    Application.ensure_all_started(@app)
   end
 end

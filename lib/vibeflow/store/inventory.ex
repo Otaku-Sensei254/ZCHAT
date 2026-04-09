@@ -6,7 +6,7 @@ defmodule Vibeflow.Store.Inventory do
   @foreign_key_type :id
 
   schema "inventory" do
-    field :item_slug, :string
+    field :item_slug, :binary_id
     field :is_equipped, :boolean, default: false
     field :metadata, :map, default: %{}
 

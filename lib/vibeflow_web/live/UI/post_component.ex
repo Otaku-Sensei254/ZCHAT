@@ -4,6 +4,7 @@ defmodule VibeflowWeb.UI.PostComponent do
   alias Vibeflow.Posts
   alias Vibeflow.Posts.{Like, Comment}
   alias Vibeflow.Powers
+  alias Vibeflow.Socials
   alias Phoenix.PubSub
   import Ecto.Query
   import Canada
@@ -53,15 +54,49 @@ defmodule VibeflowWeb.UI.PostComponent do
         nil
       end
 
+    is_following =
+      if current_user && post.user do
+        Socials.following?(current_user.id, post.user.id)
+      else
+        false
+      end
+
     {:ok,
      socket
      |> assign(:current_like, current_like)
      |> assign(:current_repost, current_repost)
      |> assign(:current_save, current_save)
+     |> assign(:is_following, is_following)
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:repost_count, post.reposts_count || 0)
      |> assign(:comment_count, post.comments_count || 0)
      |> assign_new(:current_media_index, fn -> 0 end)}
+  end
+
+  @impl true
+  def handle_event("toggle_follow", %{"user-id" => user_id}, socket) do
+    current_user = socket.assigns.current_user
+    target_id = String.to_integer(user_id)
+
+    cond do
+      is_nil(current_user) ->
+        {:noreply, put_flash(socket, :error, "Login required to follow users")}
+
+      current_user.id == target_id ->
+        {:noreply, socket}
+
+      socket.assigns.is_following ->
+        case Socials.delete_follow(current_user.id, target_id) do
+          {:ok, _} -> {:noreply, assign(socket, :is_following, false)}
+          _ -> {:noreply, put_flash(socket, :error, "Unable to unfollow")}
+        end
+
+      true ->
+        case Socials.create_follow(%{follower_id: current_user.id, following_id: target_id}) do
+          {:ok, _} -> {:noreply, assign(socket, :is_following, true)}
+          _ -> {:noreply, put_flash(socket, :error, "Unable to follow")}
+        end
+    end
   end
 
   # --- MEDIA SLIDER EVENTS ---

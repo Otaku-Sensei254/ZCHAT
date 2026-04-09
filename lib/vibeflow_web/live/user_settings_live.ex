@@ -3,6 +3,8 @@ defmodule VibeflowWeb.UserSettingsLive do
   alias Vibeflow.Infrastructure.UploadCloudinary
   alias Vibeflow.Accounts
   alias Vibeflow.Socials
+  alias Vibeflow.Store
+  alias Phoenix.LiveView.JS
   require Logger
 
   @impl true
@@ -21,11 +23,14 @@ defmodule VibeflowWeb.UserSettingsLive do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     user = socket.assigns.current_user
     email_changeset = Accounts.change_user_email(user)
     password_changeset = Accounts.change_user_password(user)
     profile_changeset = Accounts.change_user_profile(user)
+
+    glow_owned = Store.get_active_cosmetics(user.id).glow
+    open_glow_modal = glow_owned && Map.get(params, "glow") == "1"
 
     socket =
       socket
@@ -37,6 +42,9 @@ defmodule VibeflowWeb.UserSettingsLive do
       |> assign(:profile_form, to_form(profile_changeset))
       |> assign(:social_form, to_form(%{"platform" => "youtube", "username" => ""}))
       |> assign(:socials, Socials.list_social_accounts(user.id))
+      |> assign(:glow_owned, glow_owned)
+      |> assign(:show_glow_modal, open_glow_modal)
+      |> assign(:glow_style, user.username_style || "neon-green")
       |> assign(:trigger_submit, false)
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -45,6 +53,39 @@ defmodule VibeflowWeb.UserSettingsLive do
       )
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("open_glow_modal", _params, socket) do
+    {:noreply, assign(socket, :show_glow_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_glow_modal", _params, socket) do
+    {:noreply, assign(socket, :show_glow_modal, false)}
+  end
+
+  @impl true
+  def handle_event("set_glow_style", %{"style" => style}, socket) do
+    user = socket.assigns.current_user
+
+    if socket.assigns.glow_owned do
+      case Accounts.update_user_profile(user, %{"username_style" => style}) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:current_user, updated_user)
+           |> assign(:glow_style, updated_user.username_style)
+           |> assign(:profile_form, to_form(Accounts.change_user_profile(updated_user)))
+           |> assign(:show_glow_modal, false)
+           |> put_flash(:info, "Username style updated.")}
+
+        {:error, changeset} ->
+          {:noreply, assign(socket, :profile_form, to_form(changeset))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Purchase Profile Glow to unlock styles.")}
+    end
   end
 
   @impl true
@@ -328,6 +369,43 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
           <div class="px-4 py-6 sm:p-8">
             <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Username Glow Styles</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Unlock glow styles by purchasing <span class="font-semibold">Profile Glow</span> in the Wave Store.
+              </p>
+
+              <div class="mt-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                <div>
+                  <p class="text-sm text-gray-700 dark:text-gray-200">
+                    Current style:
+                    <span class={"ml-2 font-bold " <> VibeflowWeb.CoreComponents.username_glow_class(@current_user)}>
+                      <%= @current_user.username %>
+                    </span>
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <%= if @glow_owned, do: "You own Profile Glow.", else: "Locked until you purchase Profile Glow." %>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  phx-click="open_glow_modal"
+                  class={"inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm " <>
+                    if(@glow_owned,
+                      do: "bg-indigo-600 text-white hover:bg-indigo-500",
+                      else: "bg-gray-200 text-gray-500 cursor-not-allowed")}
+                  disabled={not @glow_owned}
+                >
+                  Choose Style
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
               <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Social Accounts</h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
                 Add up to 3 socials to display on your profile and use for verification.
@@ -551,6 +629,46 @@ defmodule VibeflowWeb.UserSettingsLive do
         </section>
       </div>
     </div>
+
+    <%= if @show_glow_modal do %>
+      <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" phx-click="close_glow_modal">
+        <div class="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl" phx-click={JS.exec("event.stopPropagation()")}>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Choose Username Style</h3>
+            <button type="button" phx-click="close_glow_modal" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-green" class="p-4 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50 text-left">
+              <div class="text-sm font-semibold">Neon Green</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-green"><%= @current_user.username %></div>
+            </button>
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-blue" class="p-4 rounded-xl border border-blue-200 hover:border-blue-400 bg-blue-50 text-left">
+              <div class="text-sm font-semibold">Neon Blue</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-blue"><%= @current_user.username %></div>
+            </button>
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-pink" class="p-4 rounded-xl border border-pink-200 hover:border-pink-400 bg-pink-50 text-left">
+              <div class="text-sm font-semibold">Neon Pink</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-pink"><%= @current_user.username %></div>
+            </button>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-serif" class="p-4 rounded-xl border border-amber-200 hover:border-amber-400 bg-amber-50 text-left">
+              <div class="text-sm font-semibold">Regal Serif</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-serif"><%= @current_user.username %></div>
+            </button>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-mono" class="p-4 rounded-xl border border-slate-200 hover:border-slate-400 bg-slate-50 text-left">
+              <div class="text-sm font-semibold">Signal Mono</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-mono"><%= @current_user.username %></div>
+            </button>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-grotesk" class="p-4 rounded-xl border border-violet-200 hover:border-violet-400 bg-violet-50 text-left">
+              <div class="text-sm font-semibold">Pulse Grotesk</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-grotesk"><%= @current_user.username %></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 

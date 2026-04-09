@@ -22,10 +22,10 @@
                 <%= if other_member && other_member.user do %>
                   <img
                     src={other_member.user.avatar_url || "https://ui-avatars.com/api/?name=#{other_member.user.username}"}
-                    class="w-12 h-12 rounded-full object-cover border border-gray-100 dark:border-zinc-600"
+                    class={"w-12 h-12 rounded-full object-cover border border-gray-100 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(other_member.user)}
                   />
                   <div>
-                    <p class="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-1">
+                    <p class={"font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(other_member.user)}>
                       <%= other_member.user.username %>
                       <.verified_badge user={other_member.user} class="h-5 w-5" />
                     </p>

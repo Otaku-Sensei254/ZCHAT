@@ -5,7 +5,17 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, waves: [], current_index: 0, timer_ref: nil, is_muted: false, is_paused: false, message: "")}
+    {:ok,
+     assign(socket,
+       waves: [],
+       wave_groups: [],
+       group_index: 0,
+       current_index: 0,
+       timer_ref: nil,
+       is_muted: false,
+       is_paused: false,
+       message: ""
+     )}
   end
 
   @impl true
@@ -13,16 +23,33 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
     username = params["username"]
     user = Vibeflow.Accounts.get_user_by_username(username)
     waves = if user, do: Waves.list_user_waves(user.id), else: []
+    wave_groups =
+      if socket.assigns.current_user do
+        Waves.list_active_waves(socket.assigns.current_user.id)
+      else
+        []
+      end
+
+    group_index =
+      wave_groups
+      |> Enum.find_index(fn g -> g.user.username == username end)
+      |> case do
+        nil -> 0
+        idx -> idx
+      end
 
     if waves == [] do
       {:noreply,
        socket
-       |> put_flash(:info, "This user has no active waves.")
-       |> push_navigate(to: ~p"/feed")}
+       |> assign(:wave_groups, wave_groups)
+       |> assign(:group_index, group_index)
+       |> go_next_user_or_feed()}
     else
       socket =
         socket
         |> assign(:waves, waves)
+        |> assign(:wave_groups, wave_groups)
+        |> assign(:group_index, group_index)
         |> assign(:current_index, 0)
         |> assign(:timer_ref, nil)
         |> assign(:hide_bottom_nav, true)
@@ -101,12 +128,14 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
       <!-- User Info -->
       <div class="absolute top-20 left-4 right-4 z-20 flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <img
-            src={current_wave.user.avatar_url || "/images/default_avatar.png"}
-            class="w-10 h-10 rounded-full border-2 border-white object-cover"
-          />
+          <div class={"w-10 h-10 rounded-full border-2 border-white overflow-hidden " <> VibeflowWeb.CoreComponents.avatar_frame_class(current_wave.user)}>
+            <img
+              src={current_wave.user.avatar_url || "/images/default_avatar.png"}
+              class="w-full h-full object-cover"
+            />
+          </div>
           <div class="flex flex-col">
-            <span class="font-bold text-sm shadow-black drop-shadow-md flex items-center gap-1">
+            <span class={"font-bold text-sm shadow-black drop-shadow-md flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(current_wave.user)}>
               <%= current_wave.user.username %>
               <.verified_badge user={current_wave.user} class="h-4 w-4" />
             </span>
@@ -271,11 +300,27 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
     if current + 1 >= total do
       socket
       |> cancel_timer()
-      |> push_navigate(to: ~p"/feed")
+      |> go_next_user_or_feed()
     else
       socket
       |> assign(:current_index, current + 1)
       |> schedule_timer()
+    end
+  end
+
+  defp go_next_user_or_feed(socket) do
+    groups = socket.assigns.wave_groups || []
+    idx = socket.assigns.group_index || 0
+    next_idx = idx + 1
+
+    if next_idx < length(groups) do
+      next_user = Enum.at(groups, next_idx).user
+      socket
+      |> assign(:group_index, next_idx)
+      |> push_navigate(to: ~p"/waves/view/#{next_user.username}")
+    else
+      socket
+      |> push_navigate(to: ~p"/feed")
     end
   end
 

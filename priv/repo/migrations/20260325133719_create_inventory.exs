@@ -5,7 +5,7 @@ defmodule Vibeflow.Repo.Migrations.CreateInventory do
     create table(:inventory, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :user_id, references(:users, on_delete: :delete_all, type: :id), null: false
-      add :item_slug, :string, null: false # like the..., "golden_border"
+      add :item_slug, references(:store_items, on_delete: :delete_all, type: :id), null: false
       add :is_equipped, :boolean, default: false, null: false
       add :metadata, :map
 

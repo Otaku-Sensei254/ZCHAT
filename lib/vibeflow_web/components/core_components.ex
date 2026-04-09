@@ -18,6 +18,7 @@ defmodule VibeflowWeb.CoreComponents do
     statics: VibeflowWeb.static_paths()
 
   alias Phoenix.LiveView.JS
+  alias Vibeflow.Store
 
   @doc """
   Renders a [Heroicon](https://heroicons.com).
@@ -685,7 +686,7 @@ defmodule VibeflowWeb.CoreComponents do
     <div class={@class}>
       <.link
         navigate={@navigate}
-        class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
+        class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700 dark:text-white"
       >
         <Heroicons.arrow_left solid class="w-3 h-3 stroke-current inline" />
         <%= render_slot(@inner_block) %>
@@ -809,6 +810,25 @@ defmodule VibeflowWeb.CoreComponents do
 
       true ->
         "?"
+    end
+  end
+
+  def avatar_frame_class(nil), do: ""
+  def avatar_frame_class(user) do
+    case Store.get_active_cosmetics(user.id).frame do
+      "red" -> "avatar-frame-red"
+      "blue" -> "avatar-frame-blue"
+      _ -> ""
+    end
+  end
+
+  def username_glow_class(nil), do: ""
+  def username_glow_class(user) do
+    if Store.get_active_cosmetics(user.id).glow do
+      style = user.username_style || "neon-green"
+      "username-glow-base username-style-#{style}"
+    else
+      ""
     end
   end
 

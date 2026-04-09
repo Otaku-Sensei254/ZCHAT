@@ -7,6 +7,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   alias Vibeflow.Posts
   alias Vibeflow.Posts.Comment
   alias Vibeflow.Accounts
+  alias Vibeflow.Socials
   alias VibeflowWeb.UserAuth
 
   # Use the app layout
@@ -83,6 +84,13 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         []
       end
 
+    is_following =
+      if socket.assigns.current_user do
+        Socials.following?(socket.assigns.current_user.id, post.user.id)
+      else
+        false
+      end
+
     {:noreply,
      socket
      |> assign(:post, post)
@@ -94,6 +102,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:current_repost, current_repost)
      |> assign(:current_save, current_save)
      |> assign(:comment_count, length(comments))
+     |> assign(:is_following, is_following)
 
      # 1. Desktop Stream: Uses standard IDs (e.g., "comments-1")
      |> stream(:comments, comments, reset: true)
@@ -199,9 +208,20 @@ defmodule VibeflowWeb.UI.SinglePostLive do
       if String.to_integer(user_id) == socket.assigns.current_user.id do
         {:noreply, put_flash(socket, :error, "You cannot follow yourself")}
       else
-        # Toggle follow logic would go here
-        # For now, just show a success message
-        {:noreply, put_flash(socket, :info, "Follow functionality coming soon!")}
+        if socket.assigns.is_following do
+          case Socials.delete_follow(socket.assigns.current_user.id, String.to_integer(user_id)) do
+            {:ok, _} -> {:noreply, assign(socket, :is_following, false)}
+            _ -> {:noreply, put_flash(socket, :error, "Unable to unfollow")}
+          end
+        else
+          case Socials.create_follow(%{
+                 follower_id: socket.assigns.current_user.id,
+                 following_id: String.to_integer(user_id)
+               }) do
+            {:ok, _} -> {:noreply, assign(socket, :is_following, true)}
+            _ -> {:noreply, put_flash(socket, :error, "Unable to follow")}
+          end
+        end
       end
     else
       {:noreply, put_flash(socket, :error, "Login required to follow users")}

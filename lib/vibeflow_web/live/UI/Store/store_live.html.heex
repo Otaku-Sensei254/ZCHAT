@@ -1,5 +1,5 @@
-<div class="max-w-4xl sm:mx-auto p-6 pl-safe pr-safe mx-4">
-    <.back navigate={~p"/users/#{@current_user.username}"} class="dark:text-white bg:red-500">
+<div class="max-w-4xl sm:mx-auto p-6 pl-safe pr-safe mx-4 ">
+    <.back navigate={~p"/users/#{@current_user.username}"} class="bg:red-500">
         Back to user profile
     </.back>
   <header class="flex justify-between items-center mb-10 bg-gradient-to-r from-blue-600 to-cyan-500 p-8 rounded-3xl text-white shadow-xl">
@@ -24,69 +24,84 @@
     </div>
   </header>
 
-  <div class="space-y-12">
-    
-    <section>
-      <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-2">
-        <h2 class="text-xl font-bold text-slate-800">Digital Flex</h2>
-        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase">Status</span>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-          <div class="w-full h-32 bg-slate-50 rounded-xl mb-4 flex items-center justify-center border-2 border-dashed border-slate-200 group-hover:border-yellow-400 transition-colors">
-             <div class="w-16 h-16 rounded-full border-4 border-yellow-400 bg-slate-200 shadow-[0_0_15px_rgba(250,204,21,0.5)]"></div>
-          </div>
-          <h3 class="font-bold text-slate-800">Golden Wave Border</h3>
-          <p class="text-sm text-slate-500 mb-4">A shimmering gold frame for your profile picture.</p>
-          <button class="w-full py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-yellow-500 transition-colors">
-            500 🌊
-          </button>
+  <div class="space-y-10">
+    <% digital_items = Map.get(@grouped_items, "digital_flex", []) %>
+    <%= if digital_items != [] do %>
+      <section>
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-2">
+          <h2 class="text-xl font-bold text-slate-800 dark:text-white">Digital Flex</h2>
+          <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase">Status</span>
         </div>
 
-        <div class="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-          <div class="w-full h-32 bg-slate-50 rounded-xl mb-4 flex items-center justify-center italic font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-             VibeMaster
-          </div>
-          <h3 class="font-bold text-slate-800">Iridescent Name</h3>
-          <p class="text-sm text-slate-500 mb-4">Your name glows in every comment section.</p>
-          <button class="w-full py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-purple-500 transition-colors">
-            1,200 🌊
-          </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <%= for item <- digital_items do %>
+            <div class="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              <div class="w-full h-28 bg-slate-50 rounded-xl mb-4 flex items-center justify-center border-2 border-dashed border-slate-200 group-hover:border-blue-400 transition-colors">
+                <%= cond do %>
+                  <% String.contains?(item.item_slug, "frame") -> %>
+                    <div class="w-16 h-16 rounded-full border-4 border-amber-400 bg-slate-200 shadow-[0_0_15px_rgba(250,204,21,0.5)]"></div>
+                  <% String.contains?(item.item_slug, "glow") -> %>
+                    <div class="px-4 py-2 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-white font-black tracking-wide shadow-lg">Glow</div>
+                  <% true -> %>
+                    <div class="text-lg font-black text-slate-600 uppercase tracking-wider"><%= item.item_slug %></div>
+                <% end %>
+              </div>
+              <h3 class="font-bold text-slate-800"><%= item.item_name %></h3>
+              <p class="text-sm text-slate-500 mb-4">
+                <%= if item.duration && item.duration != "" do %>
+                  Duration: <span class="font-semibold"><%= item.duration %></span>
+                <% else %>
+                  Duration: <span class="font-semibold">Permanent</span>
+                <% end %>
+              </p>
+              <button
+                phx-click="purchase_item"
+                phx-value-id={item.id}
+                class="w-full py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+              >
+                <%= item.worth %> 🌊
+              </button>
+            </div>
+          <% end %>
         </div>
-      </div>
-    </section>
+      </section>
+    <% end %>
 
-    <section>
-      <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-2">
-        <h2 class="text-xl font-bold text-slate-800">Power-Ups</h2>
-        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase">Utility</span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="flex gap-4 bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
-          <div class="text-4xl">🚀</div>
-          <div>
-            <h3 class="font-bold text-emerald-900">Tidal Wave (Boost)</h3>
-            <p class="text-sm text-emerald-700 mb-3">Instantly seed your post to 20 additional active users.</p>
-            <button class="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700">
-              150 🌊
-            </button>
-          </div>
+    <% power_items = Map.get(@grouped_items, "power_ups", []) %>
+    <%= if power_items != [] do %>
+      <section>
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-2">
+          <h2 class="text-xl font-bold text-slate-800 dark:text-white">Power-Ups</h2>
+          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase">Utility</span>
         </div>
 
-        <div class="flex gap-4 bg-blue-50 p-6 rounded-2xl border border-blue-100">
-          <div class="text-4xl">🍾</div>
-          <div>
-            <h3 class="font-bold text-blue-900">Message in a Bottle</h3>
-            <p class="text-sm text-blue-700 mb-3">Send a random positive vibe to an anonymous user.</p>
-            <button class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">
-              50 🌊
-            </button>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <%= for item <- power_items do %>
+            <div class="flex gap-4 bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+              <div class="text-4xl">
+                <%= if String.contains?(item.item_slug, "bottle"), do: "🍾", else: "🚀" %>
+              </div>
+              <div class="flex-1">
+                <h3 class="font-bold text-emerald-900"><%= item.item_name %></h3>
+                <p class="text-sm text-emerald-700 mb-3">
+                  <%= if item.duration && item.duration != "" do %>
+                    Duration: <span class="font-semibold"><%= item.duration %></span>
+                  <% else %>
+                    Duration: <span class="font-semibold">Instant</span>
+                  <% end %>
+                </p>
+                <button
+                  phx-click="purchase_item"
+                  phx-value-id={item.id}
+                  class="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700"
+                >
+                  <%= item.worth %> 🌊
+                </button>
+              </div>
+            </div>
+          <% end %>
         </div>
-      </div>
-    </section>
-
+      </section>
+    <% end %>
   </div>
 </div>

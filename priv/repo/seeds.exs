@@ -2,6 +2,9 @@
 alias Vibeflow.Repo
 alias Vibeflow.Accounts.{Role, Permission}
 
+
+
+
 IO.puts("🌱 Seeding Roles & Permissions...")
 
 # 1. Define and Create Roles (Safely)
@@ -60,3 +63,72 @@ assign_perms.("moderator", ["post-edit", "post-delete"])
 assign_perms.("user", ["post-new", "post-edit", "post-delete"])
 
 IO.puts("🚀 Seeding Complete!")
+# Store items seed
+alias Vibeflow.Store.StoreItem
+alias Vibeflow.Repo
+
+store_items = [
+  %{
+    item_name: "Wave Frame (Red)",
+    item_slug: "wave-frame-red",
+    worth: 500,
+    duration: "30d",
+    category: "digital_flex"
+  },
+  %{
+    item_name: "Wave Frame (Blue)",
+    item_slug: "wave-frame-blue",
+    worth: 500,
+    duration: "30d",
+    category: "digital_flex"
+  },
+  %{
+    item_name: "Profile Glow",
+    item_slug: "profile-glow",
+    worth: 750,
+    duration: "14d",
+    category: "digital_flex"
+  },
+  %{
+    item_name: "Boost Badge",
+    item_slug: "boost-badge",
+    worth: 1200,
+    duration: "7d",
+    category: "power_ups"
+  },
+  %{
+    item_name: "Post Booster",
+    item_slug: "post-booster",
+    worth: 150,
+    duration: "1d",
+    category: "power_ups"
+  },
+  %{
+    item_name: "Message in a Bottle",
+    item_slug: "message-bottle",
+    worth: 50,
+    duration: "1d",
+    category: "power_ups"
+  },
+   %{
+    item_name: "dummy item",
+    item_slug: "dummy-item",
+    worth: 3,
+    duration: "1d",
+    category: "power_ups"
+  }
+]
+
+Enum.each(store_items, fn attrs ->
+  case Repo.get_by(StoreItem, item_slug: attrs.item_slug) do
+    nil ->
+      %StoreItem{}
+      |> StoreItem.changeset(attrs)
+      |> Repo.insert!()
+
+    existing ->
+      existing
+      |> StoreItem.changeset(attrs)
+      |> Repo.update!()
+  end
+end)

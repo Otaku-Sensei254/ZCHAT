@@ -1,6 +1,7 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@600&family=Space+Grotesk:wght@600;700&display=swap");
 
 /* This file is for your main application CSS */
 
@@ -158,6 +159,88 @@
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
+/* Store cosmetics - Light Mode */
+.username-glow-base {
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+}
+
+.username-style-neon-green {
+  color: #16a34a;
+  text-shadow: 0 0 4px rgba(34, 197, 94, 0.3), 0 0 8px rgba(34, 197, 94, 0.2);
+}
+
+.username-style-neon-blue {
+  color: #2563eb;
+  text-shadow: 0 0 4px rgba(59, 130, 246, 0.3), 0 0 8px rgba(59, 130, 246, 0.2);
+}
+
+.username-style-neon-pink {
+  color: #db2777;
+  text-shadow: 0 0 4px rgba(236, 72, 153, 0.3), 0 0 8px rgba(236, 72, 153, 0.2);
+}
+
+.username-style-font-serif {
+  font-family: "Cinzel", serif;
+  color: #d97706;
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.3);
+}
+
+.username-style-font-mono {
+  font-family: "JetBrains Mono", monospace;
+  color: #475569;
+  text-shadow: 0 0 4px rgba(148, 163, 184, 0.3);
+}
+
+.username-style-font-grotesk {
+  font-family: "Space Grotesk", sans-serif;
+  color: #7c3aed;
+  text-shadow: 0 0 4px rgba(167, 139, 250, 0.3);
+}
+
+/* Dark Mode Overrides */
+.dark .username-style-neon-green {
+  color: #86efac;
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.9), 0 0 14px rgba(34, 197, 94, 0.7);
+}
+
+.dark .username-style-neon-blue {
+  color: #93c5fd;
+  text-shadow: 0 0 6px rgba(59, 130, 246, 0.9), 0 0 14px rgba(59, 130, 246, 0.7);
+}
+
+.dark .username-style-neon-pink {
+  color: #f9a8d4;
+  text-shadow: 0 0 6px rgba(236, 72, 153, 0.9), 0 0 14px rgba(236, 72, 153, 0.7);
+}
+
+.dark .username-style-font-serif {
+  font-family: "Cinzel", serif;
+  color: #fde68a;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+}
+
+.dark .username-style-font-mono {
+  font-family: "JetBrains Mono", monospace;
+  color: #e2e8f0;
+  text-shadow: 0 0 8px rgba(148, 163, 184, 0.8);
+}
+
+.dark .username-style-font-grotesk {
+  font-family: "Space Grotesk", sans-serif;
+  color: #ddd6fe;
+  text-shadow: 0 0 8px rgba(167, 139, 250, 0.8);
+}
+
+.avatar-frame-red {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+}
+
+.avatar-frame-blue {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+}
+
 /* Hide all default audio elements in chat */
 [id^="voice-note-"] audio,
 .message audio,
@@ -176,10 +259,13 @@
   opacity: 1 !important;
 }
 
-/* Custom Wave Player Styling */
+/* Custom Wave Player Styling - Light Mode */
 [id^="voice-note-"] {
   position: relative;
   overflow: hidden;
+  background: rgba(243, 244, 246, 0.95) !important;
+  border: 1px solid rgba(229, 231, 235, 0.8) !important;
+  backdrop-filter: blur(8px);
 }
 
 [id^="voice-note-"]::before {
@@ -189,7 +275,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
   pointer-events: none;
 }
 
@@ -225,6 +311,48 @@
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   letter-spacing: 0.05em;
   font-weight: 600;
+  color: #6b7280 !important;
+}
+
+/* Voice indicators - Light Mode */
+[id^="voice-note-"] .animate-pulse {
+  background: rgba(107, 114, 128, 0.4) !important;
+}
+
+/* Progress bar background - Light Mode */
+[id^="voice-note-"] .relative.w-full.h-2 {
+  background: rgba(229, 231, 235, 0.8) !important;
+}
+
+/* Dark Mode Adjustments */
+.dark [id^="voice-note-"] {
+  background: rgba(17, 24, 39, 0.95) !important;
+  border: 1px solid rgba(55, 65, 81, 0.8) !important;
+}
+
+.dark [id^="voice-note-"]::before {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%);
+}
+
+.dark .play-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.dark .play-btn.playing {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.dark [id^="voice-note-"] .current-time,
+.dark [id^="voice-note-"] .duration {
+  color: #d1d5db !important;
+}
+
+.dark [id^="voice-note-"] .animate-pulse {
+  background: rgba(209, 213, 219, 0.3) !important;
+}
+
+.dark [id^="voice-note-"] .relative.w-full.h-2 {
+  background: rgba(55, 65, 81, 0.8) !important;
 }
 
 /* Audio waveform animation */
@@ -235,20 +363,6 @@
 
 [id^="voice-note-"].playing .progress-bar {
   animation: waveAnimation 2s ease-in-out infinite;
-}
-
-/* Dark mode adjustments */
-.dark [id^="voice-note-"] {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.dark .play-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.dark .play-btn.playing {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 /* Chat audio bubble */

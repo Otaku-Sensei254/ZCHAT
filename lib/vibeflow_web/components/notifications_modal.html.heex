@@ -40,9 +40,9 @@
           <div class={"p-4 border-b border-zinc-50 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors flex gap-3 #{if is_nil(notif.read_at), do: "bg-blue-50/30 dark:bg-blue-900/20"}"}>
             <.link navigate={~p"/users/#{notif.actor.username}"} class="shrink-0">
               <%= if notif.actor.avatar_url do %>
-                <img src={notif.actor.avatar_url} class="w-10 h-10 rounded-full object-cover" />
+                <img src={notif.actor.avatar_url} class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(notif.actor)} />
               <% else %>
-                <div class="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-600 flex items-center justify-center font-bold text-zinc-500 dark:text-zinc-300 text-xs">
+                <div class={"w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-600 flex items-center justify-center font-bold text-zinc-500 dark:text-zinc-300 text-xs " <> VibeflowWeb.CoreComponents.avatar_frame_class(notif.actor)}>
                   <%= String.first(notif.actor.username) %>
                 </div>
               <% end %>
@@ -50,7 +50,7 @@
 
             <div class="flex-1 min-w-0">
               <p class="text-sm text-gray-800 dark:text-gray-200 leading-snug">
-                <span class="font-bold"><%= notif.actor.username %></span> 
+                <span class={"font-bold " <> VibeflowWeb.CoreComponents.username_glow_class(notif.actor)}><%= notif.actor.username %></span> 
                 <span class="text-gray-600 dark:text-gray-400"><%= format_text(notif) %></span>
               </p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">

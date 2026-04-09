@@ -334,6 +334,28 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
 
 
   @impl true
+  def handle_info({:points_awarded, %{user_id: user_id}}, socket) do
+    updated_user = Accounts.get_user!(user_id)
+
+    socket =
+      socket
+      |> maybe_update_points(:current_user, updated_user)
+      |> maybe_update_points(:user, updated_user)
+
+    {:noreply, socket}
+  end
+
+  defp maybe_update_points(socket, key, updated_user) do
+    case Map.get(socket.assigns, key) do
+      %{id: id} = user when id == updated_user.id ->
+        assign(socket, key, %{user | points: updated_user.points})
+
+      _ ->
+        socket
+    end
+  end
+
+  @impl true
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
     {:noreply, socket}
   end

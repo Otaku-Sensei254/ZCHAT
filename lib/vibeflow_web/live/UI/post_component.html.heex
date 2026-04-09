@@ -9,17 +9,33 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
                   <div class="flex items-center gap-2">
-                    <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
-        
+                    <div class="relative">
+                      <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
                         <%= if @post.user.avatar_url && @post.user.avatar_url != "" do %>
-                      <img src={@post.user.avatar_url} alt="#{@post.user.username} avatar" class="h-10 w-10 rounded-full object-cover border dark:border-zinc-700" referrerpolicy="no-referrer" />
-                    <% else %>
-                      <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
-                        <%= VibeflowWeb.CoreComponents.initials(@post.user) %>
-                      </div>
-                    <% end %>
-                    </.link>
-                  <span class="font-semibold text-gray-900 dark:text-gray-200 text-base flex items-center gap-1">
+                          <img src={@post.user.avatar_url} alt="#{@post.user.username} avatar" class={"h-10 w-10 rounded-full object-cover border dark:border-zinc-700 " <> VibeflowWeb.CoreComponents.avatar_frame_class(@post.user)} referrerpolicy="no-referrer" />
+                        <% else %>
+                          <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
+                            <%= VibeflowWeb.CoreComponents.initials(@post.user) %>
+                          </div>
+                        <% end %>
+                      </.link>
+
+                      <%= if @current_user && @current_user.id != @post.user.id && !@is_following do %>
+                        <button
+                          type="button"
+                          phx-click="toggle_follow"
+                          phx-target={@myself}
+                          phx-value-user-id={@post.user.id}
+                          class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 text-blue-500 border border-blue-200 dark:border-zinc-700 flex items-center justify-center shadow-sm hover:scale-105 transition"
+                          title="Follow"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      <% end %>
+                    </div>
+                  <span class={"font-semibold text-gray-900 dark:text-gray-200 text-base flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(@post.user)}>
                     <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
                       <%= @post.user.username %>
                       
@@ -300,15 +316,15 @@
             >
               <div class="flex-shrink-0">
                 <%= if user.avatar_url && user.avatar_url != "" do %>
-                  <img src={user.avatar_url} alt={user.username} class="h-8 w-8 rounded-full object-cover" />
+                  <img src={user.avatar_url} alt={user.username} class={"h-8 w-8 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
                 <% else %>
-                  <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                  <div class={"h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
                     <%= VibeflowWeb.CoreComponents.initials(user) %>
                   </div>
                 <% end %>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-gray-900 dark:text-gray-200 truncate">
+                <div class={"font-medium text-gray-900 dark:text-gray-200 truncate " <> VibeflowWeb.CoreComponents.username_glow_class(user)}>
                   <%= user.username %>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400 truncate">

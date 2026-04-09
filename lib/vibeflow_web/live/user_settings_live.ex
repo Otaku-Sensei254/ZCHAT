@@ -260,7 +260,7 @@ defmodule VibeflowWeb.UserSettingsLive do
   def handle_info(:update_notifications, socket) do
     {:noreply, socket}
   end
-
+#help 
   @impl true
   def handle_info({:new_sidebar_message, _message}, socket) do
     {:noreply, socket}

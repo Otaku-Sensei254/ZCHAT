@@ -21,15 +21,27 @@
   >
     <div class="px-4 py-3 border-b border-gray-100 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 flex justify-between items-center">
       <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Notifications</h3>
-      <%= if @unread_count > 0 do %>
-        <button 
-          phx-click="mark_all_read" 
-          phx-target={@myself} 
-          class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
-        >
-          Mark all read
-        </button>
-      <% end %>
+      <div class="flex gap-2">
+        <%= if @unread_count > 0 do %>
+          <button 
+            phx-click="mark_all_read" 
+            phx-target={@myself} 
+            class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Mark all read
+          </button>
+        <% end %>
+        <%= if length(@notifications) > 0 do %>
+          <button 
+            phx-click="clear_notifications" 
+            phx-target={@myself} 
+            class="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+            onclick="return confirm('Are you sure you want to clear all notifications?')"
+          >
+            Clear all
+          </button>
+        <% end %>
+      </div>
     </div>
 
     <div class="max-h-[400px] overflow-y-auto dark:bg-zinc-800">

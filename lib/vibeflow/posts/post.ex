@@ -106,7 +106,6 @@ defmodule Vibeflow.Posts.Post do
     |> validate_inclusion(:category, @categories, message: "is not a valid category")
     |> validate_tags()
     |> validate_media_files()
-    |> unique_constraint(:user_id, name: :posts_user_id_fkey)
   end
 
   # Validates the tags field.

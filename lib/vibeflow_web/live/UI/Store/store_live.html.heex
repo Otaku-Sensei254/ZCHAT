@@ -25,6 +25,81 @@
   </header>
 
   <div class="space-y-10">
+    <% social_glows = Map.get(@grouped_items, "social_glows", []) %>
+    <%= if social_glows != [] do %>
+      <section>
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-2">
+          <h2 class="text-xl font-bold text-slate-800 dark:text-white">Social Glows</h2>
+          <span class="px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-bold rounded-full uppercase">Chat Skins</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <%= for item <- social_glows do %>
+            <div class="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+              <div class="w-full h-28 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl mb-4 flex items-center justify-center border-2 border-dashed border-slate-200 group-hover:border-purple-400 transition-colors relative overflow-hidden">
+                <%= cond do %>
+                  <% String.contains?(item.item_slug, "glassmorphism") -> %>
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-white/30 rounded-xl"></div>
+                    <div class="relative text-lg font-black text-slate-800 uppercase tracking-wider">Glass</div>
+                  <% String.contains?(item.item_slug, "matrix") -> %>
+                    <div class="absolute inset-0 bg-black/90 rounded-xl">
+                      <div class="h-full flex flex-col justify-end p-2 space-y-1">
+                        <div class="h-0.5 bg-green-500 opacity-80"></div>
+                        <div class="h-0.5 bg-green-400 opacity-60"></div>
+                        <div class="h-0.5 bg-green-500 opacity-90"></div>
+                        <div class="h-0.5 bg-green-300 opacity-70"></div>
+                        <div class="h-0.5 bg-green-500 opacity-85"></div>
+                      </div>
+                    </div>
+                    <div class="relative text-lg font-black text-green-400 uppercase tracking-wider">Matrix</div>
+                  <% String.contains?(item.item_slug, "holographic") -> %>
+                    <div class="absolute inset-0 bg-gradient-to-br from-pink/20 via-blue/20 to-purple/20 rounded-xl animate-pulse"></div>
+                    <div class="relative text-lg font-black bg-gradient-to-r from-pink-500 via-blue-500 to-purple-500 bg-clip-text text-transparent uppercase tracking-wider">Holo</div>
+                  <% String.contains?(item.item_slug, "vantablack") -> %>
+                    <div class="absolute inset-0 bg-black rounded-xl border border-black"></div>
+                    <div class="relative text-lg font-black text-slate-900 uppercase tracking-wider">Void</div>
+                  <% true -> %>
+                    <div class="text-lg font-black text-slate-600 uppercase tracking-wider"><%= item.item_slug %></div>
+                <% end %>
+              </div>
+              <h3 class="font-bold text-slate-800 mb-2"><%= item.item_name %></h3>
+              <p class="text-sm text-slate-500 mb-4">
+                <%= if item.duration && item.duration != "" do %>
+                  Duration: <span class="font-semibold"><%= item.duration %></span>
+                <% else %>
+                  Duration: <span class="font-semibold">Permanent</span>
+                <% end %>
+              </p>
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">
+                  <%= cond do %>
+                    <% String.contains?(item.item_slug, "glassmorphism") -> %>
+                      Rare
+                    <% String.contains?(item.item_slug, "matrix") -> %>
+                      Epic
+                    <% String.contains?(item.item_slug, "holographic") -> %>
+                      Legendary
+                    <% String.contains?(item.item_slug, "vantablack") -> %>
+                      Mythic
+                    <% true -> %>
+                      Common
+                  <% end %>
+                </span>
+                <span class="text-lg font-black text-slate-800"><%= item.worth %> <span class="text-sm">waves</span></span>
+              </div>
+              <button
+                phx-click="purchase_item"
+                phx-value-id={item.id}
+                class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Purchase
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
     <% digital_items = Map.get(@grouped_items, "digital_flex", []) %>
     <%= if digital_items != [] do %>
       <section>

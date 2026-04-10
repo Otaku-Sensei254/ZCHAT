@@ -49,6 +49,12 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   end
 
   @impl true
+  def handle_event("clear_notifications", _, socket) do
+    Notifications.clear_notifications(socket.assigns.current_user.id)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("follow_back", %{"user-id" => user_id}, socket) do
     current_user = socket.assigns.current_user
 

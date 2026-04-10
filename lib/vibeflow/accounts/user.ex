@@ -15,6 +15,7 @@ defmodule Vibeflow.Accounts.User do
     field(:is_verified, :boolean, default: false)
     field(:points, :integer, default: 0)
     field(:username_style, :string)
+    field(:active_message_skin, :string, default: "default")
     has_many(:posts, Post)
     has_many(:social_accounts, Vibeflow.Socials.SocialAccount)
     has_many(:verification_requests, Vibeflow.Accounts.VerificationRequest)
@@ -160,7 +161,7 @@ defmodule Vibeflow.Accounts.User do
   """
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :bio, :avatar_url, :is_verified, :username_style])
+    |> cast(attrs, [:username, :bio, :avatar_url, :is_verified, :username_style, :active_message_skin])
     |> validate_required([:username])
     |> validate_length(:username, min: 3, max: 20)
     |> validate_length(:bio, max: 160)

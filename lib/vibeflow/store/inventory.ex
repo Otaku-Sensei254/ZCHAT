@@ -7,6 +7,7 @@ defmodule Vibeflow.Store.Inventory do
 
   schema "inventory" do
     field :item_slug, :binary_id
+    field :item_name, :string
     field :is_equipped, :boolean, default: false
     field :metadata, :map, default: %{}
 
@@ -17,7 +18,7 @@ defmodule Vibeflow.Store.Inventory do
 
   def changeset(inventory, attrs) do
     inventory
-    |> cast(attrs, [:user_id, :item_slug, :is_equipped, :metadata])
+    |> cast(attrs, [:user_id, :item_slug, :item_name, :is_equipped, :metadata])
     |> validate_required([:user_id, :item_slug])
   end
 end

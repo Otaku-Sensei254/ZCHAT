@@ -73,6 +73,14 @@ defmodule Vibeflow.Notifications do
     Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{user_id}", :update_notifications)
   end
 
+  #to clear notifications list
+  def clear_notifications(user_id) do
+    from(n in Notification, where: n.user_id == ^user_id)
+    |> Repo.delete_all()
+
+    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{user_id}", :update_notifications)
+  end
+
   # --- HELPERS ---
 
   def notify_followers_of_new_post(post) do

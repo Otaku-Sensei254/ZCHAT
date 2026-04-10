@@ -3,6 +3,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
   require Logger
 
   alias Vibeflow.Chat
+  alias Vibeflow.Store
   alias VibeflowWeb.Presence
   import Phoenix.HTML.Form
 
@@ -43,6 +44,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:link_preview_loading, MapSet.new())
      |> assign(:recording, false)
      |> assign(:audio_retry_count, 0)
+     |> assign(:active_message_skin, current_user.active_message_skin || "default")
      |> stream(:messages, [])
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
@@ -59,6 +61,110 @@ defmodule VibeflowWeb.Chat.ChatLive do
        auto_upload: true
      )
     }
+  end
+
+  # ===========================================================================
+  # HELPERS
+  # ===========================================================================
+
+  def message_skin_classes(active_skin, is_me) do
+    base_classes = "max-w-[75%] px-4 py-2 shadow-sm text-sm wrap-break-words relative"
+
+    case active_skin do
+      "Glassmorphism Pro" ->
+        glassmorphism_classes(is_me)
+
+      "Matrix Rain" ->
+        matrix_rain_classes(is_me)
+
+      "Holographic Foil" ->
+        holographic_foil_classes(is_me)
+
+      "Vantablack" ->
+        vantablack_classes(is_me)
+
+      _ ->
+        default_classes(is_me)
+    end
+  end
+
+  def reply_skin_classes(active_skin, is_me) do
+    case active_skin do
+      "Glassmorphism Pro" ->
+        if is_me do
+          "bg-white/10 border-white/40 text-white"
+        else
+          "bg-white/30 border-white/50 text-gray-700 dark:text-gray-300"
+        end
+
+      "Matrix Rain" ->
+        if is_me do
+          "bg-green-900/20 border-green-400/60 text-green-300"
+        else
+          "bg-green-900/10 border-green-400/40 text-green-400"
+        end
+
+      "Holographic Foil" ->
+        if is_me do
+          "bg-purple-900/20 border-purple-400/60 text-purple-200"
+        else
+          "bg-purple-900/10 border-purple-400/40 text-purple-300"
+        end
+
+      "Vantablack" ->
+        if is_me do
+          "bg-gray-800/50 border-gray-600 text-gray-400"
+        else
+          "bg-gray-700/30 border-gray-600 text-gray-500"
+        end
+
+      _ ->
+        if is_me do
+          "bg-black/10 border-white/60 text-white"
+        else
+          "bg-white/50 dark:bg-black/20 border-blue-500 text-gray-600 dark:text-gray-300"
+        end
+    end
+  end
+
+  defp glassmorphism_classes(is_me) do
+    if is_me do
+      "bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-2xl rounded-br-none shadow-lg"
+    else
+      "bg-white/10 backdrop-blur-sm border border-white/20 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none shadow-lg"
+    end
+  end
+
+  defp matrix_rain_classes(is_me) do
+    if is_me do
+      "bg-black border border-green-500/30 text-green-400 rounded-2xl rounded-br-none shadow-lg shadow-green-500/20"
+    else
+      "bg-black/90 border border-green-500/20 text-green-300 rounded-2xl rounded-bl-none shadow-lg shadow-green-500/10"
+    end
+  end
+
+  defp holographic_foil_classes(is_me) do
+    if is_me do
+      "bg-gradient-to-br from-purple-600/80 via-pink-600/80 to-blue-600/80 text-white rounded-2xl rounded-br-none shadow-lg shadow-purple-500/30"
+    else
+      "bg-gradient-to-br from-purple-500/70 via-pink-500/70 to-blue-500/70 text-white rounded-2xl rounded-bl-none shadow-lg shadow-purple-500/20"
+    end
+  end
+
+  defp vantablack_classes(is_me) do
+    if is_me do
+      "bg-black border border-gray-900 text-gray-300 rounded-2xl rounded-br-none shadow-lg shadow-black/50"
+    else
+      "bg-gray-900 border border-gray-800 text-gray-400 rounded-2xl rounded-bl-none shadow-lg shadow-black/30"
+    end
+  end
+
+  defp default_classes(is_me) do
+    if is_me do
+      "bg-blue-500 text-white rounded-2xl rounded-br-none"
+    else
+      "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none"
+    end
   end
 
   # ===========================================================================

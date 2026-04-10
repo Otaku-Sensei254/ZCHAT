@@ -29,7 +29,7 @@ defmodule VibeflowWeb.UserSettingsLive do
     password_changeset = Accounts.change_user_password(user)
     profile_changeset = Accounts.change_user_profile(user)
 
-    glow_owned = Store.get_active_cosmetics(user.id).glow
+    glow_owned = Store.get_user_item(user.id, "profile-glow") != nil
     open_glow_modal = glow_owned && Map.get(params, "glow") == "1"
 
     socket =
@@ -46,6 +46,7 @@ defmodule VibeflowWeb.UserSettingsLive do
       |> assign(:show_glow_modal, open_glow_modal)
       |> assign(:glow_style, user.username_style || "neon-green")
       |> assign(:trigger_submit, false)
+      |> put_flash(:debug, "Glow owned: #{glow_owned}")
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -260,7 +261,7 @@ defmodule VibeflowWeb.UserSettingsLive do
   def handle_info(:update_notifications, socket) do
     {:noreply, socket}
   end
-#help 
+#help
   @impl true
   def handle_info({:new_sidebar_message, _message}, socket) do
     {:noreply, socket}
@@ -641,32 +642,31 @@ defmodule VibeflowWeb.UserSettingsLive do
           </div>
 
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-green" class="p-4 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50 text-left">
-              <div class="text-sm font-semibold">Neon Green</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-green" class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-left transition-all">
+              <div class="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Neon Green</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-green"><%= @current_user.username %></div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-blue" class="p-4 rounded-xl border border-blue-200 hover:border-blue-400 bg-blue-50 text-left">
-              <div class="text-sm font-semibold">Neon Blue</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-blue" class="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-left transition-all">
+              <div class="text-sm font-semibold text-blue-600 dark:text-blue-300">Neon Blue</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-blue"><%= @current_user.username %></div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-pink" class="p-4 rounded-xl border border-pink-200 hover:border-pink-400 bg-pink-50 text-left">
-              <div class="text-sm font-semibold">Neon Pink</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="neon-pink" class="p-4 rounded-xl border border-pink-200 dark:border-pink-900/50 hover:border-pink-400 dark:hover:border-pink-700 bg-pink-50 dark:bg-pink-950/30 text-left transition-all">
+              <div class="text-sm font-semibold text-pink-900 dark:text-pink-300">Neon Pink</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-pink"><%= @current_user.username %></div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-serif" class="p-4 rounded-xl border border-amber-200 hover:border-amber-400 bg-amber-50 text-left">
-              <div class="text-sm font-semibold">Regal Serif</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-serif" class="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-left transition-all">
+              <div class="text-sm font-semibold text-amber-900 dark:text-amber-300">Regal Serif</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-font-serif"><%= @current_user.username %></div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-mono" class="p-4 rounded-xl border border-slate-200 hover:border-slate-400 bg-slate-50 text-left">
-              <div class="text-sm font-semibold">Signal Mono</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-mono" class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50 text-left transition-all">
+              <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">Signal Mono</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-font-mono"><%= @current_user.username %></div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-grotesk" class="p-4 rounded-xl border border-violet-200 hover:border-violet-400 bg-violet-50 text-left">
-              <div class="text-sm font-semibold">Pulse Grotesk</div>
+            <button type="button" phx-click="set_glow_style" phx-value-style="font-grotesk" class="p-4 rounded-xl border border-violet-200 dark:border-violet-900/50 hover:border-violet-400 dark:hover:border-violet-700 bg-violet-50 dark:bg-violet-950/30 text-left transition-all">
+              <div class="text-sm font-semibold text-violet-900 dark:text-violet-300">Pulse Grotesk</div>
               <div class="mt-2 text-lg font-bold username-glow-base username-style-font-grotesk"><%= @current_user.username %></div>
             </button>
-          </div>
-        </div>
+          </div>        </div>
       </div>
     <% end %>
     """

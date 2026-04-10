@@ -130,5 +130,140 @@ Enum.each(store_items, fn attrs ->
       existing
       |> StoreItem.changeset(attrs)
       |> Repo.update!()
-  end
+    end
 end)
+
+IO.puts("✅ Store items seeded.")
+
+# Seed posts
+alias Vibeflow.Accounts.User
+alias Vibeflow.Posts.Post
+alias Vibeflow.Posts.Like
+alias Vibeflow.Posts.Comment
+
+IO.puts("📝 Seeding posts...")
+
+# Create a test user for seeding posts
+test_user = %User{
+  username: "demo_user",
+  email: "demo@example.com",
+  hashed_password: Bcrypt.hash_pwd_salt("password123"),
+  points: 5000,
+  username_style: "neon-green",
+  active_message_skin: "default",
+  is_verified: true
+}
+
+test_user =
+  case Repo.get_by(User, email: "demo@example.com") do
+    nil ->
+      user = Repo.insert!(test_user)
+      IO.puts("🔹 Created demo user: #{user.username}")
+      user
+
+    existing ->
+      IO.puts("🔹 Demo user already exists: #{existing.username}")
+      existing
+  end
+
+# Seed posts
+posts_to_seed = [
+  %{
+    title: "Welcome to VibeFlow!",
+    content: "Welcome to VibeFlow! 🌊 This is your first wave. Share your thoughts, connect with friends, and express yourself freely.",
+    user_id: test_user.id,
+    category: "Tech",
+    media_files: [],
+    inserted_at: DateTime.utc_now(),
+    updated_at: DateTime.utc_now()
+  },
+  %{
+    title: "Creative Flow",
+    content: "Just dropped my first track! 🎵 Feeling the creative flow today. Music production mode: ON. Who else is creating something amazing?",
+    user_id: test_user.id,
+    category: "Music",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -7200, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -7200, :second)
+  },
+  %{
+    title: "Sunset Vibes",
+    content: "The sunset vibes are hitting different today 🌅 Sometimes the best conversations happen when we're not trying to have them. Just being present is enough.",
+    user_id: test_user.id,
+    category: "Nature",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -14400, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -14400, :second)
+  },
+  %{
+    title: "Weekend Energy",
+    content: "Anyone else feeling the weekend energy? ⚡ Time to recharge, reset, and come back stronger. What's your weekend ritual?",
+    user_id: test_user.id,
+    category: "Fitness",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -21600, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -21600, :second)
+  },
+  %{
+    title: "Revolutionary Stillness",
+    content: "Deep thought: In a world of endless scrolling, the most revolutionary act is to be still. 🧘",
+    user_id: test_user.id,
+    category: "Science",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -28800, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -28800, :second)
+  },
+  %{
+    title: "Neighborhood Coffee Shop",
+    content: "Just discovered this amazing coffee shop in my neighborhood ☕ Perfect spot for morning coding sessions and afternoon vibes.",
+    user_id: test_user.id,
+    category: "Food",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -43200, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -43200, :second)
+  },
+  %{
+    title: "UI/UX Journey",
+    content: "The UI/UX journey continues... Every pixel matters, every interaction counts. 💻✨",
+    user_id: test_user.id,
+    category: "Tech",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -64800, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -64800, :second)
+  },
+  %{
+    title: "Vibe Attracts Tribe",
+    content: "Remember: Your vibe attracts your tribe. Don't chase trends, set them. 🌟",
+    user_id: test_user.id,
+    category: "Fashion",
+    media_files: [],
+    inserted_at: DateTime.add(DateTime.utc_now(), -86400, :second),
+    updated_at: DateTime.add(DateTime.utc_now(), -86400, :second)
+  }
+]
+
+Enum.each(posts_to_seed, fn post_attrs ->
+  %Post{}
+  |> Post.changeset(post_attrs)
+  |> Repo.insert!()
+end)
+
+IO.puts("✅ Posts seeded successfully!")
+
+# Add some likes to posts
+all_posts = Repo.all(Post)
+Enum.take_random(all_posts, 5)
+|> Enum.each(fn post ->
+  %Like{
+    user_id: test_user.id,
+    likeable_type: "Post",
+    likeable_id: post.id,
+    inserted_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+    updated_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+  }
+  |> Repo.insert!()
+end)
+
+IO.puts("❤️ Added likes to posts!")
+
+IO.puts("🚀 Seeding Complete!")

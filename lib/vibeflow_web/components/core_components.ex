@@ -815,7 +815,8 @@ defmodule VibeflowWeb.CoreComponents do
 
   def avatar_frame_class(nil), do: ""
   def avatar_frame_class(user) do
-    case Store.get_active_cosmetics(user.id).frame do
+    cosmetics = Store.get_active_cosmetics(user.id)
+    case cosmetics.frame do
       "red" -> "avatar-frame-red"
       "blue" -> "avatar-frame-blue"
       _ -> ""
@@ -824,7 +825,8 @@ defmodule VibeflowWeb.CoreComponents do
 
   def username_glow_class(nil), do: ""
   def username_glow_class(user) do
-    if Store.get_active_cosmetics(user.id).glow do
+    cosmetics = Store.get_active_cosmetics(user.id)
+    if cosmetics.glow do
       style = user.username_style || "neon-green"
       "username-glow-base username-style-#{style}"
     else

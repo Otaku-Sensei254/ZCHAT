@@ -192,6 +192,7 @@ end
       on_mount: [{VibeflowWeb.UserAuth, :mount_current_user},
       {VibeflowWeb.ChatAuthHook, :require_member }, VibeflowWeb.UserActivityHook] do
       live "/chat", Chat.ChatLive, :index
+      live "/chat/settings", Chat.ChatSettingsLive, :index
       live "/chat/:uuid", Chat.ChatLive, :index
     end
   end

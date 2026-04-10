@@ -25,6 +25,7 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
 
       user ->
         posts = Posts.list_posts(user_id: user.id, limit: 20)
+
         saved_posts =
           if socket.assigns.current_user && socket.assigns.current_user.id == user.id do
             Posts.list_saved_posts(user.id, limit: 20)
@@ -80,7 +81,8 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
 
   @impl true
   def handle_event("validate_social", %{"platform" => platform, "username" => username}, socket) do
-    {:noreply, assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
+    {:noreply,
+     assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
   end
 
   @impl true
@@ -91,7 +93,9 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
          }) do
       {:ok, _social} ->
         # Refresh user with new social accounts
-        user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+        user =
+          Accounts.get_user!(socket.assigns.user.id)
+          |> Vibeflow.Repo.preload([:roles, :social_accounts])
 
         {:noreply,
          socket
@@ -113,7 +117,10 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
   def handle_event("remove_social", %{"id" => id}, socket) do
     case Socials.delete_social_account(id) do
       {:ok, _} ->
-        user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+        user =
+          Accounts.get_user!(socket.assigns.user.id)
+          |> Vibeflow.Repo.preload([:roles, :social_accounts])
+
         {:noreply, assign(socket, :user, user) |> put_flash(:info, "Social account removed")}
 
       _ ->
@@ -157,19 +164,27 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
 
     if current_user && current_user.id != profile_user.id do
       case Socials.create_follow(%{
-        follower_id: current_user.id,
-        following_id: profile_user.id
-      }) do
+             follower_id: current_user.id,
+             following_id: profile_user.id
+           }) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
+
           {is_following, _is_followed_by, follow_state} =
             follow_relationship(current_user, profile_user)
 
-          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+          send_update(VibeflowWeb.Components.NotificationsModal,
+            id: "notifications-modal-desktop"
+          )
+
           send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
 
           {:noreply,
-           assign(socket, is_following: is_following, follow_state: follow_state, follow_stats: follow_stats)}
+           assign(socket,
+             is_following: is_following,
+             follow_state: follow_state,
+             follow_stats: follow_stats
+           )}
 
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, "Unable to follow user")}
@@ -188,14 +203,22 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
       case Socials.delete_follow(current_user.id, profile_user.id) do
         {:ok, _follow} ->
           follow_stats = Socials.get_follow_stats(profile_user.id)
+
           {is_following, _is_followed_by, follow_state} =
             follow_relationship(current_user, profile_user)
 
-          send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+          send_update(VibeflowWeb.Components.NotificationsModal,
+            id: "notifications-modal-desktop"
+          )
+
           send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
 
           {:noreply,
-           assign(socket, is_following: is_following, follow_state: follow_state, follow_stats: follow_stats)}
+           assign(socket,
+             is_following: is_following,
+             follow_state: follow_state,
+             follow_stats: follow_stats
+           )}
 
         {:error, :not_found} ->
           {:noreply, socket}
@@ -205,53 +228,7 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     end
   end
 
-  defp follow_relationship(nil, _profile_user), do: {false, false, "follow"}
-
-  defp follow_relationship(current_user, profile_user) do
-    is_following = Socials.following?(current_user.id, profile_user.id)
-    is_followed_by = Socials.following?(profile_user.id, current_user.id)
-
-    follow_state =
-      cond do
-        current_user.id == profile_user.id -> "self"
-        is_followed_by && !is_following -> "follow_back"
-        is_following -> "following"
-        true -> "follow"
-      end
-
-    {is_following, is_followed_by, follow_state}
-  end
-
-  defp linkify_bio(nil), do: nil
-
-  defp linkify_bio(text) when is_binary(text) do
-    regex = ~r/(https?:\/\/[^\s<]+|www\.[^\s<]+)/i
-
-    regex
-    |> Regex.split(text, include_captures: true, trim: true)
-    |> Enum.map(fn part ->
-      if Regex.match?(regex, part) do
-        url = if String.starts_with?(part, "http"), do: part, else: "https://" <> part
-
-        Phoenix.HTML.Tag.content_tag(
-          :a,
-          part,
-          href: url,
-          target: "_blank",
-          rel: "noopener noreferrer",
-          class: "text-indigo-600 hover:text-indigo-700 underline underline-offset-2"
-        )
-      else
-        Phoenix.HTML.html_escape(part)
-      end
-    end)
-    |> Phoenix.HTML.Safe.to_iodata()
-    |> IO.iodata_to_binary()
-    |> Phoenix.HTML.raw()
-  end
-
-  #message the user
-    @impl true
+  @impl true
   def handle_event("message_user", _, socket) do
     current_user = socket.assigns.current_user
     profile_user = socket.assigns.user
@@ -271,7 +248,6 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     end
   end
 
-  # Followers/Following Modal Events
   @impl true
   def handle_event("show_followers", _, socket) do
     profile_user = socket.assigns.user
@@ -317,9 +293,13 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     {followers, following} =
       case modal_type do
         "followers" ->
-          {Socials.list_followers(profile_user.id, search: search_query), socket.assigns.following}
+          {Socials.list_followers(profile_user.id, search: search_query),
+           socket.assigns.following}
+
         "following" ->
-          {socket.assigns.followers, Socials.list_following(profile_user.id, search: search_query)}
+          {socket.assigns.followers,
+           Socials.list_following(profile_user.id, search: search_query)}
+
         _ ->
           {socket.assigns.followers, socket.assigns.following}
       end
@@ -331,8 +311,6 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
      |> assign(:search_query, search_query)}
   end
 
-
-
   @impl true
   def handle_info({:points_awarded, %{user_id: user_id}}, socket) do
     updated_user = Accounts.get_user!(user_id)
@@ -343,16 +321,6 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
       |> maybe_update_points(:user, updated_user)
 
     {:noreply, socket}
-  end
-
-  defp maybe_update_points(socket, key, updated_user) do
-    case Map.get(socket.assigns, key) do
-      %{id: id} = user when id == updated_user.id ->
-        assign(socket, key, %{user | points: updated_user.points})
-
-      _ ->
-        socket
-    end
   end
 
   @impl true
@@ -368,33 +336,13 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
   end
 
   @impl true
-  def handle_info(:notifications_read, socket) do
-    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
-    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
-    {:noreply, socket}
-  end
-    @impl true
-  def handle_info(:update_notifications, socket) do
-    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
-    {:noreply, socket}
-  end
-    @impl true
-  def handle_info(:update_sidebar, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_info({:update_sidebar, _message}, socket) do
-    {:noreply, socket}
-  end
-  @impl true
-  def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
-
-  @impl true
   def handle_info({:new_notification, notif}, socket) do
-    if socket.assigns.current_user && notif.user_id == socket.assigns.current_user.id and
+    if (socket.assigns.current_user && notif.user_id == socket.assigns.current_user.id) and
          notif.type in ["verification_approved", "verification_rejected"] do
-      user = Accounts.get_user!(socket.assigns.user.id) |> Vibeflow.Repo.preload([:roles, :social_accounts])
+      user =
+        Accounts.get_user!(socket.assigns.user.id)
+        |> Vibeflow.Repo.preload([:roles, :social_accounts])
+
       pending = Accounts.check_verification_status(user)
 
       {:noreply, assign(socket, user: user, pending_verification: pending)}
@@ -403,5 +351,84 @@ defmodule VibeflowWeb.Profiles.UserProfileLive do
     end
   end
 
+  @impl true
+  def handle_info(:notifications_read, socket) do
+    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")
+    {:noreply, socket}
+  end
 
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_sidebar, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:update_sidebar, _message}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:new_sidebar_message, _}, socket), do: {:noreply, socket}
+
+  defp follow_relationship(nil, _profile_user), do: {false, false, "follow"}
+
+  defp follow_relationship(current_user, profile_user) do
+    is_following = Socials.following?(current_user.id, profile_user.id)
+    is_followed_by = Socials.following?(profile_user.id, current_user.id)
+
+    follow_state =
+      cond do
+        current_user.id == profile_user.id -> "self"
+        is_followed_by && !is_following -> "follow_back"
+        is_following -> "following"
+        true -> "follow"
+      end
+
+    {is_following, is_followed_by, follow_state}
+  end
+
+  defp maybe_update_points(socket, key, updated_user) do
+    case Map.get(socket.assigns, key) do
+      %{id: id} = user when id == updated_user.id ->
+        assign(socket, key, %{user | points: updated_user.points})
+
+      _ ->
+        socket
+    end
+  end
+
+  defp linkify_bio(nil), do: nil
+
+  defp linkify_bio(text) when is_binary(text) do
+    regex = ~r/(https?:\/\/[^\s<]+|www\.[^\s<]+)/i
+
+    regex
+    |> Regex.split(text, include_captures: true, trim: true)
+    |> Enum.map(fn part ->
+      if Regex.match?(regex, part) do
+        url = if String.starts_with?(part, "http"), do: part, else: "https://" <> part
+
+        Phoenix.HTML.Tag.content_tag(
+          :a,
+          part,
+          href: url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          class: "text-indigo-600 hover:text-indigo-700 underline underline-offset-2"
+        )
+      else
+        Phoenix.HTML.html_escape(part)
+      end
+    end)
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+    |> Phoenix.HTML.raw()
+  end
 end

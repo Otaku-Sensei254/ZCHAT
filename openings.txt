@@ -1,0 +1,51 @@
+28:        <%= if @user_search_query != "" do %>
+40:      <%= if @user_search_results != [] do %>
+42:          <%= for user <- @user_search_results do %>
+48:              <%= if user.avatar_url && user.avatar_url != "" do %>
+67:      <%= if @user_search_query != "" && String.length(@user_search_query) >= 2 && @user_search_results == [] do %>
+75:      <%= for conv <- @conversations do %>
+94:            <%= cond do %>
+115:            <%= if is_online do %>
+124:                <%= if !is_group && other_member && other_member.user do %>
+128:              <%= if conv.unread_count > 0 do %>
+147:    <%= if @conversation do %>
+170:            <%= cond do %>
+186:            <%= if other_user_online do %>
+194:              <%= if @conversation.type != "group" && header_user do %>
+198:            <%= if other_user_online do %>
+216:            <%= for {dom_id, message} <- @streams.messages do %>
+224:                   <%= if is_me do %>
+231:                <%= if message.shared_post do %>
+235:                    <%= if media do %>
+236:                      <%= if media["type"] == "video" do %>
+252:                      <%= if post.user.avatar_url && post.user.avatar_url != "" do %>
+264:                    <%= if post.content do %>
+271:                  <%= if has_media do %>
+273:                      <%= for media <- message.media_files do %>
+274:                        <%= if media["type"] == "image" do %>
+277:                        <%= if media["type"] == "video" do %>
+285:                        <%= if media["type"] == "audio" do %>
+334:                  <%= if (message.content && message.content != "") || message.reply_to || preview_url do %>
+337:                      <%= if message.reply_to do %>
+349:                          <%= if message.reply_to.media_files && message.reply_to.media_files != [] && (!message.reply_to.content || message.reply_to.content == "") do %>
+361:                      <%= for segment <- message_segments(message.content || "") do %><%= case segment do %><% {:text, text} -> %><%= text %><% {:link, url} -> %>
+365:                    <%= if preview_url do %>
+376:                        <%= if preview && preview.image do %>
+390:                          <%= if preview && preview.title && preview.title != "" do %>
+396:                          <%= if preview && preview.description && preview.description != "" do %>
+410:                      <%= if message.inserted_at do %>
+418:                      <%= if is_me do %>
+423:                        <%= if is_read do %>
+436:          <%= if typing_text = get_typing_text(@typing_users) do %>
+455:          <%= if @replying_to do %>
+464:                  <%= cond do %>
+478:          <%= if @uploads.media_file.entries != [] do %>
+480:              <%= for entry <- @uploads.media_file.entries do %>
+493:                      <%= if entry.progress < 100 do %>
+607:                <%= if @preview_entry && @preview_entry.client_type == "audio" do %>
+639:              <%= if !@recording && !(@preview_entry && @preview_entry.client_type == "audio") do %>
+649:                <%= if is_uploading do %>
+669:  <%= if @preview_entry do %>
+685:           <%= if @preview_entry.progress < 100 do %>
+702:  <%= if @zoomed_image do %>
+711:        <%= if type == "video" do %>

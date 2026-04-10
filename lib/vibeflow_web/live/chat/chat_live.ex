@@ -15,21 +15,26 @@ defmodule VibeflowWeb.Chat.ChatLive do
       # 1. Subscribe to Sidebar updates
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user_sidebar:#{current_user.id}")
 
-      # 2. Track Presence
+      # 2. Subscribe to user settings changes (including skin)
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user:#{current_user.id}:settings")
+
+      # 3. Track Presence
       Presence.track(self(), "users:online", current_user.id, %{
         username: current_user.username,
         online_at: inspect(System.system_time(:second))
       })
+
       VibeflowWeb.Endpoint.subscribe("users:online")
 
-      # 3. Async load sidebar
+      # 4. Async load sidebar
       send(self(), :load_sidebar_data)
     end
 
     # Initial Assigns
     {:ok,
      socket
-     |> assign(:conversations, []) # Will load async
+     # Will load async
+     |> assign(:conversations, [])
      |> assign(:loading_sidebar, true)
      |> assign(:conversation, nil)
      |> assign(:typing_users, %{})
@@ -59,8 +64,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
        chunk_size: 64_000,
        max_file_size: 20_000_000,
        auto_upload: true
-     )
-    }
+     )}
   end
 
   # ===========================================================================
@@ -68,20 +72,22 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # ===========================================================================
 
   def message_skin_classes(active_skin, is_me) do
-    base_classes = "max-w-[75%] px-4 py-2 shadow-sm text-sm wrap-break-words relative"
+    base_classes = "max-w-[75%] px-6 py-5 text-sm break-words relative leading-relaxed word-wrap"
 
-    case active_skin do
-      "Glassmorphism Pro" ->
-        glassmorphism_classes(is_me)
+    # Skins only apply to messages the current user SENDS
+    # Received messages always use default styling
+    case {active_skin, is_me} do
+      {"Glassmorphism Pro", true} ->
+        glassmorphism_classes(true)
 
-      "Matrix Rain" ->
-        matrix_rain_classes(is_me)
+      {"Matrix Rain", true} ->
+        matrix_rain_classes(true)
 
-      "Holographic Foil" ->
-        holographic_foil_classes(is_me)
+      {"Holographic Foil", true} ->
+        holographic_foil_classes(true)
 
-      "Vantablack" ->
-        vantablack_classes(is_me)
+      {"Vantablack", true} ->
+        vantablack_classes(true)
 
       _ ->
         default_classes(is_me)
@@ -89,81 +95,67 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   def reply_skin_classes(active_skin, is_me) do
-    case active_skin do
-      "Glassmorphism Pro" ->
-        if is_me do
-          "bg-white/10 border-white/40 text-white"
-        else
-          "bg-white/30 border-white/50 text-gray-700 dark:text-gray-300"
-        end
+    # Reply skins only apply to messages the current user SENDS
+    # Received message replies always use default styling
+    case {active_skin, is_me} do
+      {"Glassmorphism Pro", true} ->
+        "bg-white/20 border-l-4 border-white/60 text-white px-3 py-2"
 
-      "Matrix Rain" ->
-        if is_me do
-          "bg-green-900/20 border-green-400/60 text-green-300"
-        else
-          "bg-green-900/10 border-green-400/40 text-green-400"
-        end
+      {"Matrix Rain", true} ->
+        "bg-green-900/30 border-l-4 border-green-400/80 text-green-300 px-3 py-2"
 
-      "Holographic Foil" ->
-        if is_me do
-          "bg-purple-900/20 border-purple-400/60 text-purple-200"
-        else
-          "bg-purple-900/10 border-purple-400/40 text-purple-300"
-        end
+      {"Holographic Foil", true} ->
+        "bg-purple-900/30 border-l-4 border-purple-400/80 text-purple-200 px-3 py-2"
 
-      "Vantablack" ->
-        if is_me do
-          "bg-gray-800/50 border-gray-600 text-gray-400"
-        else
-          "bg-gray-700/30 border-gray-600 text-gray-500"
-        end
+      {"Vantablack", true} ->
+        "bg-gray-800/50 border-l-4 border-gray-600 text-gray-300 px-3 py-2"
 
       _ ->
         if is_me do
-          "bg-black/10 border-white/60 text-white"
+          "bg-blue-100/20 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 px-3 py-2"
         else
-          "bg-white/50 dark:bg-black/20 border-blue-500 text-gray-600 dark:text-gray-300"
+          "bg-gray-200/30 dark:bg-gray-700/30 border-l-4 border-gray-400 text-gray-600 dark:text-gray-300 px-3 py-2"
         end
     end
   end
 
   defp glassmorphism_classes(is_me) do
     if is_me do
-      "bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-2xl rounded-br-none shadow-lg"
+      "bg-white/20 backdrop-blur-xl border border-white/40 text-white rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
     else
-      "bg-white/10 backdrop-blur-sm border border-white/20 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none shadow-lg"
+      "bg-white/15 backdrop-blur-lg border border-white/30 text-gray-900 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
     end
   end
 
   defp matrix_rain_classes(is_me) do
     if is_me do
-      "bg-black border border-green-500/30 text-green-400 rounded-2xl rounded-br-none shadow-lg shadow-green-500/20"
+      "bg-black/95 border-2 border-green-500/50 text-green-400 rounded-2xl rounded-br-none shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/50 before:border-b-0"
     else
-      "bg-black/90 border border-green-500/20 text-green-300 rounded-2xl rounded-bl-none shadow-lg shadow-green-500/10"
+      "bg-black/90 border-2 border-green-500/30 text-green-300 rounded-2xl rounded-bl-none shadow-2xl shadow-green-500/20 hover:shadow-green-500/40 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/30 before:border-b-0"
     end
   end
 
   defp holographic_foil_classes(is_me) do
     if is_me do
-      "bg-gradient-to-br from-purple-600/80 via-pink-600/80 to-blue-600/80 text-white rounded-2xl rounded-br-none shadow-lg shadow-purple-500/30"
+      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-blue-600/90 before:border-b-0"
     else
-      "bg-gradient-to-br from-purple-500/70 via-pink-500/70 to-blue-500/70 text-white rounded-2xl rounded-bl-none shadow-lg shadow-purple-500/20"
+      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-purple-500/80 before:border-b-0"
     end
   end
 
   defp vantablack_classes(is_me) do
     if is_me do
-      "bg-black border border-gray-900 text-gray-300 rounded-2xl rounded-br-none shadow-lg shadow-black/50"
+      "bg-black/95 border-2 border-gray-700 text-gray-200 rounded-3xl rounded-br-none shadow-2xl shadow-black/60 hover:shadow-black/80 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
     else
-      "bg-gray-900 border border-gray-800 text-gray-400 rounded-2xl rounded-bl-none shadow-lg shadow-black/30"
+      "bg-gray-900/95 border-2 border-gray-700 text-gray-300 rounded-3xl rounded-bl-none shadow-2xl shadow-black/50 hover:shadow-black/70 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
     end
   end
 
   defp default_classes(is_me) do
     if is_me do
-      "bg-blue-500 text-white rounded-2xl rounded-br-none"
+      "bg-blue-500 text-white rounded-3xl rounded-br-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-blue-500 before:border-b-0"
     else
-      "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none"
+      "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-gray-100 dark:before:border-t-zinc-700 before:border-b-0"
     end
   end
 
@@ -179,8 +171,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
     if connected?(socket) do
       # Unsubscribe from previous if exists
       if socket.assigns.conversation do
-        Phoenix.PubSub.unsubscribe(Vibeflow.PubSub, "conversation:#{socket.assigns.conversation.uuid}")
+        Phoenix.PubSub.unsubscribe(
+          Vibeflow.PubSub,
+          "conversation:#{socket.assigns.conversation.uuid}"
+        )
       end
+
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
     end
 
@@ -196,16 +192,17 @@ defmodule VibeflowWeb.Chat.ChatLive do
     other_last_read_at = if other_member, do: other_member.last_read_at, else: nil
     messages = Chat.list_messages(conversation)
 
-  {:noreply,
-   socket
-   |> assign(:conversations, conversations)
-   |> assign(:conversation, conversation)
-   |> assign(:other_last_read_at, other_last_read_at)
-   |> assign(:replying_to, nil)
-   |> assign(:typing_users, %{}) # Reset typing when switching chats
-   |> schedule_link_previews(messages)
-   |> stream(:messages, messages, reset: true)
-   |> assign(:hide_bottom_nav, true)}
+    {:noreply,
+     socket
+     |> assign(:conversations, conversations)
+     |> assign(:conversation, conversation)
+     |> assign(:other_last_read_at, other_last_read_at)
+     |> assign(:replying_to, nil)
+     # Reset typing when switching chats
+     |> assign(:typing_users, %{})
+     |> schedule_link_previews(messages)
+     |> stream(:messages, messages, reset: true)
+     |> assign(:hide_bottom_nav, true)}
   end
 
   @impl true
@@ -269,15 +266,18 @@ defmodule VibeflowWeb.Chat.ChatLive do
       {:noreply, socket}
     end
   end
+
   def handle_event("start_recording", _params, socket) do
     {:noreply, assign(socket, :recording, true)}
   end
 
   def handle_event("stop_recording", _params, socket) do
-
     entries = socket.assigns.uploads.audio.entries
-    ready = Enum.filter(entries, & &1.progress == 100)
-    Logger.debug(">>> VOICENOTE: stop_recording triggered. Total: #{length(entries)}, Ready: #{length(ready)}")
+    ready = Enum.filter(entries, &(&1.progress == 100))
+
+    Logger.debug(
+      ">>> VOICENOTE: stop_recording triggered. Total: #{length(entries)}, Ready: #{length(ready)}"
+    )
 
     socket =
       if length(ready) > 0 do
@@ -286,6 +286,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
         if length(entries) > 0 do
           Process.send_after(self(), :retry_audio_upload, 300)
         end
+
         socket
       end
 
@@ -360,7 +361,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   def handle_info(:retry_audio_upload, socket) do
     entries = socket.assigns.uploads.audio.entries
-    ready = Enum.filter(entries, & &1.progress == 100)
+    ready = Enum.filter(entries, &(&1.progress == 100))
 
     cond do
       length(ready) > 0 ->
@@ -381,15 +382,18 @@ defmodule VibeflowWeb.Chat.ChatLive do
         {:noreply, assign(socket, :audio_retry_count, 0)}
     end
   end
-#get to the replied messo
-def handle_event("scroll_to_message", _params, socket) do
-  # The server doesn't need to do anything, but it must acknowledge the event.
-  {:noreply, socket}
-end
+
+  # get to the replied messo
+  def handle_event("scroll_to_message", _params, socket) do
+    # The server doesn't need to do anything, but it must acknowledge the event.
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event("search_new_chat", %{"query" => query}, socket) do
     if String.length(query) >= 2 do
       current_user_id = socket.assigns.current_user.id
+
       results =
         Vibeflow.Search.global_search(query)
         |> Enum.filter(fn result -> Map.get(result, :type) == :user end)
@@ -417,7 +421,10 @@ end
   @impl true
   def handle_event("start_new_chat", %{"user_id" => target_user_id}, socket) do
     target_user_id = String.to_integer(target_user_id)
-    {:ok, conversation} = Chat.get_or_create_private_conversation(socket.assigns.current_user.id, target_user_id)
+
+    {:ok, conversation} =
+      Chat.get_or_create_private_conversation(socket.assigns.current_user.id, target_user_id)
+
     {:noreply,
      socket
      |> assign(user_search_results: [], user_search_query: "")
@@ -427,17 +434,20 @@ end
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
     socket =
-    if socket.assigns.preview_entry && socket.assigns.preview_entry.ref == ref do
-      assign(socket, preview_entry: nil)
-    else
-      socket
-    end
+      if socket.assigns.preview_entry && socket.assigns.preview_entry.ref == ref do
+        assign(socket, preview_entry: nil)
+      else
+        socket
+      end
+
     {:noreply, cancel_upload(socket, :media_file, ref)}
   end
 
   @impl true
   def handle_event("prepare_reply", %{"id" => message_id}, socket) do
-    message = Vibeflow.Repo.get!(Vibeflow.Chat.Message, message_id) |> Vibeflow.Repo.preload([:user])
+    message =
+      Vibeflow.Repo.get!(Vibeflow.Chat.Message, message_id) |> Vibeflow.Repo.preload([:user])
+
     {:noreply, assign(socket, :replying_to, message)}
   end
 
@@ -449,9 +459,11 @@ end
   @impl true
   def handle_event("delete_message", %{"id" => message_id}, socket) do
     message = Vibeflow.Repo.get(Vibeflow.Chat.Message, message_id)
+
     if message && message.user_id == socket.assigns.current_user.id do
       Chat.delete_message(message)
     end
+
     {:noreply, socket}
   end
 
@@ -464,18 +476,22 @@ end
       topic = "conversation:#{socket.assigns.conversation.uuid}"
 
       payload = %{
-        user: %{id: socket.assigns.current_user.id, username: socket.assigns.current_user.username},
+        user: %{
+          id: socket.assigns.current_user.id,
+          username: socket.assigns.current_user.username
+        },
         typing: is_typing
       }
+
       # Broadcast to everyone else in the topic
       VibeflowWeb.Endpoint.broadcast_from(self(), topic, "typing", payload)
     end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("display_new_message", _, socket), do: {:noreply, socket}
-
 
   @impl true
   # ======to check out the media shared=====
@@ -530,10 +546,10 @@ end
 
     socket =
       if is_current_chat do
-
         message =
           message
-          |> Vibeflow.Repo.preload([user: [], reply_to: [:user]])
+          |> Vibeflow.Repo.preload(user: [], reply_to: [:user])
+
         # We are in the chat:
         # 1. Mark as read immediately if from someone else
         if message.user_id != current_user_id do
@@ -557,7 +573,7 @@ end
               _ -> Vibeflow.Repo.get(Vibeflow.Accounts.User, message.user_id)
             end
 
-          username = message_user && message_user.username || "Someone"
+          username = (message_user && message_user.username) || "Someone"
 
           # 1. Show flash notification (ONLY here)
           put_flash(socket, :info, "New message from #{username}")
@@ -604,6 +620,7 @@ end
     # Only update if someone ELSE read messages while I am in the chat
     if reader_id != socket.assigns.current_user.id && socket.assigns.conversation do
       messages = Chat.list_messages(socket.assigns.conversation)
+
       {:noreply,
        socket
        |> assign(:other_last_read_at, last_read_at)
@@ -643,6 +660,12 @@ end
     {:noreply, assign(socket, :online_users, online_users)}
   end
 
+  # 8. SKIN CHANGED
+  @impl true
+  def handle_info({:skin_changed, new_skin}, socket) do
+    {:noreply, assign(socket, :active_message_skin, new_skin)}
+  end
+
   @impl true
   def handle_info(:update_notifications, socket) do
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
@@ -671,8 +694,11 @@ end
   end
 
   defp content_cut(nil, _), do: ""
+
   defp content_cut(content, length) do
-    if String.length(content) > length, do: String.slice(content, 0, length) <> "...", else: content
+    if String.length(content) > length,
+      do: String.slice(content, 0, length) <> "...",
+      else: content
   end
 
   defp message_segments(nil), do: []
@@ -789,8 +815,12 @@ end
   defp meta_content(html, keys) when is_list(keys) do
     Enum.find_value(keys, fn key ->
       escaped = Regex.escape(key)
-      property_first = ~r/<meta[^>]+(?:property|name)=["']#{escaped}["'][^>]+content=["']([^"']+)["'][^>]*>/i
-      content_first = ~r/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']#{escaped}["'][^>]*>/i
+
+      property_first =
+        ~r/<meta[^>]+(?:property|name)=["']#{escaped}["'][^>]+content=["']([^"']+)["'][^>]*>/i
+
+      content_first =
+        ~r/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']#{escaped}["'][^>]*>/i
 
       case Regex.run(property_first, html, capture: :all_but_first) ||
              Regex.run(content_first, html, capture: :all_but_first) do

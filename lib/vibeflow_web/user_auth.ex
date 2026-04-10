@@ -29,18 +29,18 @@ defmodule VibeflowWeb.UserAuth do
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
 
-defp maybe_write_remember_me_cookie(conn, token, _params) do
+  defp maybe_write_remember_me_cookie(conn, token, _params) do
     encoded_token = Base.url_encode64(token)
     put_resp_cookie(conn, @remember_me_cookie, encoded_token, @remember_me_options)
   end
 
   defp renew_session(conn) do
     delete_csrf_token()
+
     conn
     |> configure_session(renew: true)
     |> clear_session()
   end
-
 
   @doc """
   Logs the user out.
@@ -101,11 +101,15 @@ defp maybe_write_remember_me_cookie(conn, token, _params) do
   ## LiveView on_mount callbacks
   ## -----------------------------
 
-  def on_mount(:default, _params, session, socket), do: {:cont, mount_current_user(socket, session)}
-  def on_mount(:mount_current_user, _params, session, socket), do: {:cont, mount_current_user(socket, session)}
+  def on_mount(:default, _params, session, socket),
+    do: {:cont, mount_current_user(socket, session)}
+
+  def on_mount(:mount_current_user, _params, session, socket),
+    do: {:cont, mount_current_user(socket, session)}
 
   def on_mount(:ensure_authenticated, _params, session, socket) do
     socket = mount_current_user(socket, session)
+
     if socket.assigns.current_user do
       {:cont, socket}
     else
@@ -113,12 +117,14 @@ defp maybe_write_remember_me_cookie(conn, token, _params) do
         socket
         |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
         |> Phoenix.LiveView.redirect(to: ~p"/users/log_in")
+
       {:halt, socket}
     end
   end
 
   def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
     socket = mount_current_user(socket, session)
+
     if socket.assigns.current_user do
       {:halt, Phoenix.LiveView.redirect(socket, to: signed_in_path(socket))}
     else
@@ -191,12 +197,15 @@ defp maybe_write_remember_me_cookie(conn, token, _params) do
 
   defp put_token_in_session(conn, token) do
     encoded_token = Base.url_encode64(token)
+
     conn
     |> put_session(:user_token, encoded_token)
     |> put_session(:live_socket_id, "users_sessions:#{encoded_token}")
   end
 
-  defp maybe_store_return_to(%{method: "GET"} = conn), do: put_session(conn, :user_return_to, current_path(conn))
+  defp maybe_store_return_to(%{method: "GET"} = conn),
+    do: put_session(conn, :user_return_to, current_path(conn))
+
   defp maybe_store_return_to(conn), do: conn
 
   defp signed_in_path(_conn), do: ~p"/feed"

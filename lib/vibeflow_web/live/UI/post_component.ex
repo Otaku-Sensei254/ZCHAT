@@ -24,11 +24,12 @@ defmodule VibeflowWeb.UI.PostComponent do
     current_user = socket.assigns[:current_user]
 
     # Initialize mention modal state
-    socket = assign(socket, [
-      show_mention_modal: false,
-      mention_search_results: [],
-      mention_search_query: ""
-    ])
+    socket =
+      assign(socket,
+        show_mention_modal: false,
+        mention_search_results: [],
+        mention_search_query: ""
+      )
 
     # Check if current user has liked this post
     current_like =
@@ -139,13 +140,14 @@ defmodule VibeflowWeb.UI.PostComponent do
     post = socket.assigns.post
     user = socket.assigns.current_user
 
-    if user && (user |> can?(:delete, post)) do
+    if user && user |> can?(:delete, post) do
       case Posts.delete_post(post) do
         {:ok, _} ->
           {:noreply,
            socket
            |> put_flash(:info, "Post deleted successfully")
            |> push_navigate(to: ~p"/feed")}
+
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not delete post")}
       end
@@ -207,14 +209,15 @@ defmodule VibeflowWeb.UI.PostComponent do
 
         {:error, :post_not_found} ->
           {:noreply, put_flash(socket, :error, "Post not found")}
+
         {:error, _reason} ->
           {:noreply, put_flash(socket, :error, "Failed to repost post")}
       end
     else
       {:noreply,
-           socket
-           |> put_flash(:error, "Log in to repost")
-           |> push_navigate(to: ~p"/users/log_in")}
+       socket
+       |> put_flash(:error, "Log in to repost")
+       |> push_navigate(to: ~p"/users/log_in")}
     end
   end
 
@@ -247,7 +250,12 @@ defmodule VibeflowWeb.UI.PostComponent do
   # --- MENTION MODAL EVENTS ---
   @impl true
   def handle_event("close_mention_modal", _, socket) do
-    {:noreply, assign(socket, show_mention_modal: false, mention_search_results: [], mention_search_query: "")}
+    {:noreply,
+     assign(socket,
+       show_mention_modal: false,
+       mention_search_results: [],
+       mention_search_query: ""
+     )}
   end
 
   @impl true

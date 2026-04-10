@@ -59,9 +59,7 @@ defmodule VibeflowWeb.Router do
     end
   end
 
-
-
-  #MODERATOR ZONE
+  # MODERATOR ZONE
   pipeline :moderator do
     plug VibeflowWeb.Plugs.EnsureModerator
     plug :put_root_layout, html: {VibeflowWeb.Layouts, :root}
@@ -75,10 +73,10 @@ defmodule VibeflowWeb.Router do
     live_session :moderator,
       layout: {VibeflowWeb.Layouts, :sidepanel},
       on_mount: [
-          {VibeflowWeb.UserAuth, :mount_current_user},
-          {VibeflowWeb.ModeratorAuthLive, :ensure_moderator},
-          {VibeflowWeb.AdminLayoutHook, :default},
-          VibeflowWeb.UserActivityHook
+        {VibeflowWeb.UserAuth, :mount_current_user},
+        {VibeflowWeb.ModeratorAuthLive, :ensure_moderator},
+        {VibeflowWeb.AdminLayoutHook, :default},
+        VibeflowWeb.UserActivityHook
       ] do
       live "/dashboard", DashboardLive, :index
       live "/verification-requests", VerificationsLive, :index
@@ -87,35 +85,31 @@ defmodule VibeflowWeb.Router do
     end
   end
 
-
-  #SALES EXECUTIVE ZONE
+  # SALES EXECUTIVE ZONE
   pipeline :sales do
-  plug VibeflowWeb.Plugs.EnsureSalesExecutive
-  plug :put_root_layout, html: {VibeflowWeb.Layouts, :root}
-  plug :put_layout, html: {VibeflowWeb.Layouts, :sidepanel}
-  plug VibeflowWeb.Plugs.LoadNavigation
-end
-
-scope "/sales-executive", VibeflowWeb.Sales do
-  pipe_through [:browser, :require_authenticated_user, :sales]
-
-  live_session :sales,
-    layout: {VibeflowWeb.Layouts, :sidepanel},
-    on_mount: [
-      {VibeflowWeb.UserAuth, :mount_current_user},
-      {VibeflowWeb.SalesAuthLive, :ensure_sales_executive},
-      {VibeflowWeb.AdminLayoutHook, :default},
-      VibeflowWeb.UserActivityHook
-    ] do
-    live "/dashboard", DashboardLive, :index
-    live "/ads-request", AdsRequestLive, :index
-    live "/ads-request/new", AdsRequestLive, :new
-    live "/ads-request/:id", AdsRequestLive, :show
+    plug VibeflowWeb.Plugs.EnsureSalesExecutive
+    plug :put_root_layout, html: {VibeflowWeb.Layouts, :root}
+    plug :put_layout, html: {VibeflowWeb.Layouts, :sidepanel}
+    plug VibeflowWeb.Plugs.LoadNavigation
   end
-end
 
+  scope "/sales-executive", VibeflowWeb.Sales do
+    pipe_through [:browser, :require_authenticated_user, :sales]
 
-
+    live_session :sales,
+      layout: {VibeflowWeb.Layouts, :sidepanel},
+      on_mount: [
+        {VibeflowWeb.UserAuth, :mount_current_user},
+        {VibeflowWeb.SalesAuthLive, :ensure_sales_executive},
+        {VibeflowWeb.AdminLayoutHook, :default},
+        VibeflowWeb.UserActivityHook
+      ] do
+      live "/dashboard", DashboardLive, :index
+      live "/ads-request", AdsRequestLive, :index
+      live "/ads-request/new", AdsRequestLive, :new
+      live "/ads-request/:id", AdsRequestLive, :show
+    end
+  end
 
   # ADMIN ZONE
 
@@ -126,24 +120,24 @@ end
     plug VibeflowWeb.Plugs.LoadNavigation
   end
 
-scope "/admin", VibeflowWeb.Admin do
-  pipe_through [:browser, :require_authenticated_user, :admin]
+  scope "/admin", VibeflowWeb.Admin do
+    pipe_through [:browser, :require_authenticated_user, :admin]
 
-  live_session :admin,
-    layout: {VibeflowWeb.Layouts, :sidepanel},
-    on_mount: [
-      {VibeflowWeb.UserAuth, :mount_current_user},
-      {VibeflowWeb.AdminAuthLive, :ensure_admin},
-      {VibeflowWeb.AdminLayoutHook, :default},
-      VibeflowWeb.UserActivityHook
-    ] do
-    live "/dashboard", DashboardLive, :index
-    live "/verification-requests", VerificationsLive, :index
-    live "/users", ManagementLive, :index
-    live "/users/:user_id/edit_roles", UserRolesLive, :edit
-    live "/roles", CreateRolesLive
+    live_session :admin,
+      layout: {VibeflowWeb.Layouts, :sidepanel},
+      on_mount: [
+        {VibeflowWeb.UserAuth, :mount_current_user},
+        {VibeflowWeb.AdminAuthLive, :ensure_admin},
+        {VibeflowWeb.AdminLayoutHook, :default},
+        VibeflowWeb.UserActivityHook
+      ] do
+      live "/dashboard", DashboardLive, :index
+      live "/verification-requests", VerificationsLive, :index
+      live "/users", ManagementLive, :index
+      live "/users/:user_id/edit_roles", UserRolesLive, :edit
+      live "/roles", CreateRolesLive
+    end
   end
-end
 
   # scope "/moderator", VibeflowWeb.Moderator do
   #   pipe_yhrough [:browser, :require_authenticated_user]
@@ -189,8 +183,11 @@ end
     end
 
     live_session :chat,
-      on_mount: [{VibeflowWeb.UserAuth, :mount_current_user},
-      {VibeflowWeb.ChatAuthHook, :require_member }, VibeflowWeb.UserActivityHook] do
+      on_mount: [
+        {VibeflowWeb.UserAuth, :mount_current_user},
+        {VibeflowWeb.ChatAuthHook, :require_member},
+        VibeflowWeb.UserActivityHook
+      ] do
       live "/chat", Chat.ChatLive, :index
       live "/chat/settings", Chat.ChatSettingsLive, :index
       live "/chat/:uuid", Chat.ChatLive, :index
@@ -208,5 +205,4 @@ end
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end
   end
-
 end

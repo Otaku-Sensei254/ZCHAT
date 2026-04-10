@@ -8,73 +8,106 @@
   <div class="p-5 sm:p-6">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
-                  <div class="flex items-center gap-2">
-                    <div class="relative">
-                      <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
-                        <%= if @post.user.avatar_url && @post.user.avatar_url != "" do %>
-                          <img src={@post.user.avatar_url} alt="#{@post.user.username} avatar" class={"h-10 w-10 rounded-full object-cover border dark:border-zinc-700 " <> VibeflowWeb.CoreComponents.avatar_frame_class(@post.user)} referrerpolicy="no-referrer" />
-                        <% else %>
-                          <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
-                            <%= VibeflowWeb.CoreComponents.initials(@post.user) %>
-                          </div>
-                        <% end %>
-                      </.link>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
+              <%= if @post.user.avatar_url && @post.user.avatar_url != "" do %>
+                <img
+                  src={@post.user.avatar_url}
+                  alt="#{@post.user.username} avatar"
+                  class={"h-10 w-10 rounded-full object-cover border dark:border-zinc-700 " <> VibeflowWeb.CoreComponents.avatar_frame_class(@post.user)}
+                  referrerpolicy="no-referrer"
+                />
+              <% else %>
+                <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
+                  {VibeflowWeb.CoreComponents.initials(@post.user)}
+                </div>
+              <% end %>
+            </.link>
 
-                      <%= if @current_user && @current_user.id != @post.user.id && !@is_following do %>
-                        <button
-                          type="button"
-                          phx-click="toggle_follow"
-                          phx-target={@myself}
-                          phx-value-user-id={@post.user.id}
-                          class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 text-blue-500 border border-blue-200 dark:border-zinc-700 flex items-center justify-center shadow-sm hover:scale-105 transition"
-                          title="Follow"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clip-rule="evenodd" />
-                          </svg>
-                        </button>
-                      <% end %>
-                    </div>
-                  <span class={"font-semibold text-gray-900 dark:text-gray-200 text-base flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(@post.user)}>
-                    <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
-                      <%= @post.user.username %>
-                      
-                    </.link>
-                    <.verified_badge user={@post.user} class="h-5 w-5" />
-                  </span>
-                  </div>            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">
-              · <%= Timex.from_now(@post.inserted_at) %>
-            </span>
+            <%= if @current_user && @current_user.id != @post.user.id && !@is_following do %>
+              <button
+                type="button"
+                phx-click="toggle_follow"
+                phx-target={@myself}
+                phx-value-user-id={@post.user.id}
+                class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 text-blue-500 border border-blue-200 dark:border-zinc-700 flex items-center justify-center shadow-sm hover:scale-105 transition"
+                title="Follow"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  class="w-4 h-4"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            <% end %>
+          </div>
+          <span class={"font-semibold text-gray-900 dark:text-gray-200 text-base flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(@post.user)}>
+            <.link navigate={~p"/users/#{@post.user.username}"} class="hover:underline">
+              {@post.user.username}
+            </.link>
+            <.verified_badge user={@post.user} class="h-5 w-5" />
+          </span>
+        </div>
+        
+        <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">
+          · {Timex.from_now(@post.inserted_at)}
+        </span>
       </div>
 
-        <span :if={@post.category} class="text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-50 text-blue-600 dark:from-blue-900/50 dark:to-blue-900/80 dark:text-blue-300 px-3 py-1 rounded-full shadow-sm">
-          {@post.category}
-        </span>
+      <span
+        :if={@post.category}
+        class="text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-50 text-blue-600 dark:from-blue-900/50 dark:to-blue-900/80 dark:text-blue-300 px-3 py-1 rounded-full shadow-sm"
+      >
+        {@post.category}
+      </span>
     </div>
 
     <%= if @current_user && (@current_user |> can?(:delete, @post)) do %>
-          <div class="flex items-center gap-1 ml-2 border-l pl-3 border-gray-200 dark:border-zinc-700">
-            
-            <.link patch={~p"/posts/#{@post.uuid}/edit"} class="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
-                <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
-              </svg>
-            </.link>
+      <div class="flex items-center gap-1 ml-2 border-l pl-3 border-gray-200 dark:border-zinc-700">
+        <.link
+          patch={~p"/posts/#{@post.uuid}/edit"}
+          class="text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="w-4 h-4"
+          >
+            <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
+            <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+          </svg>
+        </.link>
 
-            <button 
-              phx-click="delete_post" 
-              phx-target={@myself}
-              data-confirm="Are you sure you want to delete this post?"
-              class="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-500 transition-colors p-1"
-            >
-            
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        <% end %>
+        <button
+          phx-click="delete_post"
+          phx-target={@myself}
+          data-confirm="Are you sure you want to delete this post?"
+          class="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-500 transition-colors p-1"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="w-4 h-4"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    <% end %>
 
     <%!-- TAGS (Navigate to Tag Search) --%>
     <%= if length(@post.tags || []) > 0 do %>
@@ -84,12 +117,12 @@
             href={~p"/tags/#{tag}"}
             class="text-xs bg-gray-50 text-gray-600 font-medium px-2.5 py-1 rounded-full hover:bg-gray-100 dark:bg-zinc-800 dark:text-gray-400 dark:hover:bg-zinc-700 transition"
           >
-            #<%= tag %>
+            #{tag}
           </.link>
         <% end %>
       </div>
     <% end %>
-<%!-- MEDIA SLIDER --%>
+    <%!-- MEDIA SLIDER --%>
     <%= if @post.media_files && @post.media_files != [] do %>
       <div class="my-6 relative group/slider">
         <div class="overflow-hidden rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm bg-black/5 dark:bg-black/20">
@@ -97,18 +130,17 @@
             <%= for {media, index} <- Enum.with_index(@post.media_files) do %>
               <div class={if index == @current_media_index, do: "block", else: "hidden"}>
                 <%= cond do %>
-                  
                   <%!-- ✨ CLICKABLE IMAGE ✨ --%>
                   <% media["type"] == "image" -> %>
                     <.link navigate={~p"/posts/#{@post.uuid}"} class="block cursor-pointer">
-                      <img 
-                        src={media["url"]} 
-                        alt="Post media" 
-                        class="w-full object-contain max-h-[600px]" 
+                      <img
+                        src={media["url"]}
+                        alt="Post media"
+                        class="w-full object-contain max-h-[600px]"
                       />
                     </.link>
 
-                  <%!-- VIDEO (Not clickable for nav, clickable for play) --%>
+                    <%!-- VIDEO (Not clickable for nav, clickable for play) --%>
                   <% media["type"] == "video" -> %>
                     <%= if index == @current_media_index do %>
                       <video
@@ -124,10 +156,13 @@
                         Your browser does not support the video tag.
                       </video>
                     <% end %>
-
                   <% true -> %>
                     <div class="p-12 text-center text-gray-500 bg-gray-50 dark:text-gray-400 dark:bg-zinc-800">
-                      <a href={media["url"]} target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                      <a
+                        href={media["url"]}
+                        target="_blank"
+                        class="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
                         View attached file
                       </a>
                     </div>
@@ -135,34 +170,44 @@
               </div>
             <% end %>
           </div>
-          
+
           <%!-- SLIDER CONTROLS (Prevent navigation click bubbling) --%>
           <%= if length(@post.media_files) > 1 do %>
-            <button 
+            <button
               type="button"
               phx-click="prev_media"
               phx-target={@myself}
               class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-all z-10 backdrop-blur-sm opacity-0 group-hover/slider:opacity-100"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
-            
-            <button 
+
+            <button
               type="button"
               phx-click="next_media"
               phx-target={@myself}
               class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-black/70 transition-all z-10 backdrop-blur-sm opacity-0 group-hover/slider:opacity-100"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
-            
+
             <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
               <%= for {_media, index} <- Enum.with_index(@post.media_files) do %>
-                <button 
+                <button
                   type="button"
                   phx-click="go_to_media"
                   phx-value-index={index}
@@ -185,37 +230,46 @@
       <div class="mt-5 cursor-pointer">
         <%= if @post.title do %>
           <h3 class="text-3xl font-extrabold text-gray-900 dark:text-gray-200 leading-snug mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            <%= @post.title %>
+            {@post.title}
           </h3>
         <% end %>
         <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-300 leading-relaxed">
-          <%= VibeflowWeb.CoreComponents.render_markdown_mentions(content_cut(@post.content, 200)) %>
+          {VibeflowWeb.CoreComponents.render_markdown_mentions(content_cut(@post.content, 200))}
           <%= if String.length(@post.content) > 200 do %>
             <span class="text-blue-600 dark:text-blue-400 hover:underline">Read more</span>
           <% end %>
         </div>
       </div>
     </.link>
-
-    
   </div>
 
   <%!-- INTERACTIONS --%>
   <div class="px-5 sm:px-6 py-3 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2 sm:gap-4">
-        
         <button
           phx-click="toggle_like"
           phx-throttle="500"
           phx-target={@myself}
-          class={"flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 transition-all duration-150 #{if @current_like, do: "text-red-500 bg-red-50 dark:bg-red-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}"}}
+          class={"flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 transition-all duration-150 #{if @current_like, do: "text-red-500 bg-red-50 dark:bg-red-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"}"}
+          }
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5" fill={if @current_like, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 sm:h-5"
+            fill={if @current_like, do: "currentColor", else: "none"}
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
           </svg>
           <span class="text-xs sm:text-sm font-medium">
-            <%= @like_count %>
+            {@like_count}
           </span>
         </button>
 
@@ -224,126 +278,195 @@
           navigate={~p"/posts/#{@post.uuid}"}
           class="flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-600 dark:hover:text-blue-400"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 sm:h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
           </svg>
           <span class="text-xs sm:text-sm font-medium">
-            <%= @comment_count %>
+            {@comment_count}
           </span>
         </.link>
 
-        <button 
-        phx-click="request_share" 
-        phx-target={@myself}
-        class="flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
-        title="Send to chat"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-        </svg>
-        <span class="text-xs sm:text-sm font-medium hidden sm:inline">Share</span>
-      </button>
-      
-        <button 
-          phx-click="repost_post" 
+        <button
+          phx-click="request_share"
+          phx-target={@myself}
+          class="flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+          title="Send to chat"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 sm:h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
+          </svg>
+          <span class="text-xs sm:text-sm font-medium hidden sm:inline">Share</span>
+        </button>
+
+        <button
+          phx-click="repost_post"
           phx-target={@myself}
           class={"flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 transition-all duration-150 #{
             if @current_repost, do: "text-green-500 bg-green-50 dark:bg-green-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
           }"}
           title={if @current_repost, do: "Remove repost", else: "Repost this post"}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5" fill={if @current_repost, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 sm:h-5"
+            fill={if @current_repost, do: "currentColor", else: "none"}
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+            />
           </svg>
           <span class="text-xs sm:text-sm font-medium">
-            <%= @repost_count %>
+            {@repost_count}
           </span>
         </button>
 
-        <button 
-          phx-click="toggle_save" 
+        <button
+          phx-click="toggle_save"
           phx-target={@myself}
           class={"flex items-center gap-1.5 sm:gap-2 rounded-full py-1.5 px-2 sm:px-3 transition-all duration-150 #{
             if @current_save, do: "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/50", else: "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
           }"}
           title={if @current_save, do: "Remove from saved", else: "Save this post"}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5" fill={if @current_save, do: "currentColor", else: "none"} viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 sm:h-5"
+            fill={if @current_save, do: "currentColor", else: "none"}
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            />
           </svg>
           <span class="text-xs sm:text-sm font-medium hidden sm:inline">Save</span>
         </button>
-     
       </div>
 
       <div class="text-xs text-gray-400 dark:text-gray-500">
-        <%= @post.view_count %> views
+        {@post.view_count} views
       </div>
     </div>
   </div>
-
-<!-- Mention Search Modal -->
-<div 
-  id="mention-modal" 
-  class={["fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity", 
-           if(@show_mention_modal, do: "", else: "hidden")]}
-  phx-click="close_mention_modal"
->
-  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
   
-  <div class="relative bg-white dark:bg-zinc-900 w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[60vh] flex flex-col border border-gray-100 dark:border-zinc-800" phx-click="stop_propagation">
-    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
-      <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Mention User</h3>
-      <button 
-        phx-click="close_mention_modal" 
-        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto p-4">
-      <%= if @mention_search_results && @mention_search_results != [] do %>
-        <div class="space-y-2">
-          <%= for user <- @mention_search_results do %>
-            <button 
-              phx-click="select_mention" 
-              phx-value-username={user.username}
-              phx-value-avatar={user.avatar_url}
-              class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left"
+<!-- Mention Search Modal -->
+  <div
+    id="mention-modal"
+    class={[
+      "fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity",
+      if(@show_mention_modal, do: "", else: "hidden")
+    ]}
+    phx-click="close_mention_modal"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+    <div
+      class="relative bg-white dark:bg-zinc-900 w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[60vh] flex flex-col border border-gray-100 dark:border-zinc-800"
+      phx-click="stop_propagation"
+    >
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Mention User</h3>
+        <button
+          phx-click="close_mention_modal"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
             >
-              <div class="flex-shrink-0">
-                <%= if user.avatar_url && user.avatar_url != "" do %>
-                  <img src={user.avatar_url} alt={user.username} class={"h-8 w-8 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
-                <% else %>
-                  <div class={"h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
-                    <%= VibeflowWeb.CoreComponents.initials(user) %>
-                  </div>
-                <% end %>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class={"font-medium text-gray-900 dark:text-gray-200 truncate " <> VibeflowWeb.CoreComponents.username_glow_class(user)}>
-                  <%= user.username %>
-                </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
-                  <%= user.bio || "No bio" %>
-                </div>
-              </div>
-            </button>
-          <% end %>
-        </div>
-      <% else %>
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </path>
           </svg>
-          <p class="text-sm">No users found</p>
-          <p class="text-xs mt-1">Try a different username</p>
-        </div>
-      <% end %>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4">
+        <%= if @mention_search_results && @mention_search_results != [] do %>
+          <div class="space-y-2">
+            <%= for user <- @mention_search_results do %>
+              <button
+                phx-click="select_mention"
+                phx-value-username={user.username}
+                phx-value-avatar={user.avatar_url}
+                class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left"
+              >
+                <div class="flex-shrink-0">
+                  <%= if user.avatar_url && user.avatar_url != "" do %>
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      class={"h-8 w-8 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}
+                    />
+                  <% else %>
+                    <div class={"h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
+                      {VibeflowWeb.CoreComponents.initials(user)}
+                    </div>
+                  <% end %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class={"font-medium text-gray-900 dark:text-gray-200 truncate " <> VibeflowWeb.CoreComponents.username_glow_class(user)}>
+                    {user.username}
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {user.bio || "No bio"}
+                  </div>
+                </div>
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <svg
+              class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              >
+              </path>
+            </svg>
+            <p class="text-sm">No users found</p>
+            <p class="text-xs mt-1">Try a different username</p>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
-</div>
 </div>

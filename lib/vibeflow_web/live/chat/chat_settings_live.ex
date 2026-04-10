@@ -13,8 +13,7 @@ defmodule VibeflowWeb.Chat.ChatSettingsLive do
      |> assign(:active_message_skin, current_user.active_message_skin || "default")
      |> assign(:notifications_enabled, true)
      |> assign(:sound_enabled, true)
-     |> assign(:online_status_enabled, true)
-    }
+     |> assign(:online_status_enabled, true)}
   end
 
   @impl true

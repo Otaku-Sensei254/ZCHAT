@@ -2,7 +2,10 @@
   <div class="rounded-3xl overflow-hidden border border-slate-200/60 dark:border-zinc-800 bg-gradient-to-br from-white via-slate-50 to-blue-50/60 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900/60">
     <div class="p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <.link navigate={~p"/users/#{@user.username}"} class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+        <.link
+          navigate={~p"/users/#{@user.username}"}
+          class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+        >
           &larr; Back to profile
         </.link>
         <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mt-2">
@@ -13,10 +16,13 @@
         </p>
       </div>
       <div class="flex items-center gap-3 bg-white/80 dark:bg-zinc-800/70 border border-slate-200 dark:border-zinc-700 rounded-2xl px-4 py-3 shadow-sm">
-        <img src={@user.avatar_url || "/images/default_avatar.png"} class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-700">
+        <img
+          src={@user.avatar_url || "/images/default_avatar.png"}
+          class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-700"
+        />
         <div>
           <div class="font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-            <%= @user.username %>
+            {@user.username}
             <.verified_badge user={@user} class="h-5 w-5" />
           </div>
           <div class="text-xs text-gray-500 dark:text-gray-400">Creator dashboard</div>
@@ -28,23 +34,23 @@
   <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
     <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Views</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2"><%= @totals.views %></div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{@totals.views}</div>
     </div>
     <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Likes</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2"><%= @totals.likes %></div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{@totals.likes}</div>
     </div>
     <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Comments</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2"><%= @totals.comments %></div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{@totals.comments}</div>
     </div>
     <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Reach</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2"><%= @totals.reach %></div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{@totals.reach}</div>
     </div>
     <div class="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Rippled</div>
-      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2"><%= @totals.rippled %></div>
+      <div class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{@totals.rippled}</div>
     </div>
   </div>
 
@@ -60,13 +66,16 @@
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <h3 class="font-semibold text-gray-900 dark:text-white truncate">
-                  <%= p.post.title || "Untitled Post" %>
+                  {p.post.title || "Untitled Post"}
                 </h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <%= Timex.from_now(p.post.inserted_at) %>
+                  {Timex.from_now(p.post.inserted_at)}
                 </p>
               </div>
-              <.link navigate={~p"/posts/#{p.post.uuid}"} class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+              <.link
+                navigate={~p"/posts/#{p.post.uuid}"}
+                class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
                 View
               </.link>
             </div>
@@ -74,30 +83,32 @@
             <div class="grid grid-cols-3 gap-3 mt-4">
               <div class="rounded-xl bg-slate-50 dark:bg-zinc-800 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Views</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.post.view_count || 0 %></div>
+                <div class="font-bold text-gray-900 dark:text-white">
+                  {p.post.view_count || 0}
+                </div>
               </div>
               <div class="rounded-xl bg-slate-50 dark:bg-zinc-800 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Likes</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.likes_count %></div>
+                <div class="font-bold text-gray-900 dark:text-white">{p.likes_count}</div>
               </div>
               <div class="rounded-xl bg-slate-50 dark:bg-zinc-800 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Comments</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.comments_count %></div>
+                <div class="font-bold text-gray-900 dark:text-white">{p.comments_count}</div>
               </div>
             </div>
 
             <div class="mt-4 grid grid-cols-3 gap-3">
               <div class="rounded-xl border border-slate-200 dark:border-zinc-700 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Seeded</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.seed_count %></div>
+                <div class="font-bold text-gray-900 dark:text-white">{p.seed_count}</div>
               </div>
               <div class="rounded-xl border border-slate-200 dark:border-zinc-700 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Rippled</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.rippled_count %></div>
+                <div class="font-bold text-gray-900 dark:text-white">{p.rippled_count}</div>
               </div>
               <div class="rounded-xl border border-slate-200 dark:border-zinc-700 p-3 text-center">
                 <div class="text-xs text-gray-500 dark:text-gray-400">Stopped At</div>
-                <div class="font-bold text-gray-900 dark:text-white"><%= p.frontier_count %></div>
+                <div class="font-bold text-gray-900 dark:text-white">{p.frontier_count}</div>
               </div>
             </div>
 
@@ -111,7 +122,7 @@
                 <% else %>
                   <%= for u <- p.ripplers do %>
                     <span class="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
-                      <%= u.username %>
+                      {u.username}
                     </span>
                   <% end %>
                 <% end %>

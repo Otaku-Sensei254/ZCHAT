@@ -29,7 +29,8 @@ defmodule Vibeflow.Posts.Seeder do
     expand_seeds(post_id, creator_id, creator_id, count)
   end
 
-  def expand_seeds(post_id, creator_id, source_user_id, count) when is_integer(count) and count > 0 do
+  def expand_seeds(post_id, creator_id, source_user_id, count)
+      when is_integer(count) and count > 0 do
     existing_ids =
       from(ps in PostSeed,
         where: ps.post_id == ^post_id,

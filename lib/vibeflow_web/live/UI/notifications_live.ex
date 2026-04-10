@@ -31,4 +31,3 @@ defmodule VibeflowWeb.UI.NotificationsLive do
     {:noreply, socket}
   end
 end
-  

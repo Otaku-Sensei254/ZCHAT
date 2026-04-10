@@ -10,7 +10,10 @@ defmodule Vibeflow.Repo.Migrations.CreatePostSeeds do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:post_seeds, [:post_id, :user_id], name: :post_seeds_post_id_user_id_index)
+    create unique_index(:post_seeds, [:post_id, :user_id],
+             name: :post_seeds_post_id_user_id_index
+           )
+
     create index(:post_seeds, [:user_id])
     create index(:post_seeds, [:post_id])
   end

@@ -15,7 +15,7 @@ defmodule Vibeflow.Notifications.Notification do
 
   def changeset(notification, attrs) do
     notification
-  |> cast(attrs, [:type, :user_id, :actor_id, :post_id, :read_at, :conversation_id])
-   |> validate_required([:type, :user_id, :actor_id])
+    |> cast(attrs, [:type, :user_id, :actor_id, :post_id, :read_at, :conversation_id])
+    |> validate_required([:type, :user_id, :actor_id])
   end
 end

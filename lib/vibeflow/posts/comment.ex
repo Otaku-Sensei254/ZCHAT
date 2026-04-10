@@ -12,10 +12,11 @@ defmodule Vibeflow.Posts.Comment do
     belongs_to :post, Vibeflow.Posts.Post
     belongs_to :parent, __MODULE__
     has_many :replies, __MODULE__, foreign_key: :parent_id
+
     has_many :likes, Vibeflow.Posts.Like,
-  foreign_key: :likeable_id,
-  on_replace: :delete,
-  where: [likeable_type: "Comment"]
+      foreign_key: :likeable_id,
+      on_replace: :delete,
+      where: [likeable_type: "Comment"]
 
     timestamps()
   end
@@ -39,7 +40,7 @@ defmodule Vibeflow.Posts.Comment do
     preload = Keyword.get(opts, :preload, [:user, :likes])
     post_id = Keyword.get(opts, :post_id)
     parent_id = Keyword.get(opts, :parent_id)
-    order_by = Keyword.get(opts, :order_by, [desc: :inserted_at])
+    order_by = Keyword.get(opts, :order_by, desc: :inserted_at)
 
     query = from(c in __MODULE__)
 
@@ -47,10 +48,13 @@ defmodule Vibeflow.Posts.Comment do
       case {post_id, parent_id} do
         {nil, nil} ->
           query
+
         {post_id, nil} ->
           from c in query, where: c.post_id == ^post_id and is_nil(c.parent_id)
+
         {nil, parent_id} ->
           from c in query, where: c.parent_id == ^parent_id
+
         {post_id, parent_id} ->
           from c in query, where: c.post_id == ^post_id and c.parent_id == ^parent_id
       end

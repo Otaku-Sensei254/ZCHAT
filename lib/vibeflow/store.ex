@@ -17,7 +17,7 @@ defmodule Vibeflow.Store do
     Repo.get_by(StoreItem, item_slug: slug)
   end
 
-    def list_user_inventory(user_id) do
+  def list_user_inventory(user_id) do
     Repo.all(
       from i in Inventory,
         join: s in StoreItem,
@@ -27,16 +27,17 @@ defmodule Vibeflow.Store do
     )
   end
 
-   def get_user_item(user_id, identifier) when is_binary(identifier) do
+  def get_user_item(user_id, identifier) when is_binary(identifier) do
     # Try by item name first, then by slug
     Repo.one(
       from i in Inventory,
         join: s in StoreItem,
         on: s.id == i.item_slug,
-        where: i.user_id == ^user_id and (i.item_name == ^identifier or s.item_slug == ^identifier),
+        where:
+          i.user_id == ^user_id and (i.item_name == ^identifier or s.item_slug == ^identifier),
         limit: 1
     )
-   end
+  end
 
   def activate_cosmetic(user_id, cosmetic_type, skin_name) do
     case cosmetic_type do
@@ -45,9 +46,26 @@ defmodule Vibeflow.Store do
         alias Vibeflow.Repo
 
         user = Repo.get!(User, user_id)
-        user
-        |> User.profile_changeset(%{active_message_skin: skin_name})
-        |> Repo.update()
+
+        result =
+          user
+          |> User.profile_changeset(%{active_message_skin: skin_name})
+          |> Repo.update()
+
+        # Broadcast the skin change so ChatLive can update
+        case result do
+          {:ok, updated_user} ->
+            Phoenix.PubSub.broadcast(
+              Vibeflow.PubSub,
+              "user:#{user_id}:settings",
+              {:skin_changed, skin_name}
+            )
+
+            {:ok, updated_user}
+
+          error ->
+            error
+        end
 
       _ ->
         :ok
@@ -71,9 +89,9 @@ defmodule Vibeflow.Store do
       items
       |> Enum.find(fn item ->
         (String.contains?(item.name, "Glassmorphism") or
-         String.contains?(item.name, "Matrix") or
-         String.contains?(item.name, "Holographic") or
-         String.contains?(item.name, "Vantablack")) and not expired_metadata?(item.metadata)
+           String.contains?(item.name, "Matrix") or
+           String.contains?(item.name, "Holographic") or
+           String.contains?(item.name, "Vantablack")) and not expired_metadata?(item.metadata)
       end)
       |> case do
         %{name: item_name} -> item_name
@@ -89,8 +107,8 @@ defmodule Vibeflow.Store do
 
   defp get_active_frame(items) do
     case Enum.find(items, fn item ->
-      String.contains?(item.slug, "wave-frame") and not expired_metadata?(item.metadata)
-    end) do
+           String.contains?(item.slug, "wave-frame") and not expired_metadata?(item.metadata)
+         end) do
       %{slug: "wave-frame-red"} -> "red"
       %{slug: "wave-frame-blue"} -> "blue"
       _ -> nil
@@ -99,7 +117,8 @@ defmodule Vibeflow.Store do
 
   defp get_active_glow(items) do
     Enum.any?(items, fn item ->
-      (item.name == "Profile Glow" or item.slug == "profile-glow") and not expired_metadata?(item.metadata)
+      (item.name == "Profile Glow" or item.slug == "profile-glow") and
+        not expired_metadata?(item.metadata)
     end)
   end
 
@@ -204,7 +223,8 @@ defmodule Vibeflow.Store do
         from i in Inventory,
           join: s in StoreItem,
           on: s.id == i.item_slug,
-          where: i.user_id == ^user_id and s.item_slug in ^frame_slugs and s.item_slug != ^item_slug
+          where:
+            i.user_id == ^user_id and s.item_slug in ^frame_slugs and s.item_slug != ^item_slug
       )
     end
 

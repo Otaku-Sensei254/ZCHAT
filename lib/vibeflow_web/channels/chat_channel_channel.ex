@@ -76,7 +76,8 @@ defmodule VibeflowWeb.ChatChannelChannel do
     broadcast(socket, "presence_change", %{
       user_id: user.id,
       username: user.username,
-      status: status, # "online", "offline", "away"
+      # "online", "offline", "away"
+      status: status,
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     })
 

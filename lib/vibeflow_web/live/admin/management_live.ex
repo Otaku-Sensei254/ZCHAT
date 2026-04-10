@@ -19,8 +19,7 @@ defmodule VibeflowWeb.Admin.ManagementLive do
        |> assign(:page_title, "User Management")
        |> assign(:users, users)
        |> assign(:all_roles, all_roles)
-       |> assign(:search_query, "")
-      }
+       |> assign(:search_query, "")}
     end
   end
 

@@ -56,12 +56,12 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
-
-   # CONFIG MIME TYPES FOR UPLOADED FILES
-  config :mime, :types, %{
+# CONFIG MIME TYPES FOR UPLOADED FILES
+config :mime, :types, %{
   "audio/flac" => ["flac"],
   "audio/ogg" => ["ogg"]
 }
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
@@ -69,8 +69,7 @@ config :phoenix, :json_library, Jason
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
 # Neon Database Configuration
-#yes yes yes
-
+# yes yes yes
 
 # Development/Production Configuration
 

@@ -9,15 +9,17 @@ defmodule Vibeflow.Repo.Migrations.CreatePermissionsStructure do
 
     # 2. CREATE the Permissions definition table
     create table(:permissions) do
-      add :slug, :string, null: false        # e.g. "post-new"
-      add :description, :string              # e.g. "Can create new posts"
+      # e.g. "post-new"
+      add :slug, :string, null: false
+      # e.g. "Can create new posts"
+      add :description, :string
 
       timestamps()
     end
 
     # Ensure slugs are unique (can't have two "post-new")
     create unique_index(:permissions, [:slug])
-    
+
     # 3. CREATE the Join Table (Role <-> Permission)
     create table(:role_permissions) do
       add :role_id, references(:roles, on_delete: :delete_all), null: false

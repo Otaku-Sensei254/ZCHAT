@@ -7,7 +7,6 @@ defmodule VibeflowWeb.UserRegistrationLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-[80vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-
       <div class="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
         <span class="text-4xl">🚀</span>
         <h2 class="mt-4 text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
@@ -15,7 +14,10 @@ defmodule VibeflowWeb.UserRegistrationLive do
         </h2>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Already have an account?
-          <.link navigate={~p"/users/log_in"} class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline transition-all">
+          <.link
+            navigate={~p"/users/log_in"}
+            class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline transition-all"
+          >
             Log in here
           </.link>
         </p>
@@ -23,8 +25,8 @@ defmodule VibeflowWeb.UserRegistrationLive do
 
       <div class="mt-2 sm:mx-auto sm:w-full sm:max-w-md animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div class="bg-white dark:bg-zinc-900 py-8 px-6 shadow-xl rounded-2xl sm:px-10 border border-gray-100 dark:border-zinc-800 relative overflow-hidden">
-
-          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500"></div>
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500">
+          </div>
 
           <.simple_form
             for={@form}
@@ -43,14 +45,22 @@ defmodule VibeflowWeb.UserRegistrationLive do
             </.error>
 
             <div>
-              <.input field={@form[:username]} type="text" label="Username" required
+              <.input
+                field={@form[:username]}
+                type="text"
+                label="Username"
+                required
                 class="block w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 focus:border-indigo-500 focus:ring-orange-500 sm:text-sm shadow-sm transition-all"
                 placeholder="johndoe"
               />
             </div>
 
             <div>
-              <.input field={@form[:email]} type="email" label="Email address" required
+              <.input
+                field={@form[:email]}
+                type="email"
+                label="Email address"
+                required
                 class="block w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 focus:border-indigo-500 focus:ring-orange-500 sm:text-sm shadow-sm transition-all"
                 placeholder="you@example.com"
               />
@@ -74,11 +84,16 @@ defmodule VibeflowWeb.UserRegistrationLive do
               >
                 <.icon name="hero-eye" class="h-5 w-5" />
               </button>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Must be at least 8 characters</p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Must be at least 8 characters
+              </p>
             </div>
 
             <div class="pt-4">
-              <.button phx-disable-with="Creating account..." class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
+              <.button
+                phx-disable-with="Creating account..."
+                class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"
+              >
                 Create account <span aria-hidden="true" class="ml-2">→</span>
               </.button>
             </div>

@@ -11,7 +11,10 @@ defmodule VibeflowWeb.UI.FeedLive do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "posts")
 
       if socket.assigns[:current_user] do
-        Phoenix.PubSub.subscribe(Vibeflow.PubSub, "notifications:#{socket.assigns.current_user.id}")
+        Phoenix.PubSub.subscribe(
+          Vibeflow.PubSub,
+          "notifications:#{socket.assigns.current_user.id}"
+        )
       end
     end
 
@@ -99,7 +102,11 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
-  def handle_event("confirm_share", %{"recipient_ids" => recipient_ids, "share_message" => message}, socket)
+  def handle_event(
+        "confirm_share",
+        %{"recipient_ids" => recipient_ids, "share_message" => message},
+        socket
+      )
       when is_list(recipient_ids) do
     current_user_id = socket.assigns.current_user.id
     post_id = socket.assigns.post_to_share
@@ -130,7 +137,11 @@ defmodule VibeflowWeb.UI.FeedLive do
   def handle_event("confirm_share", %{"recipient_ids" => recipient_ids}, socket)
       when is_list(recipient_ids) do
     # Handle case where no message is provided
-    handle_event("confirm_share", %{"recipient_ids" => recipient_ids, "share_message" => ""}, socket)
+    handle_event(
+      "confirm_share",
+      %{"recipient_ids" => recipient_ids, "share_message" => ""},
+      socket
+    )
   end
 
   def handle_event("confirm_share", %{"recipient_id" => recipient_id}, socket) do
@@ -142,6 +153,7 @@ defmodule VibeflowWeb.UI.FeedLive do
     ids = if is_list(ids), do: Enum.map(ids, &String.to_integer/1), else: [String.to_integer(ids)]
     {:noreply, assign(socket, :selected_friends, ids)}
   end
+
   def handle_event("update_selected_friends", _params, socket) do
     {:noreply, assign(socket, :selected_friends, [])}
   end
@@ -353,7 +365,11 @@ defmodule VibeflowWeb.UI.FeedLive do
 
     posts =
       if socket.assigns[:current_user] do
-        _ = Vibeflow.Posts.Seeder.backfill_followed_posts_for_user(socket.assigns.current_user.id, per_page * 3)
+        _ =
+          Vibeflow.Posts.Seeder.backfill_followed_posts_for_user(
+            socket.assigns.current_user.id,
+            per_page * 3
+          )
 
         Posts.list_feed_for_user(
           socket.assigns.current_user.id,
@@ -376,12 +392,18 @@ defmodule VibeflowWeb.UI.FeedLive do
     has_more = length(posts) == per_page
 
     # Check if this might be fallback content for a new user
-    is_fallback_content = page == 1 and not is_nil(socket.assigns[:current_user]) and
-                        length(posts) > 0 and
-                        not has_content_from_followed_users(posts, socket.assigns.current_user.id)
+    is_fallback_content =
+      page == 1 and not is_nil(socket.assigns[:current_user]) and
+        length(posts) > 0 and
+        not has_content_from_followed_users(posts, socket.assigns.current_user.id)
 
     socket
-    |> assign(loading: false, has_more: has_more, page: page + 1, is_fallback_content: is_fallback_content)
+    |> assign(
+      loading: false,
+      has_more: has_more,
+      page: page + 1,
+      is_fallback_content: is_fallback_content
+    )
     |> update_stream_based_on_page(page, posts)
   end
 
@@ -391,7 +413,7 @@ defmodule VibeflowWeb.UI.FeedLive do
   defp has_content_from_followed_users(posts, user_id) do
     Enum.any?(posts, fn post ->
       post.user_id == user_id or
-      Vibeflow.Posts.get_post_seed(post.id, user_id) != nil
+        Vibeflow.Posts.get_post_seed(post.id, user_id) != nil
     end)
   end
 

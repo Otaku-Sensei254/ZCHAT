@@ -36,7 +36,6 @@ if config_env() == :prod do
     secret_key_base: secret_key_base,
     server: true
 
-
   # --- Cloudinary ---
   config :cloudex,
     api_key: System.fetch_env!("CLOUDEX_API_KEY"),

@@ -4,8 +4,6 @@ defmodule VibeflowWeb.UserSessionController do
   alias Vibeflow.Accounts
   alias VibeflowWeb.UserAuth
 
-
-
   def create(conn, %{"_action" => "registered"} = params) do
     create(conn, params, "Account created successfully!")
   end

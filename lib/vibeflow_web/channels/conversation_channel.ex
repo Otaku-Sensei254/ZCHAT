@@ -38,8 +38,6 @@ defmodule VibeflowWeb.ConversationChannel do
     end
   end
 
-
-
   def handle_info({:new_message, message}, socket) do
     push(socket, "new_message", %{
       id: message.id,
@@ -57,16 +55,13 @@ defmodule VibeflowWeb.ConversationChannel do
     {:noreply, socket}
   end
 
-
-  #HANDLE READ SCRIPTS
+  # HANDLE READ SCRIPTS
   def handle_info({:message_read, _payload}, socket) do
     {:noreply, socket}
   end
-  
 
-
-  #SHOW TYPING ON USER UI
- def handle_in("typing", %{"typing" => is_typing}, socket) do
+  # SHOW TYPING ON USER UI
+  def handle_in("typing", %{"typing" => is_typing}, socket) do
     user = socket.assigns.current_user
 
     broadcast_from!(socket, "typing", %{
@@ -76,6 +71,4 @@ defmodule VibeflowWeb.ConversationChannel do
 
     {:noreply, socket}
   end
-
-
 end

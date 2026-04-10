@@ -19,8 +19,7 @@ defmodule Vibeflow.MixProject do
   def application do
     [
       mod: {Vibeflow.Application, []},
-      extra_applications: [:logger, :runtime_tools, :canada],
-
+      extra_applications: [:logger, :runtime_tools, :canada]
     ]
   end
 
@@ -61,7 +60,6 @@ defmodule Vibeflow.MixProject do
       {:cloudex, "~> 1.4"},
       {:httpoison, "~> 1.6"},
       {:req, "~> 0.5.0"}
-
     ]
   end
 

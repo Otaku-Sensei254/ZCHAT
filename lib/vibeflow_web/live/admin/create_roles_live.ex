@@ -27,7 +27,8 @@ defmodule VibeflowWeb.Admin.CreateRolesLive do
         {:noreply,
          socket
          |> put_flash(:info, "Role created successfully")
-         |> push_navigate(to: ~p"/admin/roles")} # Redirect wherever you want
+         # Redirect wherever you want
+         |> push_navigate(to: ~p"/admin/roles")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

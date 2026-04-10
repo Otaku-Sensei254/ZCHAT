@@ -1,107 +1,144 @@
 <div class="max-w-7xl mx-auto lg:px-4 lg:py-6 pl-safe pr-safe pb-safe">
-  
   <%!-- Back Button (Desktop Only) --%>
-  <.link navigate={~p"/feed"} class="hidden lg:inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors">
-    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+  <.link
+    navigate={~p"/feed"}
+    class="hidden lg:inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors"
+  >
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M10 19l-7-7m0 0l7-7m-7 7h18"
+      />
+    </svg>
     Back to feed
   </.link>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-8 items-start">
-    
     <%!-- =========================================================================
           LEFT COLUMN: POST CONTENT (MEDIA)
     ========================================================================== --%>
     <article class="lg:col-span-2 bg-black lg:bg-white dark:lg:bg-zinc-900 lg:shadow-xl lg:rounded-3xl lg:border border-gray-100 dark:border-zinc-800 overflow-hidden relative group">
-      
       <%!-- 
           MOBILE IMMERSIVE VIEW 
           (Ultra Simple Design)
        --%>
-       <div id="single-post-container" class="relative min-h-[calc(100dvh+3rem)] w-full bg-gray-50 dark:bg-gray-900" phx-hook="ShareHook">
-         
-         <%!-- Simple Header --%>
-         <div class="bg-white dark:bg-black px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
-           <.link navigate={~p"/feed"} class="text-gray-600 dark:text-gray-400">
-             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-             </svg>
-           </.link>
-           <span class="text-sm font-medium text-gray-900 dark:text-white">Post</span>
-           <div class="w-5 h-5"></div>
-         </div>
+      <div
+        id="single-post-container"
+        class="relative min-h-[calc(100dvh+3rem)] w-full bg-gray-50 dark:bg-gray-900"
+        phx-hook="ShareHook"
+      >
+        <%!-- Simple Header --%>
+        <div class="bg-white dark:bg-black px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
+          <.link navigate={~p"/feed"} class="text-gray-600 dark:text-gray-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </.link>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">Post</span>
+          <div class="w-5 h-5"></div>
+        </div>
 
-         <%!-- Content Area --%>
-         <div class="overflow-y-auto pb-24 pb-safe">
-           
-           <%!-- Media --%>
-           <%= if @post.media_files && @post.media_files != [] do %>
-             <div class="bg-black relative">
-               <% current_media = Enum.at(@post.media_files, @current_media_index) %>
-               <%= cond do %>
-                 <% current_media["type"] == "image" -> %>
-                   <img src={current_media["url"]} class="w-full h-auto max-h-96 object-contain" />
-                 
-                 <% current_media["type"] == "video" -> %>
-                   <video id={"mobile-video-#{@post.id}"} controls src={current_media["url"]} class="w-full h-auto max-h-96 bg-black" phx-hook="VideoAutoplay" ></video>
-                 
-                 <% true -> %>
-                   <div class="h-48 bg-black flex items-center justify-center text-white">
-                     Media not supported
-                   </div>
-               <% end %>
+        <%!-- Content Area --%>
+        <div class="overflow-y-auto pb-24 pb-safe">
+          <%!-- Media --%>
+          <%= if @post.media_files && @post.media_files != [] do %>
+            <div class="bg-black relative">
+              <% current_media = Enum.at(@post.media_files, @current_media_index) %>
+              <%= cond do %>
+                <% current_media["type"] == "image" -> %>
+                  <img src={current_media["url"]} class="w-full h-auto max-h-96 object-contain" />
+                <% current_media["type"] == "video" -> %>
+                  <video
+                    id={"mobile-video-#{@post.id}"}
+                    controls
+                    src={current_media["url"]}
+                    class="w-full h-auto max-h-96 bg-black"
+                    phx-hook="VideoAutoplay"
+                  >
+                  </video>
+                <% true -> %>
+                  <div class="h-48 bg-black flex items-center justify-center text-white">
+                    Media not supported
+                  </div>
+              <% end %>
 
-               <%!-- Navigation Buttons --%>
-               <%= if length(@post.media_files) > 1 do %>
-                 <button 
-                   phx-click="prev_media"
-                   class="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
-                 >
-                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                   </svg>
-                 </button>
-                 
-                 <button 
-                   phx-click="next_media"
-                   class="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
-                 >
-                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                   </svg>
-                 </button>
-               <% end %>
+              <%!-- Navigation Buttons --%>
+              <%= if length(@post.media_files) > 1 do %>
+                <button
+                  phx-click="prev_media"
+                  class="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
 
-               <%!-- Simple Navigation --%>
-               <%= if length(@post.media_files) > 1 do %>
-                 <div class="flex justify-center gap-1 py-2 bg-black">
-                   <%= for {_media, index} <- Enum.with_index(@post.media_files) do %>
-                     <button 
-                       phx-click="go_to_media" 
-                       phx-value-index={index}
-                       class={"h-1 rounded-full transition-all #{if index == @current_media_index, do: "w-6 bg-white", else: "w-1 bg-gray-500"}"}
-                     ></button>
-                   <% end %>
-                 </div>
-               <% end %>
-             </div>
-           <% end %>
+                <button
+                  phx-click="next_media"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              <% end %>
 
-           <%!-- Post Info --%>
-           <div class="bg-white dark:bg-black p-4">
-             
-             <%!-- User Header --%>
-             <div class="flex items-center justify-between mb-3">
-               <div class="flex items-center gap-3">
-                <.link navigate={~p"/users/#{@post.user.username}"} class="flex items-center gap-3">
+              <%!-- Simple Navigation --%>
+              <%= if length(@post.media_files) > 1 do %>
+                <div class="flex justify-center gap-1 py-2 bg-black">
+                  <%= for {_media, index} <- Enum.with_index(@post.media_files) do %>
+                    <button
+                      phx-click="go_to_media"
+                      phx-value-index={index}
+                      class={"h-1 rounded-full transition-all #{if index == @current_media_index, do: "w-6 bg-white", else: "w-1 bg-gray-500"}"}
+                    >
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%!-- Post Info --%>
+          <div class="bg-white dark:bg-black p-4">
+            <%!-- User Header --%>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <.link
+                  navigate={~p"/users/#{@post.user.username}"}
+                  class="flex items-center gap-3"
+                >
                   <div class="relative">
-                    <img src={@post.user.avatar_url || "/images/default_avatar.png"} class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(@post.user)}>
+                    <img
+                      src={@post.user.avatar_url || "/images/default_avatar.png"}
+                      class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(@post.user)}
+                    />
                   </div>
                   <div>
                     <p class={"font-semibold text-gray-900 dark:text-white flex items-center gap-2 " <> VibeflowWeb.CoreComponents.username_glow_class(@post.user)}>
-                      <%= @post.user.username %>
+                      {@post.user.username}
                       <.verified_badge user={@post.user} class="h-5 w-5" />
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400"><%= Timex.from_now(@post.inserted_at) %></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      {Timex.from_now(@post.inserted_at)}
+                    </p>
                   </div>
                 </.link>
                 <%= if @current_user && @current_user.id != @post.user.id do %>
@@ -114,72 +151,108 @@
                         do: "bg-blue-600 text-white hover:bg-blue-700 dark:bg-transparent dark:text-white dark:border dark:border-white/80 dark:hover:bg-white/10",
                         else: "bg-blue-500 text-white hover:bg-blue-600")}
                   >
-                    <%= if @is_following, do: "Following", else: "Follow" %>
+                    {if @is_following, do: "Following", else: "Follow"}
                   </button>
                 <% end %>
-               </div>
-             </div>
+              </div>
+            </div>
 
-             <%!-- Content --%>
-             <div class="mb-4">
-               <div class="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
-                 <%= VibeflowWeb.CoreComponents.render_markdown_mentions(@post.content) %>
-               </div>
-             </div>
+            <%!-- Content --%>
+            <div class="mb-4">
+              <div class="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
+                {VibeflowWeb.CoreComponents.render_markdown_mentions(@post.content)}
+              </div>
+            </div>
 
-             <%!-- Actions --%>
-             <div class="flex items-center gap-6 pb-3 border-b border-gray-100 dark:border-gray-800">
-               
-               <%!-- Like --%>
-               <button phx-click="toggle_like" phx-throttle="500" class={"flex items-center gap-2 #{if @current_like, do: "text-red-500", else: "text-gray-600 dark:text-gray-400"}"}>
-                 <svg class="w-5 h-5" fill={if @current_like, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                 </svg>
-                 <span class="text-sm"><%= @like_count %></span>
-               </button>
+            <%!-- Actions --%>
+            <div class="flex items-center gap-6 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <%!-- Like --%>
+              <button
+                phx-click="toggle_like"
+                phx-throttle="500"
+                class={"flex items-center gap-2 #{if @current_like, do: "text-red-500", else: "text-gray-600 dark:text-gray-400"}"}
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_like, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+                <span class="text-sm">{@like_count}</span>
+              </button>
 
-               <%!-- Comments --%>
-               <button phx-click="show_comments" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                 </svg>
-                 <span class="text-sm"><%= @comment_count %></span>
-               </button>
+              <%!-- Comments --%>
+              <button
+                phx-click="show_comments"
+                class="flex items-center gap-2 text-gray-600 dark:text-gray-400"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span class="text-sm">{@comment_count}</span>
+              </button>
 
-               <%!-- Share --%>
-               <button phx-click="share_post" class="text-gray-600 dark:text-gray-400">
-                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                 </svg>
-               </button>
+              <%!-- Share --%>
+              <button phx-click="share_post" class="text-gray-600 dark:text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                  />
+                </svg>
+              </button>
 
-               <%!-- Repost --%>
-               <button
-                 phx-click="repost_post"
-                 class={
-                   "flex items-center gap-1 " <>
-                   if @current_repost do
-                     # Match the styling of the active repost button in PostComponent
-                     "text-green-600 bg-green-50 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 font-semibold px-3 py-1.5 rounded-full shadow-sm"
-                   else
-                     # Inactive styling
-                     "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-3 py-1.5 rounded-full"
-                   end
-                 }
-                 title="Repost this post"
-               >
-                 <svg class="w-5 h-5" fill={if @current_repost, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                 </svg>
-                 <span class="text-sm font-medium">
-                   <%= @repost_count %>
-                 </span>
-               </button>
+              <%!-- Repost --%>
+              <button
+                phx-click="repost_post"
+                class={
+                  "flex items-center gap-1 " <>
+                    if @current_repost do
+                      # Match the styling of the active repost button in PostComponent
+                      "text-green-600 bg-green-50 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 font-semibold px-3 py-1.5 rounded-full shadow-sm"
+                    else
+                      # Inactive styling
+                      "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-3 py-1.5 rounded-full"
+                    end
+                }
+                title="Repost this post"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_repost, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                  />
+                </svg>
+                <span class="text-sm font-medium">
+                  {@repost_count}
+                </span>
+              </button>
 
-               <%!-- Save --%>
-               <button
-                 phx-click="toggle_save"
-                 class={
+              <%!-- Save --%>
+              <button
+                phx-click="toggle_save"
+                class={
                    "flex items-center gap-1 " <>
                    if @current_save do
                      "text-indigo-600 bg-indigo-50 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 font-semibold px-3 py-1.5 rounded-full shadow-sm"
@@ -187,118 +260,184 @@
                      "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-3 py-1.5 rounded-full"
                    end
                  }
-                 title={if @current_save, do: "Remove from saved", else: "Save this post"}
-               >
-                 <svg class="w-5 h-5" fill={if @current_save, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                 </svg>
-               </button>
-            
-             </div>
-              <%!-- TAGS (MOBILE) --%>
-             <%= if @post.tags && @post.tags != [] do %>
-               <div class="flex flex-wrap gap-2 mt-6">
-                 <%= for tag <- @post.tags do %>
-                   <.link 
-                     navigate={~p"/tags/#{tag}"}
-                     class="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
-                   >
-                     #<%= tag %>
-                   </.link>
-                 <% end %>
-               </div>
-             <% end %>
+                title={if @current_save, do: "Remove from saved", else: "Save this post"}
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_save, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <%!-- TAGS (MOBILE) --%>
+            <%= if @post.tags && @post.tags != [] do %>
+              <div class="flex flex-wrap gap-2 mt-6">
+                <%= for tag <- @post.tags do %>
+                  <.link
+                    navigate={~p"/tags/#{tag}"}
+                    class="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                  >
+                    #{tag}
+                  </.link>
+                <% end %>
+              </div>
+            <% end %>
 
-             <%!-- Add Comment --%>
-             <div class="mt-3">
-               <.form :let={f} for={@comment_form} phx-change="validate" phx-submit="add_comment" class="flex items-center gap-2">
-                 <input type="hidden" name="post_id" value={@post.id} />
-                 <input type="hidden" name="parent_id" value={@replying_to} />
-                 
-                 <%= if @current_user && @current_user.avatar_url && @current_user.avatar_url != "" do %>
-                   <img src={@current_user.avatar_url} class={"w-8 h-8 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}>
-                 <% else %>
-                   <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}>
-                     <%= VibeflowWeb.CoreComponents.initials(@current_user) %>
-                   </div>
-                 <% end %>
-                 
-                 <div class="flex-1 relative">
-                   <.input 
-                     field={f[:content]} 
-                     type="text" 
-                     placeholder="Add a comment..."
-                     class="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
-                     autocomplete="off"
-                   />
-                   
-                   <button 
-                     type="submit" 
-                     disabled={!f[:content].value}
-                     class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                   >
-                     Post
-                   </button>
-                 </div>
-               </.form>
-             </div>
-            
-           </div> <!-- closes .bg-white.dark:bg-black.p-4 -->
-       </div> <!-- closes #single-post-container -->
+            <%!-- Add Comment --%>
+            <div class="mt-3">
+              <.form
+                :let={f}
+                for={@comment_form}
+                phx-change="validate"
+                phx-submit="add_comment"
+                class="flex items-center gap-2"
+              >
+                <input type="hidden" name="post_id" value={@post.id} />
+                <input type="hidden" name="parent_id" value={@replying_to} />
 
-      <%!-- 
+                <%= if @current_user && @current_user.avatar_url && @current_user.avatar_url != "" do %>
+                  <img
+                    src={@current_user.avatar_url}
+                    class={"w-8 h-8 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}
+                  />
+                <% else %>
+                  <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}>
+                    {VibeflowWeb.CoreComponents.initials(@current_user)}
+                  </div>
+                <% end %>
+
+                <div class="flex-1 relative">
+                  <.input
+                    field={f[:content]}
+                    type="text"
+                    placeholder="Add a comment..."
+                    class="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
+                    autocomplete="off"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={!f[:content].value}
+                    class="absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Post
+                  </button>
+                </div>
+              </.form>
+            </div>
+          </div>
+          <!-- closes .bg-white.dark:bg-black.p-4 -->
+        </div>
+        <!-- closes #single-post-container -->
+
+        <%!-- 
           DESKTOP MEDIA VIEW
       --%>
-      <div class="hidden lg:block w-full">
-        <%!-- Header --%>
-        <div class="p-6 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-white via-white to-slate-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900/70">
-          <div class="flex items-center gap-4">
-            <.link navigate={~p"/users/#{@post.user.username}"} class="flex items-center gap-3">
-                
-                  <img src={@post.user.avatar_url || "/images/default_avatar.png"} class="w-10 h-10 rounded-full object-cover">
-                  <div>
-                    <p class="font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                      <%= @post.user.username %>
-                      <.verified_badge user={@post.user} class="h-5 w-5" />
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Posted <%= Timex.from_now(@post.inserted_at) %></p>
-                  </div>
-                </.link>
-          </div>
-          <div class="flex items-center gap-2">
-            <button phx-click="toggle_like" class={"flex items-center gap-2 px-4 py-2 rounded-full border transition-all " <> if(@current_like, do: "border-red-200 bg-red-50 text-red-600", else: "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300")}>
-              <svg class="w-5 h-5" fill={if @current_like, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-              <span class="font-bold"><%= @like_count %></span>
-            </button>
-            <button phx-click="show_comments" class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-              <span class="font-bold"><%= @comment_count %></span>
-            </button>
-            <button phx-click="share_post" class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-              </svg>
-            </button>
-            <button
-              phx-click="repost_post"
-              class={
-                "flex items-center justify-center w-10 h-10 rounded-full border transition-all " <>
-                if @current_repost do
-                  # Match the styling of the active repost button in PostComponent
-                  "border-green-200 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 font-semibold"
-                else
-                  "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
-                end
-              }
-              title="Repost this post"
-            >
-              <svg class="w-5 h-5" fill={if @current_repost, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </button>
-            <button
-              phx-click="toggle_save"
-              class={
+        <div class="hidden lg:block w-full">
+          <%!-- Header --%>
+          <div class="p-6 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-white via-white to-slate-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900/70">
+            <div class="flex items-center gap-4">
+              <.link navigate={~p"/users/#{@post.user.username}"} class="flex items-center gap-3">
+                <img
+                  src={@post.user.avatar_url || "/images/default_avatar.png"}
+                  class="w-10 h-10 rounded-full object-cover"
+                />
+                <div>
+                  <p class="font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                    {@post.user.username}
+                    <.verified_badge user={@post.user} class="h-5 w-5" />
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Posted {Timex.from_now(@post.inserted_at)}
+                  </p>
+                </div>
+              </.link>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                phx-click="toggle_like"
+                class={"flex items-center gap-2 px-4 py-2 rounded-full border transition-all " <> if(@current_like, do: "border-red-200 bg-red-50 text-red-600", else: "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300")}
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_like, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+                <span class="font-bold">{@like_count}</span>
+              </button>
+              <button
+                phx-click="show_comments"
+                class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span class="font-bold">{@comment_count}</span>
+              </button>
+              <button
+                phx-click="share_post"
+                class="flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                  />
+                </svg>
+              </button>
+              <button
+                phx-click="repost_post"
+                class={
+                  "flex items-center justify-center w-10 h-10 rounded-full border transition-all " <>
+                    if @current_repost do
+                      # Match the styling of the active repost button in PostComponent
+                      "border-green-200 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 font-semibold"
+                    else
+                      "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
+                    end
+                }
+                title="Repost this post"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_repost, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                  />
+                </svg>
+              </button>
+              <button
+                phx-click="toggle_save"
+                class={
                 "flex items-center justify-center w-10 h-10 rounded-full border transition-all " <>
                 if @current_save do
                   "border-indigo-200 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700 font-semibold"
@@ -306,59 +445,107 @@
                   "border-gray-200 hover:bg-gray-50 text-gray-600 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-gray-300"
                 end
               }
-              title={if @current_save, do: "Remove from saved", else: "Save this post"}
-            >
-              <svg class="w-5 h-5" fill={if @current_save, do: "currentColor", else: "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <%!-- Media Carousel --%>
-        <div class="bg-slate-50 dark:bg-black/50 aspect-video flex items-center justify-center relative overflow-hidden group">
-          <%= if @post.media_files && @post.media_files != [] do %>
-            <% current_media = Enum.at(@post.media_files, @current_media_index) %>
-            <%= cond do %>
-              <% current_media["type"] == "image" -> %>
-                <div class="absolute inset-0 w-full h-full bg-cover bg-center blur-3xl opacity-20" style={"background-image: url('#{current_media["url"]}')"}></div>
-                <img src={current_media["url"]} class="relative z-10 max-h-full max-w-full object-contain shadow-2xl" />
-              <% current_media["type"] == "video" -> %>
-                <video id={"desktop-video-#{@post.id}"} controls src={current_media["url"]} class="max-h-full w-full object-contain bg-black" phx-hook="VideoAutoplay"></video>
-              <% true -> %>
-                <p class="text-sm text-gray-500">Unsupported media</p>
-            <% end %>
-
-            <%= if length(@post.media_files) > 1 do %>
-              <button phx-click="prev_media" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
-              <button phx-click="next_media" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
-            <% end %>
-          <% end %>
-        </div>
-
-        <%!-- Caption --%>
-        <div class="p-6 space-y-4">
-          <%= if @post.title && @post.title != "" do %>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @post.title %></h1>
-          <% end %>
-          <div class="whitespace-pre-line text-gray-700 dark:text-gray-300 leading-relaxed">
-            <%= VibeflowWeb.CoreComponents.render_markdown_mentions(@post.content) %>
-          </div>
-          <%= if @post.tags && @post.tags != [] do %>
-            <div class="flex flex-wrap gap-2">
-              <%= for tag <- @post.tags do %>
-                <.link 
-                  navigate={~p"/tags/#{tag}"}
-                  class="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                title={if @current_save, do: "Remove from saved", else: "Save this post"}
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill={if @current_save, do: "currentColor", else: "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  #<%= tag %>
-                </.link>
-              <% end %>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  />
+                </svg>
+              </button>
             </div>
-          <% end %>
+          </div>
+
+          <%!-- Media Carousel --%>
+          <div class="bg-slate-50 dark:bg-black/50 aspect-video flex items-center justify-center relative overflow-hidden group">
+            <%= if @post.media_files && @post.media_files != [] do %>
+              <% current_media = Enum.at(@post.media_files, @current_media_index) %>
+              <%= cond do %>
+                <% current_media["type"] == "image" -> %>
+                  <div
+                    class="absolute inset-0 w-full h-full bg-cover bg-center blur-3xl opacity-20"
+                    style={"background-image: url('#{current_media["url"]}')"}
+                  >
+                  </div>
+                  <img
+                    src={current_media["url"]}
+                    class="relative z-10 max-h-full max-w-full object-contain shadow-2xl"
+                  />
+                <% current_media["type"] == "video" -> %>
+                  <video
+                    id={"desktop-video-#{@post.id}"}
+                    controls
+                    src={current_media["url"]}
+                    class="max-h-full w-full object-contain bg-black"
+                    phx-hook="VideoAutoplay"
+                  >
+                  </video>
+                <% true -> %>
+                  <p class="text-sm text-gray-500">Unsupported media</p>
+              <% end %>
+
+              <%= if length(@post.media_files) > 1 do %>
+                <button
+                  phx-click="prev_media"
+                  class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <button
+                  phx-click="next_media"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%!-- Caption --%>
+          <div class="p-6 space-y-4">
+            <%= if @post.title && @post.title != "" do %>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{@post.title}</h1>
+            <% end %>
+            <div class="whitespace-pre-line text-gray-700 dark:text-gray-300 leading-relaxed">
+              {VibeflowWeb.CoreComponents.render_markdown_mentions(@post.content)}
+            </div>
+            <%= if @post.tags && @post.tags != [] do %>
+              <div class="flex flex-wrap gap-2">
+                <%= for tag <- @post.tags do %>
+                  <.link
+                    navigate={~p"/tags/#{tag}"}
+                    class="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                  >
+                    #{tag}
+                  </.link>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         </div>
       </div>
-    </div>
     </article>
 
     <%!-- 
@@ -366,122 +553,201 @@
          (Sticky, Independent Scrolling)
     --%>
     <aside class="hidden lg:flex lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-6rem)] min-h-0 flex-col bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 shadow-xl overflow-hidden">
-      
       <%!-- Sidebar Header --%>
       <div class="p-5 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/30 backdrop-blur">
         <h3 class="font-bold text-lg text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          Comments <span class="bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-0.5 rounded-full"><%= @comment_count %></span>
+          Comments
+          <span class="bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-0.5 rounded-full">
+            {@comment_count}
+          </span>
         </h3>
       </div>
 
       <%!-- Sidebar List (Uses @streams.comments) --%>
-      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-0" id="comments-list-desktop" phx-update="stream">
+      <div
+        class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-0"
+        id="comments-list-desktop"
+        phx-update="stream"
+      >
         <%= for {dom_id, comment} <- @streams.comments do %>
-             <div id={dom_id} class="p-4 border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors group">
-                <div class="flex space-x-3">
-                    <%= if comment.user.avatar_url && comment.user.avatar_url != "" do %>
-                      <img src={comment.user.avatar_url} 
-                        onerror="this.src='/images/default_avatar.png'" 
-                        class={"w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-zinc-700 shrink-0 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
-                    <% else %>
-                      <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs border border-gray-100 dark:border-zinc-700 shrink-0 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
-                        <%= VibeflowWeb.CoreComponents.initials(comment.user) %>
-                      </div>
-                    <% end %>
-                    <div class="flex-1">
-                       <div class="flex items-center justify-between">
-                          <span class={"font-bold text-sm text-gray-900 dark:text-gray-200 flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(comment.user)}>
-                            <%= comment.user.username %>
-                            <.verified_badge user={comment.user} class="h-5 w-5" />
-                          </span>
-                          <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-gray-400"><%= Timex.from_now(comment.inserted_at) %></span>
-                            <%= if comment.pinned do %>
-                              <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20" title="Pinned">
-                                <path d="M8.5 2a1 1 0 00-.707 1.707l2.086 2.086-4.9 4.9a1 1 0 000 1.414l.707.707-2.2 2.2a1 1 0 101.414 1.414l2.2-2.2.707.707a1 1 0 001.414 0l4.9-4.9 2.086 2.086A1 1 0 0017.5 9.5l-6-6A1 1 0 0010.5 3H8.5z"/>
-                              </svg>
-                            <% end %>
-                            <div class="relative">
-                              <button
-                                phx-click="toggle_comment_menu"
-                                phx-value-comment-id={comment.id}
-                                class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                                title="Comment options"
-                              >
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                              </button>
-                              <%= if @open_comment_menu_id == comment.id do %>
-                                <div
-                                  class="absolute right-0 mt-2 w-36 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-lg z-20"
-                                  phx-click-away="close_comment_menu"
-                                >
-                                  <button phx-click="edit_comment" phx-value-comment-id={comment.id} class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800">
-                                    Edit
-                                  </button>
-                                  <button phx-click="delete_comment" phx-value-comment-id={comment.id} data-confirm="Are you sure you want to delete this comment?" class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                    Delete
-                                  </button>
-                                  <%= if @current_user && @current_user.id == @post.user_id do %>
-                                    <button phx-click="pin_comment" phx-value-comment-id={comment.id} class="w-full text-left px-3 py-2 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20">
-                                      Pin
-                                    </button>
-                                  <% end %>
-                                </div>
-                              <% end %>
-                            </div>
-                          </div>
-                       </div>
-                       <%= if @editing_comment_id == comment.id do %>
-                         <.form :let={f} for={%{}} as={:edit_comment} phx-submit="edit_comment" class="mt-2 flex items-center gap-2">
-                           <input type="hidden" name="comment-id" value={comment.id} />
-                           <.input
-                            field={f[:content]}
-                            type="text"
-                            value={comment.content}
-                            class="w-full bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            autocomplete="off"
-                          />
-                           <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg">
-                             Save
-                           </button>
-                           <button type="button" phx-click="cancel_edit" phx-value-comment-id={comment.id} class="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                             Cancel
-                           </button>
-                         </.form>
-                       <% else %>
-                         <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-snug">
-                         <%= VibeflowWeb.CoreComponents.render_markdown_mentions(comment.content) %>
-                       </p>
-                       <% end %>
-                    </div>
+          <div
+            id={dom_id}
+            class="p-4 border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors group"
+          >
+            <div class="flex space-x-3">
+              <%= if comment.user.avatar_url && comment.user.avatar_url != "" do %>
+                <img
+                  src={comment.user.avatar_url}
+                  onerror="this.src='/images/default_avatar.png'"
+                  class={"w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-zinc-700 shrink-0 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}
+                />
+              <% else %>
+                <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs border border-gray-100 dark:border-zinc-700 shrink-0 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
+                  {VibeflowWeb.CoreComponents.initials(comment.user)}
                 </div>
-             </div>
+              <% end %>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class={"font-bold text-sm text-gray-900 dark:text-gray-200 flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(comment.user)}>
+                    {comment.user.username}
+                    <.verified_badge user={comment.user} class="h-5 w-5" />
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-gray-400">
+                      {Timex.from_now(comment.inserted_at)}
+                    </span>
+                    <%= if comment.pinned do %>
+                      <svg
+                        class="w-3.5 h-3.5 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        title="Pinned"
+                      >
+                        <path d="M8.5 2a1 1 0 00-.707 1.707l2.086 2.086-4.9 4.9a1 1 0 000 1.414l.707.707-2.2 2.2a1 1 0 101.414 1.414l2.2-2.2.707.707a1 1 0 001.414 0l4.9-4.9 2.086 2.086A1 1 0 0017.5 9.5l-6-6A1 1 0 0010.5 3H8.5z" />
+                      </svg>
+                    <% end %>
+                    <div class="relative">
+                      <button
+                        phx-click="toggle_comment_menu"
+                        phx-value-comment-id={comment.id}
+                        class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        title="Comment options"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </button>
+                      <%= if @open_comment_menu_id == comment.id do %>
+                        <div
+                          class="absolute right-0 mt-2 w-36 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-lg z-20"
+                          phx-click-away="close_comment_menu"
+                        >
+                          <button
+                            phx-click="edit_comment"
+                            phx-value-comment-id={comment.id}
+                            class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            phx-click="delete_comment"
+                            phx-value-comment-id={comment.id}
+                            data-confirm="Are you sure you want to delete this comment?"
+                            class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            Delete
+                          </button>
+                          <%= if @current_user && @current_user.id == @post.user_id do %>
+                            <button
+                              phx-click="pin_comment"
+                              phx-value-comment-id={comment.id}
+                              class="w-full text-left px-3 py-2 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                            >
+                              Pin
+                            </button>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+                <%= if @editing_comment_id == comment.id do %>
+                  <.form
+                    :let={f}
+                    for={%{}}
+                    as={:edit_comment}
+                    phx-submit="edit_comment"
+                    class="mt-2 flex items-center gap-2"
+                  >
+                    <input type="hidden" name="comment-id" value={comment.id} />
+                    <.input
+                      field={f[:content]}
+                      type="text"
+                      value={comment.content}
+                      class="w-full bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="submit"
+                      class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="cancel_edit"
+                      phx-value-comment-id={comment.id}
+                      class="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </.form>
+                <% else %>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-snug">
+                    {VibeflowWeb.CoreComponents.render_markdown_mentions(comment.content)}
+                  </p>
+                <% end %>
+              </div>
+            </div>
+          </div>
         <% end %>
 
         <%= if Enum.empty?(@streams.comments.inserts) do %>
-           <div class="flex flex-col items-center justify-center h-40 text-gray-400 text-sm text-center px-6">
-              <div class="bg-gray-100 dark:bg-zinc-800 p-3 rounded-full mb-3">
-                 <svg class="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-              </div>
-              Be the first to comment!
-           </div>
+          <div class="flex flex-col items-center justify-center h-40 text-gray-400 text-sm text-center px-6">
+            <div class="bg-gray-100 dark:bg-zinc-800 p-3 rounded-full mb-3">
+              <svg
+                class="w-6 h-6 opacity-50"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+            </div>
+            Be the first to comment!
+          </div>
         <% end %>
       </div>
 
       <%!-- Sidebar Input --%>
       <div class="p-4 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-         <.form :let={f} for={@comment_form} phx-change="validate" phx-submit="add_comment" class="relative">
-            <input type="hidden" name="post_id" value={@post.id} />
-            <input type="hidden" name="parent_id" value={@replying_to} />
-            
-            <.input field={f[:content]} type="text" placeholder="Add a comment..." class="w-full bg-gray-50 dark:bg-zinc-800 border-0 rounded-2xl py-3 px-4 text-sm pr-12 focus:ring-2 focus:ring-indigo-500 transition-all" autocomplete="off" />
-            
-            <button type="submit" class="absolute right-2 top-1.5 p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow-sm transition-colors">
-               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-            </button>
-         </.form>
+        <.form
+          :let={f}
+          for={@comment_form}
+          phx-change="validate"
+          phx-submit="add_comment"
+          class="relative"
+        >
+          <input type="hidden" name="post_id" value={@post.id} />
+          <input type="hidden" name="parent_id" value={@replying_to} />
+
+          <.input
+            field={f[:content]}
+            type="text"
+            placeholder="Add a comment..."
+            class="w-full bg-gray-50 dark:bg-zinc-800 border-0 rounded-2xl py-3 px-4 text-sm pr-12 focus:ring-2 focus:ring-indigo-500 transition-all"
+            autocomplete="off"
+          />
+
+          <button
+            type="submit"
+            class="absolute right-2 top-1.5 p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow-sm transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
+              />
+            </svg>
+          </button>
+        </.form>
       </div>
 
       <%= if @seeded_users && @seeded_users != [] do %>
@@ -492,8 +758,8 @@
           <div class="max-h-40 overflow-y-auto custom-scrollbar space-y-1">
             <%= for u <- @seeded_users do %>
               <div class="flex items-center justify-between">
-                <span class="truncate"><%= u.username %></span>
-                <span class="text-[10px] text-gray-400"><%= u.id %></span>
+                <span class="truncate">{u.username}</span>
+                <span class="text-[10px] text-gray-400">{u.id}</span>
               </div>
             <% end %>
           </div>
@@ -501,195 +767,276 @@
       <% end %>
     </aside>
 
- <%!-- 
+    <%!-- 
          MOBILE COMMENTS MODAL 
          (Fixed Full-Screen Overlay, Uses @streams.mobile_comments)
     --%>
     <%= if @show_comments_modal do %>
       <div class="lg:hidden fixed inset-0 z-[100] bg-white dark:bg-zinc-900 flex flex-col h-[100dvh] animate-in slide-in-from-bottom-full duration-300">
-        
         <%!-- Modal Header --%>
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md sticky top-0 z-10">
           <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Comments</h3>
-          <button phx-click="close_comments_modal" class="p-2 -mr-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          <button
+            phx-click="close_comments_modal"
+            class="p-2 -mr-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
-  
+
         <%!-- Modal List --%>
         <%!-- FIX 1: Added phx-update="stream" so LiveView knows to append/prepend items here --%>
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 pb-24" id="comments-list-mobile" phx-update="stream">
-          
+        <div
+          class="flex-1 overflow-y-auto p-4 space-y-4 pb-24"
+          id="comments-list-mobile"
+          phx-update="stream"
+        >
           <%!-- FIX 2: Changed @streams.comments to @streams.mobile_comments --%>
           <%= for {dom_id, comment} <- @streams.mobile_comments do %>
-             <div id={dom_id} class="flex gap-3 animate-in fade-in duration-500">
-               <div class="shrink-0">
-                  <%= if comment.user.avatar_url && comment.user.avatar_url != "" do %>
-                    <img src={comment.user.avatar_url} 
-                      onerror="this.src='/images/default_avatar.png'" 
-                      class={"w-9 h-9 rounded-full object-cover border border-gray-100 dark:border-zinc-800 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
-                  <% else %>
-                    <div class={"w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-gray-100 dark:border-zinc-800 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
-                      <%= VibeflowWeb.CoreComponents.initials(comment.user) %>
-                    </div>
-                  <% end %>
-               </div>
-               <div class="flex-1">
-                 <div class="flex items-baseline gap-2">
-                    <span class={"font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(comment.user)}>
-                      <%= comment.user.username %>
-                      <.verified_badge user={comment.user} class="h-5 w-5" />
+            <div id={dom_id} class="flex gap-3 animate-in fade-in duration-500">
+              <div class="shrink-0">
+                <%= if comment.user.avatar_url && comment.user.avatar_url != "" do %>
+                  <img
+                    src={comment.user.avatar_url}
+                    onerror="this.src='/images/default_avatar.png'"
+                    class={"w-9 h-9 rounded-full object-cover border border-gray-100 dark:border-zinc-800 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}
+                  />
+                <% else %>
+                  <div class={"w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-gray-100 dark:border-zinc-800 " <> VibeflowWeb.CoreComponents.avatar_frame_class(comment.user)}>
+                    {VibeflowWeb.CoreComponents.initials(comment.user)}
+                  </div>
+                <% end %>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-baseline gap-2">
+                  <span class={"font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(comment.user)}>
+                    {comment.user.username}
+                    <.verified_badge user={comment.user} class="h-5 w-5" />
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">
+                      {Timex.from_now(comment.inserted_at)}
                     </span>
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs text-gray-400"><%= Timex.from_now(comment.inserted_at) %></span>
-                      <%= if comment.pinned do %>
-                        <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20" title="Pinned">
-                          <path d="M8.5 2a1 1 0 00-.707 1.707l2.086 2.086-4.9 4.9a1 1 0 000 1.414l.707.707-2.2 2.2a1 1 0 101.414 1.414l2.2-2.2.707.707a1 1 0 001.414 0l4.9-4.9 2.086 2.086A1 1 0 0017.5 9.5l-6-6A1 1 0 0010.5 3H8.5z"/>
+                    <%= if comment.pinned do %>
+                      <svg
+                        class="w-3.5 h-3.5 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        title="Pinned"
+                      >
+                        <path d="M8.5 2a1 1 0 00-.707 1.707l2.086 2.086-4.9 4.9a1 1 0 000 1.414l.707.707-2.2 2.2a1 1 0 101.414 1.414l2.2-2.2.707.707a1 1 0 001.414 0l4.9-4.9 2.086 2.086A1 1 0 0017.5 9.5l-6-6A1 1 0 0010.5 3H8.5z" />
+                      </svg>
+                    <% end %>
+                    <div class="relative">
+                      <button
+                        phx-click="toggle_comment_menu"
+                        phx-value-comment-id={comment.id}
+                        class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        title="Comment options"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                      <% end %>
-                      <div class="relative">
-                        <button
-                          phx-click="toggle_comment_menu"
-                          phx-value-comment-id={comment.id}
-                          class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                          title="Comment options"
+                      </button>
+                      <%= if @open_comment_menu_id == comment.id do %>
+                        <div
+                          class="absolute right-0 mt-2 w-36 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-lg z-20"
+                          phx-click-away="close_comment_menu"
                         >
-                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"/>
-                          </svg>
-                        </button>
-                        <%= if @open_comment_menu_id == comment.id do %>
-                          <div
-                            class="absolute right-0 mt-2 w-36 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-lg z-20"
-                            phx-click-away="close_comment_menu"
+                          <button
+                            phx-click="edit_comment"
+                            phx-value-comment-id={comment.id}
+                            class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800"
                           >
-                            <button phx-click="edit_comment" phx-value-comment-id={comment.id} class="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-800">
-                              Edit
+                            Edit
+                          </button>
+                          <button
+                            phx-click="delete_comment"
+                            phx-value-comment-id={comment.id}
+                            data-confirm="Are you sure you want to delete this comment?"
+                            class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            Delete
+                          </button>
+                          <%= if @current_user && @current_user.id == @post.user_id do %>
+                            <button
+                              phx-click="pin_comment"
+                              phx-value-comment-id={comment.id}
+                              class="w-full text-left px-3 py-2 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                            >
+                              Pin
                             </button>
-                            <button phx-click="delete_comment" phx-value-comment-id={comment.id} data-confirm="Are you sure you want to delete this comment?" class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                              Delete
-                            </button>
-                            <%= if @current_user && @current_user.id == @post.user_id do %>
-                              <button phx-click="pin_comment" phx-value-comment-id={comment.id} class="w-full text-left px-3 py-2 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20">
-                                Pin
-                              </button>
-                            <% end %>
-                          </div>
-                        <% end %>
-                      </div>
+                          <% end %>
+                        </div>
+                      <% end %>
                     </div>
                   </div>
-                  <%= if @editing_comment_id == comment.id do %>
-                  <.form :let={f} for={%{}} as={:edit_comment} phx-submit="edit_comment" class="mt-2 flex items-center gap-2">
-                      <input type="hidden" name="comment-id" value={comment.id} />
-                      <.input
-                        field={f[:content]}
-                        type="text"
-                        value={comment.content}
-                        class="w-full bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                        autocomplete="off"
-                      />
-                      <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg">
-                        Save
-                      </button>
-                      <button type="button" phx-click="cancel_edit" phx-value-comment-id={comment.id} class="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                        Cancel
-                      </button>
-                    </.form>
-                  <% else %>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5 leading-snug">
-                    <%= VibeflowWeb.CoreComponents.render_markdown_mentions(comment.content) %>
+                </div>
+                <%= if @editing_comment_id == comment.id do %>
+                  <.form
+                    :let={f}
+                    for={%{}}
+                    as={:edit_comment}
+                    phx-submit="edit_comment"
+                    class="mt-2 flex items-center gap-2"
+                  >
+                    <input type="hidden" name="comment-id" value={comment.id} />
+                    <.input
+                      field={f[:content]}
+                      type="text"
+                      value={comment.content}
+                      class="w-full bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="submit"
+                      class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="cancel_edit"
+                      phx-value-comment-id={comment.id}
+                      class="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </.form>
+                <% else %>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5 leading-snug">
+                    {VibeflowWeb.CoreComponents.render_markdown_mentions(comment.content)}
                   </p>
-                  <% end %>
-               </div>
-             </div>
+                <% end %>
+              </div>
+            </div>
           <% end %>
-          
+
           <%!-- Empty State Check (Note: Stream inserts check is tricky in templates, standard checks work best on the raw list if available, but visual fallback is okay) --%>
           <%= if @comment_count == 0 do %>
-             <div class="flex flex-col items-center justify-center h-48 text-gray-400 text-sm">
-                <p>No comments yet.</p>
-                <p class="text-xs">Start the conversation!</p>
-             </div>
+            <div class="flex flex-col items-center justify-center h-48 text-gray-400 text-sm">
+              <p>No comments yet.</p>
+              <p class="text-xs">Start the conversation!</p>
+            </div>
           <% end %>
         </div>
-  
+
         <%!-- Modal Input (Fixed Bottom) --%>
         <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 pb-safe z-20">
-          <.form :let={f} for={@comment_form} phx-change="validate" phx-submit="add_comment" class="flex gap-2 items-center">
+          <.form
+            :let={f}
+            for={@comment_form}
+            phx-change="validate"
+            phx-submit="add_comment"
+            class="flex gap-2 items-center"
+          >
             <input type="hidden" name="post_id" value={@post.id} />
             <input type="hidden" name="parent_id" value={@replying_to} />
-            
+
             <%= if @current_user && @current_user.avatar_url && @current_user.avatar_url != "" do %>
-              <img src={@current_user.avatar_url} class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+              <img
+                src={@current_user.avatar_url}
+                class="w-8 h-8 rounded-full border border-gray-200 object-cover"
+              />
             <% else %>
               <div class="w-8 h-8 rounded-full border border-gray-200 bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-                <%= VibeflowWeb.CoreComponents.initials(@current_user) %>
+                {VibeflowWeb.CoreComponents.initials(@current_user)}
               </div>
             <% end %>
-            
+
             <div class="flex-1 bg-gray-100 dark:bg-zinc-800 rounded-3xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
-               <.input field={f[:content]} type="text" placeholder={"Comment on #{@post.user.username} post..."} class="w-full bg-transparent border-none p-0 text-sm focus:ring-0 placeholder-gray-500" autocomplete="off" />
+              <.input
+                field={f[:content]}
+                type="text"
+                placeholder={"Comment on #{@post.user.username} post..."}
+                class="w-full bg-transparent border-none p-0 text-sm focus:ring-0 placeholder-gray-500"
+                autocomplete="off"
+              />
             </div>
-            
-            <button type="submit" disabled={!f[:content].value} class="p-2 text-indigo-600 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-               Post
+
+            <button
+              type="submit"
+              disabled={!f[:content].value}
+              class="p-2 text-indigo-600 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Post
             </button>
           </.form>
         </div>
       </div>
     <% end %>
-
   </div>
 </div>
 
 <!-- Mention Search Modal -->
-<div 
-  id="mention-modal" 
-  class={["fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity", 
-           if(@show_mention_modal, do: "", else: "hidden")]}
+<div
+  id="mention-modal"
+  class={[
+    "fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity",
+    if(@show_mention_modal, do: "", else: "hidden")
+  ]}
   phx-click="close_mention_modal"
 >
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-  
-  <div class="relative bg-white dark:bg-zinc-900 w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[60vh] flex flex-col border border-gray-100 dark:border-zinc-800" phx-click="stop_propagation">
+
+  <div
+    class="relative bg-white dark:bg-zinc-900 w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[60vh] flex flex-col border border-gray-100 dark:border-zinc-800"
+    phx-click="stop_propagation"
+  >
     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
       <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Mention User</h3>
-      <button 
-        phx-click="close_mention_modal" 
+      <button
+        phx-click="close_mention_modal"
         class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          >
+          </path>
         </svg>
       </button>
     </div>
-    
+
     <div class="flex-1 overflow-y-auto p-4">
       <%= if @mention_search_results && @mention_search_results != [] do %>
         <div class="space-y-2">
           <%= for user <- @mention_search_results do %>
-            <button 
-              phx-click="select_mention" 
+            <button
+              phx-click="select_mention"
               phx-value-username={user.username}
               phx-value-avatar={user.avatar_url}
               class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left"
             >
               <div class="flex-shrink-0">
                 <%= if user.avatar_url && user.avatar_url != "" do %>
-                  <img src={user.avatar_url} alt={user.username} class="h-8 w-8 rounded-full object-cover" />
+                  <img
+                    src={user.avatar_url}
+                    alt={user.username}
+                    class="h-8 w-8 rounded-full object-cover"
+                  />
                 <% else %>
                   <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
-                    <%= VibeflowWeb.CoreComponents.initials(user) %>
+                    {VibeflowWeb.CoreComponents.initials(user)}
                   </div>
                 <% end %>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-gray-900 dark:text-gray-200 truncate">
-                  <%= user.username %>
+                  {user.username}
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
-                  <%= user.bio || "No bio" %>
+                  {user.bio || "No bio"}
                 </div>
               </div>
             </button>
@@ -697,8 +1044,19 @@
         </div>
       <% else %>
         <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          <svg
+            class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            >
+            </path>
           </svg>
           <p class="text-sm">No users found</p>
           <p class="text-xs mt-1">Try a different username</p>

@@ -24,8 +24,11 @@ defmodule Vibeflow.Socials do
           user_id: following_id,
           actor_id: follower_id
         })
+
         {:ok, follow}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -45,7 +48,9 @@ defmodule Vibeflow.Socials do
   Returns if a user is following another user.
   """
   def following?(follower_id, following_id) do
-    Repo.exists?(from f in Follow, where: f.follower_id == ^follower_id and f.following_id == ^following_id)
+    Repo.exists?(
+      from f in Follow, where: f.follower_id == ^follower_id and f.following_id == ^following_id
+    )
   end
 
   @doc """
@@ -56,18 +61,20 @@ defmodule Vibeflow.Socials do
     offset = Keyword.get(opts, :offset, 0)
     search = Keyword.get(opts, :search, nil)
 
-    query = from(f in Follow,
-      where: f.follower_id == ^user_id,
-      preload: [:following],
-      limit: ^limit,
-      offset: ^offset
-    )
+    query =
+      from(f in Follow,
+        where: f.follower_id == ^user_id,
+        preload: [:following],
+        limit: ^limit,
+        offset: ^offset
+      )
 
     query =
       if search && search != "" do
         from(f in query,
           join: following in assoc(f, :following),
-          where: ilike(following.username, ^"%#{search}%") or ilike(following.email, ^"%#{search}%")
+          where:
+            ilike(following.username, ^"%#{search}%") or ilike(following.email, ^"%#{search}%")
         )
       else
         query
@@ -86,12 +93,13 @@ defmodule Vibeflow.Socials do
     offset = Keyword.get(opts, :offset, 0)
     search = Keyword.get(opts, :search, nil)
 
-    query = from(f in Follow,
-      where: f.following_id == ^user_id,
-      preload: [:follower],
-      limit: ^limit,
-      offset: ^offset
-    )
+    query =
+      from(f in Follow,
+        where: f.following_id == ^user_id,
+        preload: [:follower],
+        limit: ^limit,
+        offset: ^offset
+      )
 
     query =
       if search && search != "" do
@@ -155,21 +163,21 @@ defmodule Vibeflow.Socials do
     if current_count >= 3 do
       {:error, :social_limit_reached}
     else
-    platform = attrs["platform"] || attrs[:platform]
-    username = attrs["username"] || attrs[:username]
+      platform = attrs["platform"] || attrs[:platform]
+      username = attrs["username"] || attrs[:username]
 
-    username = normalize_username(platform, username)
+      username = normalize_username(platform, username)
 
-    url = build_social_url(platform, username)
+      url = build_social_url(platform, username)
 
-    attrs =
-      attrs
-      |> Map.put("url", url)
-      |> Map.put("user_id", user.id)
+      attrs =
+        attrs
+        |> Map.put("url", url)
+        |> Map.put("user_id", user.id)
 
-    %SocialAccount{}
-    |> SocialAccount.changeset(attrs)
-    |> Repo.insert()
+      %SocialAccount{}
+      |> SocialAccount.changeset(attrs)
+      |> Repo.insert()
     end
   end
 
@@ -182,7 +190,8 @@ defmodule Vibeflow.Socials do
   defp build_social_url("x", username), do: "https://x.com/#{username}"
   defp build_social_url("twitch", username), do: "https://twitch.tv/#{username}"
   defp build_social_url("tiktok", username), do: "https://tiktok.com/@#{username}"
-  defp build_social_url("discord", username), do: username # Discord doesn't have a simple public profile URL by username
+  # Discord doesn't have a simple public profile URL by username
+  defp build_social_url("discord", username), do: username
   defp build_social_url(_, username), do: username
 
   defp normalize_username(platform, username) do

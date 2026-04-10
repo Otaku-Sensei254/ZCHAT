@@ -14,7 +14,28 @@ defmodule Vibeflow.Posts.Post do
   import Ecto.Changeset
   alias Vibeflow.Posts.SavedPosts
   alias Vibeflow.Repo
-  @categories ["Tech", "Drama", "Action", "Fiction","Music", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
+
+  @categories [
+    "Tech",
+    "Drama",
+    "Action",
+    "Fiction",
+    "Music",
+    "Fitness",
+    "Sports",
+    "Thrills",
+    "Science",
+    "Fashion",
+    "Beauty",
+    "Gossip",
+    "Food",
+    "Politics",
+    "Business",
+    "Comedy",
+    "Nature",
+    "Couples",
+    "Kids"
+  ]
 
   @type t :: %__MODULE__{
           id: integer() | nil,
@@ -50,7 +71,8 @@ defmodule Vibeflow.Posts.Post do
     field :likes_count, :integer, default: 0
     field :comments_count, :integer, virtual: true, default: 0
     field :is_featured, :boolean, virtual: true, default: false
-    field :media_files, {:array, :map}, default: []  # JSON array of media files
+    # JSON array of media files
+    field :media_files, {:array, :map}, default: []
     # Keep old fields for backward compatibility
     field :media_url, :string, virtual: true
     field :media_type, :string, virtual: true
@@ -58,6 +80,7 @@ defmodule Vibeflow.Posts.Post do
     belongs_to :user, Vibeflow.Accounts.User
     has_many :reposts, Vibeflow.Posts.Repost, on_delete: :delete_all
     has_many :comments, Vibeflow.Posts.Comment, on_delete: :delete_all
+
     has_many :likes, Vibeflow.Posts.Like,
       foreign_key: :likeable_id,
       on_replace: :delete,
@@ -143,8 +166,6 @@ defmodule Vibeflow.Posts.Post do
     end
   end
 
-
-
   # Validates the media_files field.
   # - Must be a list
   # - Each media file must be a map with url and type
@@ -164,9 +185,9 @@ defmodule Vibeflow.Posts.Post do
 
           Enum.all?(media_files, fn media ->
             is_map(media) and
-            is_binary(Map.get(media, "url")) and
-            is_binary(Map.get(media, "type")) and
-            Map.get(media, "type") in ["image", "video"]
+              is_binary(Map.get(media, "url")) and
+              is_binary(Map.get(media, "type")) and
+                Map.get(media, "type") in ["image", "video"]
           end) ->
             changeset
 
@@ -197,8 +218,15 @@ defmodule Vibeflow.Posts.Post do
       case {post.media_url, post.media_type} do
         {nil, _} ->
           %{post | media_files: []}
+
         {url, type} when is_binary(url) and is_binary(type) ->
-          %{post | media_files: [%{"url" => url, "type" => type}], media_url: nil, media_type: nil}
+          %{
+            post
+            | media_files: [%{"url" => url, "type" => type}],
+              media_url: nil,
+              media_type: nil
+          }
+
         _ ->
           %{post | media_files: []}
       end
@@ -213,5 +241,4 @@ defmodule Vibeflow.Posts.Post do
     post
     |> change(view_count: post.view_count + 1)
   end
-
-  end
+end

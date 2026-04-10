@@ -20,13 +20,11 @@ defmodule Vibeflow.Application do
       Vibeflow.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: Vibeflow.PubSub},
-
       VibeflowWeb.Presence,
       # Start Finch
       {Finch, name: Vibeflow.Finch},
       # Start the Endpoint (http/https)
       VibeflowWeb.Endpoint
-
 
       # Start a worker by calling: Vibeflow.Worker.start_link(arg)
       # {Vibeflow.Worker, arg}

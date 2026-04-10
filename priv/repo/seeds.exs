@@ -2,18 +2,17 @@
 alias Vibeflow.Repo
 alias Vibeflow.Accounts.{Role, Permission}
 
-
-
-
 IO.puts("🌱 Seeding Roles & Permissions...")
 
 # 1. Define and Create Roles (Safely)
 roles_to_create = ["admin", "moderator", "user"]
+
 for role_name <- roles_to_create do
   case Repo.get_by(Role, name: role_name) do
     nil ->
       {:ok, _} = Repo.insert(%Role{name: role_name})
       IO.puts("🔹 Created role: #{role_name}")
+
     _ ->
       IO.puts("🔹 Role '#{role_name}' already exists. Skipping.")
   end
@@ -37,6 +36,7 @@ permission_map =
         nil -> Repo.insert!(data)
         existing -> existing
       end
+
     Map.put(acc, data.slug, perm)
   end)
 
@@ -45,12 +45,15 @@ IO.puts("✅ Permissions table populated.")
 # 4. Helper to Link Roles <-> Permissions
 assign_perms = fn role_name, slugs ->
   role = Repo.get_by(Role, name: role_name) |> Repo.preload(:permissions)
+
   if role do
     perms_to_add = Enum.map(slugs, fn s -> Map.get(permission_map, s) end)
+
     role
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.put_assoc(:permissions, perms_to_add)
     |> Repo.update!()
+
     IO.puts("🔹 Assigned [#{Enum.join(slugs, ", ")}] to role: #{role_name}")
   else
     IO.puts("⚠️ Role '#{role_name}' not found. Skipping.")
@@ -110,7 +113,7 @@ store_items = [
     duration: "1d",
     category: "power_ups"
   },
-   %{
+  %{
     item_name: "dummy item",
     item_slug: "dummy-item",
     worth: 3,
@@ -130,7 +133,7 @@ Enum.each(store_items, fn attrs ->
       existing
       |> StoreItem.changeset(attrs)
       |> Repo.update!()
-    end
+  end
 end)
 
 IO.puts("✅ Store items seeded.")
@@ -170,7 +173,8 @@ test_user =
 posts_to_seed = [
   %{
     title: "Welcome to VibeFlow!",
-    content: "Welcome to VibeFlow! 🌊 This is your first wave. Share your thoughts, connect with friends, and express yourself freely.",
+    content:
+      "Welcome to VibeFlow! 🌊 This is your first wave. Share your thoughts, connect with friends, and express yourself freely.",
     user_id: test_user.id,
     category: "Tech",
     media_files: [],
@@ -179,7 +183,8 @@ posts_to_seed = [
   },
   %{
     title: "Creative Flow",
-    content: "Just dropped my first track! 🎵 Feeling the creative flow today. Music production mode: ON. Who else is creating something amazing?",
+    content:
+      "Just dropped my first track! 🎵 Feeling the creative flow today. Music production mode: ON. Who else is creating something amazing?",
     user_id: test_user.id,
     category: "Music",
     media_files: [],
@@ -188,7 +193,8 @@ posts_to_seed = [
   },
   %{
     title: "Sunset Vibes",
-    content: "The sunset vibes are hitting different today 🌅 Sometimes the best conversations happen when we're not trying to have them. Just being present is enough.",
+    content:
+      "The sunset vibes are hitting different today 🌅 Sometimes the best conversations happen when we're not trying to have them. Just being present is enough.",
     user_id: test_user.id,
     category: "Nature",
     media_files: [],
@@ -197,7 +203,8 @@ posts_to_seed = [
   },
   %{
     title: "Weekend Energy",
-    content: "Anyone else feeling the weekend energy? ⚡ Time to recharge, reset, and come back stronger. What's your weekend ritual?",
+    content:
+      "Anyone else feeling the weekend energy? ⚡ Time to recharge, reset, and come back stronger. What's your weekend ritual?",
     user_id: test_user.id,
     category: "Fitness",
     media_files: [],
@@ -206,7 +213,8 @@ posts_to_seed = [
   },
   %{
     title: "Revolutionary Stillness",
-    content: "Deep thought: In a world of endless scrolling, the most revolutionary act is to be still. 🧘",
+    content:
+      "Deep thought: In a world of endless scrolling, the most revolutionary act is to be still. 🧘",
     user_id: test_user.id,
     category: "Science",
     media_files: [],
@@ -215,7 +223,8 @@ posts_to_seed = [
   },
   %{
     title: "Neighborhood Coffee Shop",
-    content: "Just discovered this amazing coffee shop in my neighborhood ☕ Perfect spot for morning coding sessions and afternoon vibes.",
+    content:
+      "Just discovered this amazing coffee shop in my neighborhood ☕ Perfect spot for morning coding sessions and afternoon vibes.",
     user_id: test_user.id,
     category: "Food",
     media_files: [],
@@ -252,6 +261,7 @@ IO.puts("✅ Posts seeded successfully!")
 
 # Add some likes to posts
 all_posts = Repo.all(Post)
+
 Enum.take_random(all_posts, 5)
 |> Enum.each(fn post ->
   %Like{

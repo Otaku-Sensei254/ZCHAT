@@ -13,7 +13,9 @@ defmodule Vibeflow.Socials.Follow do
     follow
     |> cast(attrs, [:follower_id, :following_id])
     |> validate_required([:follower_id, :following_id])
-    |> unique_constraint([:follower_id, :following_id], name: :follows_follower_id_following_id_index)
+    |> unique_constraint([:follower_id, :following_id],
+      name: :follows_follower_id_following_id_index
+    )
     |> validate_different_accounts()
   end
 

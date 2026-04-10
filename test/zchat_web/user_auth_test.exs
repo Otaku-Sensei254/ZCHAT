@@ -85,7 +85,12 @@ defmodule VibeflowWeb.UserAuthTest do
   describe "fetch_current_user/2" do
     test "authenticates user from session", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
-      conn = conn |> put_session(:user_token, Base.url_encode64(user_token)) |> UserAuth.fetch_current_user([])
+
+      conn =
+        conn
+        |> put_session(:user_token, Base.url_encode64(user_token))
+        |> UserAuth.fetch_current_user([])
+
       assert conn.assigns.current_user.id == user.id
     end
 

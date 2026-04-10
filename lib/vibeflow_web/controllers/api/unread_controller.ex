@@ -16,7 +16,9 @@ defmodule VibeflowWeb.Api.UnreadController do
             ["Bearer", t] -> t
             _ -> nil
           end
-        _ -> nil
+
+        _ ->
+          nil
       end || Map.get(params, "user_token")
 
     with token when not is_nil(token) <- token,

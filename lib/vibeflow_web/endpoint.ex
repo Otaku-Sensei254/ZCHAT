@@ -14,12 +14,13 @@ defmodule VibeflowWeb.Endpoint do
     websocket: true,
     longpoll: false
 
-socket "/live", Phoenix.LiveView.Socket,
-  websocket: [
-    #delay for at least 5mins
-    idle_timeout: 300_000,
-    connect_info: [session: @session_options]
-  ]
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [
+      # delay for at least 5mins
+      idle_timeout: 300_000,
+      connect_info: [session: @session_options]
+    ]
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phx.digest
@@ -41,6 +42,7 @@ socket "/live", Phoenix.LiveView.Socket,
       browserconfig.xml
       robots.txt
     )
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

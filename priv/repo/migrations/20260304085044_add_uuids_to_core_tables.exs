@@ -7,16 +7,19 @@ defmodule Vibeflow.Repo.Migrations.AddUuidsToCoreTables do
     alter table(:posts) do
       add :uuid, :uuid, default: fragment("gen_random_uuid()"), null: false
     end
+
     create unique_index(:posts, [:uuid])
 
     alter table(:conversations) do
       add :uuid, :uuid, default: fragment("gen_random_uuid()"), null: false
     end
+
     create unique_index(:conversations, [:uuid])
 
     alter table(:waves) do
       add :uuid, :uuid, default: fragment("gen_random_uuid()"), null: false
     end
+
     create unique_index(:waves, [:uuid])
   end
 

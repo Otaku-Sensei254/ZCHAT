@@ -87,37 +87,36 @@ defmodule VibeflowWeb.UserResetPasswordLiveTest do
     end
   end
 
- describe "Reset password navigation" do
- test "redirects to login page when the Log in button is clicked", %{conn: conn, token: token} do
-  {:ok, lv, _html} = live(conn, ~p"/users/reset_password/#{token}")
+  describe "Reset password navigation" do
+    test "redirects to login page when the Log in button is clicked", %{conn: conn, token: token} do
+      {:ok, lv, _html} = live(conn, ~p"/users/reset_password/#{token}")
 
-  # Use the 3-item tuple here
-  {:ok, _login_lv, html} =
-    lv
-    |> element("header a", "Log in")
-    |> render_click()
-    |> follow_redirect(conn, ~p"/users/log_in")
+      # Use the 3-item tuple here
+      {:ok, _login_lv, html} =
+        lv
+        |> element("header a", "Log in")
+        |> render_click()
+        |> follow_redirect(conn, ~p"/users/log_in")
 
-  # Assert against the HTML string, not conn.resp_body
-  assert html =~ "Log in"
-end
+      # Assert against the HTML string, not conn.resp_body
+      assert html =~ "Log in"
+    end
 
+    test "redirects to registration page when the Sign up button is clicked", %{
+      conn: conn,
+      token: token
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/users/reset_password/#{token}")
 
- test "redirects to registration page when the Sign up button is clicked", %{
-  conn: conn,
-  token: token
-} do
-  {:ok, lv, _html} = live(conn, ~p"/users/reset_password/#{token}")
+      # Destructure the 3-element tuple returned by follow_redirect for LiveViews
+      {:ok, _registration_lv, html} =
+        lv
+        |> element("a", "Sign up")
+        |> render_click()
+        |> follow_redirect(conn, ~p"/users/register")
 
-  # Destructure the 3-element tuple returned by follow_redirect for LiveViews
-  {:ok, _registration_lv, html} =
-    lv
-    |> element("a", "Sign up")
-    |> render_click()
-    |> follow_redirect(conn, ~p"/users/register")
-
-  # Assert against the 'html' variable instead of 'conn.resp_body'
-  assert html =~ "Sign up"
-end
-end
+      # Assert against the 'html' variable instead of 'conn.resp_body'
+      assert html =~ "Sign up"
+    end
+  end
 end

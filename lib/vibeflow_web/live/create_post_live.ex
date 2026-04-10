@@ -12,7 +12,6 @@ defmodule VibeflowWeb.CreatePostLive do
 
   alias Vibeflow.Infrastructure.UploadCloudinary
 
-
   @impl true
   def mount(_params, _session, socket) do
     changeset = Posts.change_post(%Post{})
@@ -26,7 +25,8 @@ defmodule VibeflowWeb.CreatePostLive do
      |> assign(:uploaded_files, [])
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
-       max_entries: 21,#inside vibe not chat
+       # inside vibe not chat
+       max_entries: 21,
        max_file_size: 100_000_000,
        auto_upload: true,
        progress: &handle_progress/3
@@ -61,12 +61,14 @@ defmodule VibeflowWeb.CreatePostLive do
         consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
           case UploadCloudinary.upload_file(path) do
             {:ok, result} ->
-              {:ok, %{
-                "url" => result.url,
-                "type" => result.resource_type,
-                "client_name" => entry.client_name,
-                "client_size" => entry.client_size
-              }}
+              {:ok,
+               %{
+                 "url" => result.url,
+                 "type" => result.resource_type,
+                 "client_name" => entry.client_name,
+                 "client_size" => entry.client_size
+               }}
+
             {:error, _reason} ->
               {:postpone, :upload_failed}
           end
@@ -147,7 +149,9 @@ defmodule VibeflowWeb.CreatePostLive do
         {:noreply, socket}
       else
         new_changeset = Ecto.Changeset.put_change(changeset, :tags, current_tags ++ [tag])
-        {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
+
+        {:noreply,
+         assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
       end
     else
       {:noreply, socket}

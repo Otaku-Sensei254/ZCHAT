@@ -92,11 +92,12 @@ defmodule Vibeflow.Posts do
         left_join: r in assoc(ur, :role),
         group_by: [p.id, u.id],
         order_by: [
-          desc: fragment(
-            "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN 1 ELSE 0 END",
-            r.name,
-            r.name
-          ),
+          desc:
+            fragment(
+              "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN 1 ELSE 0 END",
+              r.name,
+              r.name
+            ),
           desc: p.inserted_at
         ],
         select_merge: %{
@@ -151,10 +152,18 @@ defmodule Vibeflow.Posts do
       personalized_slots = per_page - general_slots
 
       # Get recent general content (newest posts)
-      recent_general = get_recent_general_content(user_id, general_slots, search_term, category, personalized_posts)
+      recent_general =
+        get_recent_general_content(
+          user_id,
+          general_slots,
+          search_term,
+          category,
+          personalized_posts
+        )
 
       # Get personalized content to fill remaining slots
-      personalized = get_personalized_posts(user_id, page, personalized_slots, search_term, category)
+      personalized =
+        get_personalized_posts(user_id, page, personalized_slots, search_term, category)
 
       # Combine: recent general first, then personalized
       (recent_general ++ personalized)
@@ -292,22 +301,27 @@ defmodule Vibeflow.Posts do
   end
 
   defp filter_by_user(query, nil), do: query
+
   defp filter_by_user(query, user_id) do
     from [p, u] in query, where: p.user_id == ^user_id
   end
 
   defp filter_by_search(query, nil), do: query
   defp filter_by_search(query, ""), do: query
+
   defp filter_by_search(query, term) do
     pattern = "%#{term}%"
+
     from [p, u] in query,
-      where: ilike(p.title, ^pattern) or
-             ilike(p.content, ^pattern) or
-             ilike(u.username, ^pattern)
+      where:
+        ilike(p.title, ^pattern) or
+          ilike(p.content, ^pattern) or
+          ilike(u.username, ^pattern)
   end
 
   defp filter_by_category(query, nil), do: query
   defp filter_by_category(query, ""), do: query
+
   defp filter_by_category(query, category) do
     from [p, u] in query, where: ilike(p.category, ^category)
   end
@@ -358,17 +372,16 @@ defmodule Vibeflow.Posts do
   end
 
   def list_fresh_random_posts(limit \\ 20, days_ago \\ 5) do
-    cutoff_date =  DateTime.add(DateTime.utc_now(), -days_ago, :day)
+    cutoff_date = DateTime.add(DateTime.utc_now(), -days_ago, :day)
 
     from(p in Post,
-              where: p.inserted_at >= ^cutoff_date,
-              order_by: fragment("RANDOM()"),
-              limit: ^limit,
-              preload: [:user, :likes]
-          )
-          |> Repo.all()
+      where: p.inserted_at >= ^cutoff_date,
+      order_by: fragment("RANDOM()"),
+      limit: ^limit,
+      preload: [:user, :likes]
+    )
+    |> Repo.all()
   end
-
 
   def get_post(id_or_uuid, opts \\ []) do
     preload = Keyword.get(opts, :preload, [:user, :likes, comments: :user])
@@ -413,7 +426,27 @@ defmodule Vibeflow.Posts do
   end
 
   def categories do
-    ["Tech", "Drama", "Action", "Fiction", "Music","Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]
+    [
+      "Tech",
+      "Drama",
+      "Action",
+      "Fiction",
+      "Music",
+      "Fitness",
+      "Sports",
+      "Thrills",
+      "Science",
+      "Fashion",
+      "Beauty",
+      "Gossip",
+      "Food",
+      "Politics",
+      "Business",
+      "Comedy",
+      "Nature",
+      "Couples",
+      "Kids"
+    ]
   end
 
   def get_post_with_associations(id) do
@@ -421,7 +454,6 @@ defmodule Vibeflow.Posts do
     |> Repo.get(id)
     |> Repo.preload([:user, :likes, comments: :user])
   end
-
 
   # --- POST CRUD ---
 
@@ -451,13 +483,17 @@ defmodule Vibeflow.Posts do
 
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:new_post, post})
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_created, post})
+
         case Seeder.assign_initial_seeds(post.id, post.user_id) do
           {:ok, _} -> :ok
           {:error, reason} -> Logger.error("Post seeding failed: #{inspect(reason)}")
         end
+
         _ = maybe_award_daily_post_points(post.user_id)
         {:ok, post}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -481,7 +517,9 @@ defmodule Vibeflow.Posts do
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_deleted, post})
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_deleted, post})
         {:ok, post}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -509,7 +547,6 @@ defmodule Vibeflow.Posts do
     |> NaiveDateTime.new!(~T[00:00:00])
   end
 
-
   # --- COMMENTS ---
 
   def get_comment!(id, opts \\ []) do
@@ -528,7 +565,7 @@ defmodule Vibeflow.Posts do
 
     query
     |> preload(^preload)
-    |> order_by([c], [desc: c.pinned, asc: c.inserted_at])
+    |> order_by([c], desc: c.pinned, asc: c.inserted_at)
     |> Repo.all()
   end
 
@@ -539,11 +576,18 @@ defmodule Vibeflow.Posts do
     |> case do
       {:ok, comment} ->
         comment = Repo.preload(comment, :user)
-        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:new_comment, comment})
+
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "post:#{comment.post_id}",
+          {:new_comment, comment}
+        )
+
         Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:comment_created, comment})
 
         unless comment.post_id |> get_post!() |> Map.get(:user_id) == comment.user_id do
           post = get_post!(comment.post_id)
+
           Notifications.create_notification(%{
             type: "comment",
             user_id: post.user_id,
@@ -559,7 +603,9 @@ defmodule Vibeflow.Posts do
         end)
 
         {:ok, comment}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -610,14 +656,22 @@ defmodule Vibeflow.Posts do
 
   defp handle_comment_update({:ok, comment}) do
     comment = Repo.preload(comment, :user)
-    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post_comments:#{comment.post_id}", {:comment_updated, comment})
+
+    Phoenix.PubSub.broadcast(
+      Vibeflow.PubSub,
+      "post_comments:#{comment.post_id}",
+      {:comment_updated, comment}
+    )
+
     {:ok, comment}
   end
+
   defp handle_comment_update({:error, changeset}), do: {:error, changeset}
 
   def change_comment(%Comment{} = comment, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
   end
+
   def pin_comment(%Comment{} = comment) do
     comment
     |> Comment.changeset(%{pinned: true})
@@ -625,12 +679,19 @@ defmodule Vibeflow.Posts do
     |> case do
       {:ok, comment} ->
         comment = Repo.preload(comment, :user)
-        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post_comments:#{comment.post_id}", {:comment_pinned, comment})
+
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "post_comments:#{comment.post_id}",
+          {:comment_pinned, comment}
+        )
+
         {:ok, comment}
-      error -> error
+
+      error ->
+        error
     end
   end
-
 
   # --- LIKES ---
 
@@ -643,7 +704,8 @@ defmodule Vibeflow.Posts do
         update_like_count(like)
         like = Repo.preload(like, :user)
 
-        unless like.likeable_type == "Post" and Repo.get(Post, like.likeable_id) |> Map.get(:user_id) == like.user_id do
+        unless like.likeable_type == "Post" and
+                 Repo.get(Post, like.likeable_id) |> Map.get(:user_id) == like.user_id do
           Notifications.create_notification(%{
             type: "like",
             user_id: Repo.get(Post, like.likeable_id) |> Map.get(:user_id),
@@ -654,17 +716,30 @@ defmodule Vibeflow.Posts do
 
         cond do
           like.likeable_type == "Post" ->
-            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{like.likeable_id}", {:post_liked, like})
+            Phoenix.PubSub.broadcast(
+              Vibeflow.PubSub,
+              "post:#{like.likeable_id}",
+              {:post_liked, like}
+            )
+
             Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_liked, like})
+
           like.likeable_type == "Comment" ->
             comment = Repo.get(Comment, like.likeable_id)
+
             if comment do
-              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:comment_liked, like})
+              Phoenix.PubSub.broadcast(
+                Vibeflow.PubSub,
+                "post:#{comment.post_id}",
+                {:comment_liked, like}
+              )
             end
         end
 
         {:ok, like}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -677,17 +752,34 @@ defmodule Vibeflow.Posts do
 
         cond do
           like.likeable_type == "Post" ->
-            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{like.likeable_id}", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
-            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}})
+            Phoenix.PubSub.broadcast(
+              Vibeflow.PubSub,
+              "post:#{like.likeable_id}",
+              {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}}
+            )
+
+            Phoenix.PubSub.broadcast(
+              Vibeflow.PubSub,
+              "posts",
+              {:post_unliked, %{post_id: like.likeable_id, user_id: like.user_id}}
+            )
+
           like.likeable_type == "Comment" ->
             comment = Repo.get(Comment, like.likeable_id)
+
             if comment do
-              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{comment.post_id}", {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}})
+              Phoenix.PubSub.broadcast(
+                Vibeflow.PubSub,
+                "post:#{comment.post_id}",
+                {:comment_unliked, %{comment_id: like.likeable_id, user_id: like.user_id}}
+              )
             end
         end
 
         {:ok, like}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -697,7 +789,8 @@ defmodule Vibeflow.Posts do
 
   def get_repost_by_user_and_post(user_id, post_id) do
     from(r in Repost,
-      where: r.user_id == ^user_id and r.post_id == ^post_id)
+      where: r.user_id == ^user_id and r.post_id == ^post_id
+    )
     |> Repo.one()
   end
 
@@ -732,12 +825,14 @@ defmodule Vibeflow.Posts do
     offset = Keyword.get(opts, :offset, 0)
 
     from(sp in SavedPosts,
-      join: p in Post, on: sp.post_id == p.id,
+      join: p in Post,
+      on: sp.post_id == p.id,
       where: sp.user_id == ^user_id,
       order_by: [desc: sp.inserted_at],
       limit: ^limit,
       offset: ^offset,
-      preload: [:post])
+      preload: [:post]
+    )
     |> Repo.all()
     |> Enum.map(& &1.post)
   end
@@ -746,7 +841,9 @@ defmodule Vibeflow.Posts do
     case get_like_by_user_and_target(user_id, likeable_type, likeable_id) do
       nil ->
         case likeable_type do
-          "Post" -> like_post(user_id, likeable_id)
+          "Post" ->
+            like_post(user_id, likeable_id)
+
           _ ->
             create_like(%{
               user_id: user_id,
@@ -754,6 +851,7 @@ defmodule Vibeflow.Posts do
               likeable_id: likeable_id
             })
         end
+
       like ->
         delete_like(like)
     end
@@ -807,10 +905,11 @@ defmodule Vibeflow.Posts do
       {:ok, %{post: post, like: like, ripple: ripple_status}} ->
         award_like_points(post, user_id, ripple_status)
         {:ok, like}
-      {:error, _step, reason, _changes} -> {:error, reason}
+
+      {:error, _step, reason, _changes} ->
+        {:error, reason}
     end
   end
-
 
   defp award_like_points(%Post{} = post, user_id, _ripple_status) when post.user_id == user_id do
     :ok
@@ -829,16 +928,20 @@ defmodule Vibeflow.Posts do
   defp award_like_points(_, _, _), do: :ok
 
   defp maybe_award_author_points(nil, _user_id, _points), do: {:ok, :no_author}
-  defp maybe_award_author_points(author_id, user_id, _points) when author_id == user_id, do: {:ok, :self_action}
+
+  defp maybe_award_author_points(author_id, user_id, _points) when author_id == user_id,
+    do: {:ok, :self_action}
+
   defp maybe_award_author_points(author_id, _user_id, points) do
     Accounts.grant_points(author_id, points)
   end
 
-
-   #adding repost functions for posts
-    def toggle_repost(user_id, post_id) do
+  # adding repost functions for posts
+  def toggle_repost(user_id, post_id) do
     case Repo.get(Post, post_id) do
-      nil -> {:error, :post_not_found}
+      nil ->
+        {:error, :post_not_found}
+
       post ->
         existing_repost = Repo.get_by(Repost, user_id: user_id, post_id: post_id)
 
@@ -846,6 +949,7 @@ defmodule Vibeflow.Posts do
           if existing_repost do
             # Remove repost and decrease count
             Repo.delete(existing_repost)
+
             from(p in Post, where: p.id == ^post_id)
             |> Repo.update_all(inc: [reposts_count: -1])
 
@@ -856,23 +960,28 @@ defmodule Vibeflow.Posts do
             # Add repost and increase count
             repost_changeset = Repost.changeset(%Repost{}, %{user_id: user_id, post_id: post_id})
             {:ok, repost} = Repo.insert(repost_changeset)
+
             from(p in Post, where: p.id == ^post_id)
             |> Repo.update_all(inc: [reposts_count: 1])
 
             # Send notification to original post owner (if not self-repost)
             if post.user_id != user_id do
-              {:ok, notification} = Notifications.create_notification(%{
-                user_id: post.user_id,
-                actor_id: user_id,
-                type: "repost",
-                post_id: post_id
-              })
+              {:ok, notification} =
+                Notifications.create_notification(%{
+                  user_id: post.user_id,
+                  actor_id: user_id,
+                  type: "repost",
+                  post_id: post_id
+                })
 
               # Send specific broadcast for repost notifications with flash
               actor = Repo.get(Vibeflow.Accounts.User, user_id)
               notification_with_actor = %{notification | actor: actor}
-              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{post.user_id}",
-                %{event: "repost_notification", notification: notification_with_actor})
+
+              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{post.user_id}", %{
+                event: "repost_notification",
+                notification: notification_with_actor
+              })
             end
 
             Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:repost_added, repost})
@@ -884,29 +993,34 @@ defmodule Vibeflow.Posts do
   end
 
   def repost_post(user_id, post_id) do
-      case Repo.get(Post, post_id) do
-        nil -> {:error, :post_not_found}
-        post ->
-          # Check if user already reposted this post
-          existing_repost = Repo.get_by(Repost, user_id: user_id, post_id: post_id)
-          if existing_repost do
-            {:error, :already_reposted}
-          else
-            # make the repost
-            repost_changeset = Repost.changeset(%Repost{}, %{user_id: user_id, post_id: post_id})
-            Repo.transaction(fn ->
-              # Insert repost record
-              {:ok, repost} = Repo.insert(repost_changeset)
-              # Increase repost count on original post
-              from(p in Post, where: p.id == ^post_id)
-              |> Repo.update_all(inc: [reposts_count: 1])
-              # Broadcast the repost activity
-              Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:repost_added, repost})
-              repost
-            end)
-          end
-      end
+    case Repo.get(Post, post_id) do
+      nil ->
+        {:error, :post_not_found}
+
+      post ->
+        # Check if user already reposted this post
+        existing_repost = Repo.get_by(Repost, user_id: user_id, post_id: post_id)
+
+        if existing_repost do
+          {:error, :already_reposted}
+        else
+          # make the repost
+          repost_changeset = Repost.changeset(%Repost{}, %{user_id: user_id, post_id: post_id})
+
+          Repo.transaction(fn ->
+            # Insert repost record
+            {:ok, repost} = Repo.insert(repost_changeset)
+            # Increase repost count on original post
+            from(p in Post, where: p.id == ^post_id)
+            |> Repo.update_all(inc: [reposts_count: 1])
+
+            # Broadcast the repost activity
+            Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:repost_added, repost})
+            repost
+          end)
+        end
     end
+  end
 
   # --- ANALYTICS / STATS ---
 
@@ -988,15 +1102,16 @@ defmodule Vibeflow.Posts do
 
     final_query =
       base_query
-      |> where([p, u], true)  # Keep the joins
+      # Keep the joins
+      |> where([p, u], true)
       |> group_by([p, u], [p.id, u.id])
-      |> order_by([p, u], [desc: p.inserted_at])
+      |> order_by([p, u], desc: p.inserted_at)
       |> limit(^per_page)
       |> offset(^((page - 1) * per_page))
       |> select_merge([p, u, l, c], %{
-          likes_count: count(l.id, :distinct),
-          comments_count: count(c.id, :distinct)
-        })
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      })
 
     query =
       final_query
@@ -1023,17 +1138,26 @@ defmodule Vibeflow.Posts do
     }
   end
 
-
   # --- PRIVATE HELPERS ---
 
   defp update_like_count(%Like{likeable_type: "Post", likeable_id: post_id}) do
-    count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^post_id and l.likeable_type == "Post"), :count)
+    count =
+      Repo.aggregate(
+        from(l in Like, where: l.likeable_id == ^post_id and l.likeable_type == "Post"),
+        :count
+      )
+
     from(p in Post, where: p.id == ^post_id) |> Repo.update_all(set: [likes_count: count])
     :ok
   end
 
   defp update_like_count(%Like{likeable_type: "Comment", likeable_id: comment_id}) do
-    count = Repo.aggregate(from(l in Like, where: l.likeable_id == ^comment_id and l.likeable_type == "Comment"), :count)
+    count =
+      Repo.aggregate(
+        from(l in Like, where: l.likeable_id == ^comment_id and l.likeable_type == "Comment"),
+        :count
+      )
+
     from(c in Comment, where: c.id == ^comment_id) |> Repo.update_all(set: [likes_count: count])
     :ok
   end
@@ -1056,7 +1180,8 @@ defmodule Vibeflow.Posts do
               view_exists = Repo.get_by(View, post_id: post_id, user_id: user_id)
 
               if view_exists do
-                :ok  # Already viewed, don't increment
+                # Already viewed, don't increment
+                :ok
               else
                 # Try to insert the view record
                 case %View{}
@@ -1150,18 +1275,22 @@ defmodule Vibeflow.Posts do
               if File.exists?(path), do: upload_and_format(path), else: nil
 
             # C: Already processed map (e.g. edit form keeping old images)
-            %{"url" => _url, "type" => _type} = item -> item
+            %{"url" => _url, "type" => _type} = item ->
+              item
 
             # D: Catch-all for garbage
-            _ -> nil
+            _ ->
+              nil
           end)
-          |> Enum.reject(&is_nil/1) # Remove failed uploads
+          # Remove failed uploads
+          |> Enum.reject(&is_nil/1)
 
         # Replace original list with processed list of maps
         Map.put(attrs, "media_files", processed_media)
 
       # 2. No files, or empty list -> return attrs untouched
-      _ -> attrs
+      _ ->
+        attrs
     end
   end
 
@@ -1172,6 +1301,7 @@ defmodule Vibeflow.Posts do
           "url" => result.url,
           "type" => result.resource_type || "image"
         }
+
       {:error, reason} ->
         # Log the error so we can see it in Fly logs if it fails again
         IO.inspect(reason, label: "CLOUDINARY UPLOAD ERROR")

@@ -53,7 +53,6 @@ defmodule VibeflowWeb.Navigation do
         roles: ["moderator"],
         section: nil
       },
-
       %{
         section: "Moderation",
         roles: ["moderator"]
@@ -81,7 +80,6 @@ defmodule VibeflowWeb.Navigation do
         roles: ["sales_executive"],
         section: nil
       },
-
       %{
         section: "Sales",
         roles: ["sales_executive"]
@@ -115,10 +113,11 @@ defmodule VibeflowWeb.Navigation do
   """
   def filter_by_user_roles(nav_items, user_roles) when is_list(user_roles) do
     # Extract role names from the user's roles
-    user_role_names = Enum.map(user_roles, fn
-      %{name: name} -> name
-      role when is_binary(role) -> role
-    end)
+    user_role_names =
+      Enum.map(user_roles, fn
+        %{name: name} -> name
+        role when is_binary(role) -> role
+      end)
 
     # Filter items where user has at least one matching role
     Enum.filter(nav_items, fn item ->

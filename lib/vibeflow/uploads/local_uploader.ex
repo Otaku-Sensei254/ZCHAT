@@ -9,8 +9,9 @@ defmodule Vibeflow.Uploads.LocalUploader do
     case File.cp(temp_path, destination_path) do
       :ok ->
         {:ok, "/uploads/waves/#{unique_name}"}
+
       {:error, reason} ->
-         {:error, reason}
+        {:error, reason}
     end
   end
 end

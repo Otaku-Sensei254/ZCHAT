@@ -10,7 +10,9 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
     cloud_name = config()[:cloud_name]
     upload_preset = config()[:upload_preset]
 
-    Logger.info("Uploading to Cloudinary with cloud_name: #{cloud_name}, upload_preset: #{upload_preset}")
+    Logger.info(
+      "Uploading to Cloudinary with cloud_name: #{cloud_name}, upload_preset: #{upload_preset}"
+    )
 
     # 2. Choose endpoint
     endpoint =
@@ -25,10 +27,12 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
     url = "https://api.cloudinary.com/v1_1/#{cloud_name}/#{endpoint}"
 
     # 3. Construct the multipart body
-    body = {:multipart, [
-      {:file, file_path},
-      {"upload_preset", upload_preset}
-    ]}
+    body =
+      {:multipart,
+       [
+         {:file, file_path},
+         {"upload_preset", upload_preset}
+       ]}
 
     # Increase timeout to 30s because videos take longer to upload
     options = [recv_timeout: 30_000]
@@ -39,10 +43,11 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
         json = Jason.decode!(response_body)
 
         # Return the URL and the type (e.g., "image" or "video")
-        {:ok, %{
-          url: json["secure_url"],
-          resource_type: json["resource_type"]
-        }}
+        {:ok,
+         %{
+           url: json["secure_url"],
+           resource_type: json["resource_type"]
+         }}
 
       {:ok, %{body: error_body}} ->
         Logger.error("Cloudinary upload error: #{inspect(error_body)}")

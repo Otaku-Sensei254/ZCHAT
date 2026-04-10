@@ -204,7 +204,7 @@ defmodule Vibeflow.Accounts do
   # for admin and moderator to view all verification requests
   def list_verification_requests do
     VerificationRequest
-    |> order_by([desc: :inserted_at])
+    |> order_by(desc: :inserted_at)
     |> preload(:user)
     |> Repo.all()
   end
@@ -213,7 +213,7 @@ defmodule Vibeflow.Accounts do
   def list_pending_verification_requests do
     VerificationRequest
     |> where([v], v.status == "pending")
-    |> order_by([asc: :inserted_at])
+    |> order_by(asc: :inserted_at)
     |> preload(:user)
     |> Repo.all()
   end
@@ -553,13 +553,12 @@ defmodule Vibeflow.Accounts do
     |> Repo.update()
   end
 
-
-    #Adding mentions to posts and comments
+  # Adding mentions to posts and comments
   def mention_user_in_post(user_id, post_id) do
     # This is a placeholder function. You would implement the logic to create a mention record in the database.
     # For example, you might have a PostMention schema that tracks which users are mentioned in which posts.
     # You would create a new PostMention record here linking the user_id and post_id.
-     {:ok, :mentioned}
+    {:ok, :mentioned}
   end
 
   # --- POINTS MANAGEMENT ---

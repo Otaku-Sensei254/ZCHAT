@@ -23,7 +23,9 @@ defmodule Vibeflow.Posts.Like do
     |> validate_required([:user_id, :likeable_type, :likeable_id])
     |> foreign_key_constraint(:user_id)
     # This ensures a user can only like a specific item (post or comment) once
-    |> unique_constraint([:user_id, :likeable_type, :likeable_id], name: :user_likeable_unique_index)
+    |> unique_constraint([:user_id, :likeable_type, :likeable_id],
+      name: :user_likeable_unique_index
+    )
   end
 
   # We remove the after_insert and after_delete callbacks

@@ -21,20 +21,23 @@ defmodule Vibeflow.WavesTest do
       Socials.create_follow(%{follower_id: me.id, following_id: friend.id})
 
       # 3. Create a wave for the friend (should see this)
-      {:ok, _friend_wave} = Waves.create_wave(%{
-        user_id: friend.id,
-        media_url: "friend.mp4",
-        media_type: "video",
-        expires_at: DateTime.add(DateTime.utc_now(), 3600) # Expires in 1 hour
-      })
+      {:ok, _friend_wave} =
+        Waves.create_wave(%{
+          user_id: friend.id,
+          media_url: "friend.mp4",
+          media_type: "video",
+          # Expires in 1 hour
+          expires_at: DateTime.add(DateTime.utc_now(), 3600)
+        })
 
       # 4. Create a wave for the stranger (should NOT see this)
-      {:ok, _stranger_wave} = Waves.create_wave(%{
-        user_id: stranger.id,
-        media_url: "stranger.mp4",
-        media_type: "video",
-        expires_at: DateTime.add(DateTime.utc_now(), 3600)
-      })
+      {:ok, _stranger_wave} =
+        Waves.create_wave(%{
+          user_id: stranger.id,
+          media_url: "stranger.mp4",
+          media_type: "video",
+          expires_at: DateTime.add(DateTime.utc_now(), 3600)
+        })
 
       # --- ACT ---
       # Call the function we are testing

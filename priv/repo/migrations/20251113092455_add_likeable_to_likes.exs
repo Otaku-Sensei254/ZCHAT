@@ -13,6 +13,8 @@ defmodule Vibeflow.Repo.Migrations.AddLikeableToLikes do
     end
 
     # Create a new unique index for the polymorphic fields
-    create unique_index(:likes, [:user_id, :likeable_type, :likeable_id], name: :user_likeable_unique_index)
+    create unique_index(:likes, [:user_id, :likeable_type, :likeable_id],
+             name: :user_likeable_unique_index
+           )
   end
 end

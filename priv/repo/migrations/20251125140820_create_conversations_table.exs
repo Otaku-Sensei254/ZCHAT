@@ -5,7 +5,8 @@ defmodule Vibeflow.Repo.Migrations.CreateConversationsTable do
   def change do
     create table(:conversations) do
       add :name, :string
-      add :type, :string, default: "direct" # "direct" or "group"
+      # "direct" or "group"
+      add :type, :string, default: "direct"
 
       timestamps()
     end

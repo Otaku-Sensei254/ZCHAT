@@ -20,7 +20,11 @@ defmodule Vibeflow.Accounts.Role do
     field :name, :string
 
     many_to_many :users, Vibeflow.Accounts.User, join_through: "user_roles"
-    many_to_many :permissions, Vibeflow.Accounts.Permission, join_through: "role_permissions", on_replace: :delete
+
+    many_to_many :permissions, Vibeflow.Accounts.Permission,
+      join_through: "role_permissions",
+      on_replace: :delete
+
     timestamps()
   end
 

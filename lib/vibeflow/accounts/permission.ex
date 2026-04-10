@@ -1,5 +1,4 @@
 defmodule Vibeflow.Accounts.Permission do
-
   use Ecto.Schema
   import Ecto.Changeset
 

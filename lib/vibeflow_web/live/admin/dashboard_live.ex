@@ -3,7 +3,7 @@ defmodule VibeflowWeb.Admin.DashboardLive do
   alias Vibeflow.Posts
 
   @impl true
-def mount(_params, _session, socket) do
+  def mount(_params, _session, socket) do
     # 👇 1. Subscribe to the topic if connected
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "admin:stats")
@@ -16,7 +16,6 @@ def mount(_params, _session, socket) do
      |> assign(:categories, Posts.count_posts_by_category())
      |> assign(:tags, Posts.count_top_tags())}
   end
-
 
   # --- Handle POST updates ---
   @impl true

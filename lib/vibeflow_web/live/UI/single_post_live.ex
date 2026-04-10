@@ -26,15 +26,14 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> assign(:current_like, nil)
      |> assign(:like_count, 0)
      |> assign(:wide_layout, true)
-    #  |> assign(:hide_bottom_nav, true)
+     #  |> assign(:hide_bottom_nav, true)
      |> assign(:show_comments_modal, false)
      |> assign(:current_media_index, 0)
      |> assign(:show_mention_modal, false)
      |> assign(:mention_search_results, [])
      |> assign(:mention_search_query, "")
-    #  FIX: Initialize BOTH streams here
+     #  FIX: Initialize BOTH streams here
      |> stream(:comments, [])
-
      |> stream(:mobile_comments, [])}
   end
 
@@ -49,6 +48,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "post:#{post.id}")
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "post_comments:#{post.id}")
+
       if socket.assigns.current_user && socket.assigns.current_user.id != post.user_id do
         Posts.track_view(post.id, socket.assigns.current_user.id)
       end
@@ -108,7 +108,10 @@ defmodule VibeflowWeb.UI.SinglePostLive do
      |> stream(:comments, comments, reset: true)
 
      # 2. Mobile Stream: Uses custom IDs (e.g., "mobile-comment-1") to prevent DOM conflicts
-     |> stream(:mobile_comments, comments, reset: true, dom_id: fn c -> "mobile-comment-#{c.id}" end)}
+     |> stream(:mobile_comments, comments,
+       reset: true,
+       dom_id: fn c -> "mobile-comment-#{c.id}" end
+     )}
   end
 
   # --- MEDIA CAROUSEL ---
@@ -148,7 +151,8 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   @impl true
   def handle_event("add_comment", %{"comment" => comment_params}, socket) do
     if socket.assigns.current_user do
-      attrs = Map.merge(comment_params, %{
+      attrs =
+        Map.merge(comment_params, %{
           "user_id" => socket.assigns.current_user.id,
           "post_id" => socket.assigns.post.id,
           "parent_id" => socket.assigns.replying_to
@@ -161,6 +165,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
            |> assign(:comment_form, to_form(Posts.change_comment(%Comment{})))
            |> assign(:replying_to, nil)
            |> put_flash(:info, "Comment posted!")}
+
         {:error, changeset} ->
           {:noreply, assign(socket, :comment_form, to_form(changeset))}
       end
@@ -189,17 +194,18 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     end
   end
 
- @impl true
- def handle_event("share_post", _, socket) do
-   post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.uuid}"
-   {:noreply,
+  @impl true
+  def handle_event("share_post", _, socket) do
+    post_url = VibeflowWeb.Endpoint.url() <> "/posts/#{socket.assigns.post.uuid}"
+
+    {:noreply,
      socket
      |> push_event("share_post", %{
-         title: "Check out this post by #{socket.assigns.post.user.username}",
-         text: socket.assigns.post.content,
-         url: post_url
-       })}
- end
+       title: "Check out this post by #{socket.assigns.post.user.username}",
+       text: socket.assigns.post.content,
+       url: post_url
+     })}
+  end
 
   @impl true
   def handle_event("toggle_follow", %{"user-id" => user_id}, socket) do
@@ -259,11 +265,15 @@ defmodule VibeflowWeb.UI.SinglePostLive do
     {:noreply,
      socket
      |> assign(:show_comments_modal, true)
-     |> stream(:mobile_comments, comments, reset: true, dom_id: fn c -> "mobile-comment-#{c.id}" end)}
+     |> stream(:mobile_comments, comments,
+       reset: true,
+       dom_id: fn c -> "mobile-comment-#{c.id}" end
+     )}
   end
 
   @impl true
-  def handle_event("close_comments_modal", _, socket), do: {:noreply, assign(socket, :show_comments_modal, false)}
+  def handle_event("close_comments_modal", _, socket),
+    do: {:noreply, assign(socket, :show_comments_modal, false)}
 
   @impl true
   def handle_event("toggle_comment_menu", %{"comment-id" => comment_id}, socket) do
@@ -299,13 +309,16 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   def handle_event("delete_comment", %{"comment-id" => comment_id}, socket) do
     comment = Posts.get_comment!(comment_id)
 
-    if socket.assigns.current_user && (socket.assigns.current_user.id == comment.user_id || Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
+    if socket.assigns.current_user &&
+         (socket.assigns.current_user.id == comment.user_id ||
+            Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
       case Posts.delete_comment(comment) do
         {:ok, _} ->
           {:noreply,
            socket
            |> put_flash(:info, "Comment deleted successfully")
            |> stream_delete(:comments, comment)}
+
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not delete comment")}
       end
@@ -315,12 +328,20 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   end
 
   @impl true
-  def handle_event("edit_comment", %{"comment-id" => comment_id, "content" => new_content}, socket) do
+  def handle_event(
+        "edit_comment",
+        %{"comment-id" => comment_id, "content" => new_content},
+        socket
+      ) do
     update_comment_content(comment_id, new_content, socket)
   end
 
   @impl true
-  def handle_event("edit_comment", %{"comment-id" => comment_id, "edit_comment" => %{"content" => new_content}}, socket) do
+  def handle_event(
+        "edit_comment",
+        %{"comment-id" => comment_id, "edit_comment" => %{"content" => new_content}},
+        socket
+      ) do
     update_comment_content(comment_id, new_content, socket)
   end
 
@@ -349,7 +370,10 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   @impl true
   def handle_event("pin_comment", %{"comment-id" => comment_id}, socket) do
     comment = Posts.get_comment!(comment_id, preload: [:user])
-    if socket.assigns.current_user && (socket.assigns.current_user.id == socket.assigns.post.user_id || Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
+
+    if socket.assigns.current_user &&
+         (socket.assigns.current_user.id == socket.assigns.post.user_id ||
+            Accounts.user_has_role?(socket.assigns.current_user, "admin")) do
       case Posts.pin_comment(comment) do
         {:ok, _} ->
           {:noreply,
@@ -358,6 +382,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
            |> assign(:open_comment_menu_id, nil)
            |> stream_insert(:comments, comment)
            |> stream_insert(:mobile_comments, comment)}
+
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not pin comment")}
       end
@@ -389,7 +414,12 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   # --- MENTION MODAL EVENTS ---
   @impl true
   def handle_event("close_mention_modal", _, socket) do
-    {:noreply, assign(socket, show_mention_modal: false, mention_search_results: [], mention_search_query: "")}
+    {:noreply,
+     assign(socket,
+       show_mention_modal: false,
+       mention_search_results: [],
+       mention_search_query: ""
+     )}
   end
 
   @impl true
@@ -417,6 +447,7 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   # --- HELPER FUNCTIONS ---
   defp search_users_by_username(query) do
     query_prefix = query <> "%"
+
     from(u in Vibeflow.Accounts.User,
       where: ilike(u.username, ^query_prefix),
       limit: 10,
@@ -451,12 +482,14 @@ defmodule VibeflowWeb.UI.SinglePostLive do
   def handle_info({:post_liked, like}, socket) do
     if like.likeable_id == socket.assigns.post.id do
       new_count = socket.assigns.like_count + 1
+
       current_like =
         if socket.assigns.current_user && like.user_id == socket.assigns.current_user.id do
           like
         else
           socket.assigns.current_like
         end
+
       {:noreply, assign(socket, like_count: new_count, current_like: current_like)}
     else
       {:noreply, socket}
@@ -472,7 +505,12 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         else
           socket.assigns.current_like
         end
-      {:noreply, assign(socket, like_count: max(0, socket.assigns.like_count - 1), current_like: current_like)}
+
+      {:noreply,
+       assign(socket,
+         like_count: max(0, socket.assigns.like_count - 1),
+         current_like: current_like
+       )}
     else
       {:noreply, socket}
     end
@@ -533,17 +571,17 @@ defmodule VibeflowWeb.UI.SinglePostLive do
         {:noreply, put_flash(socket, :error, "Comment cannot be blank")}
       else
         case Posts.update_comment(comment, %{"content" => trimmed}) do
-        {:ok, updated_comment} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, "Comment updated successfully")
-           |> assign(:editing_comment_id, nil)
-           |> stream_insert(:comments, updated_comment)
-           |> stream_insert(:mobile_comments, updated_comment)}
+          {:ok, updated_comment} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Comment updated successfully")
+             |> assign(:editing_comment_id, nil)
+             |> stream_insert(:comments, updated_comment)
+             |> stream_insert(:mobile_comments, updated_comment)}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Could not update comment")}
-      end
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Could not update comment")}
+        end
       end
     else
       {:noreply, put_flash(socket, :error, "Unauthorized")}

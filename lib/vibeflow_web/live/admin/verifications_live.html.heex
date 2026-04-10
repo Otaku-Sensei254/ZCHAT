@@ -7,8 +7,8 @@
         phx-value-filter="pending"
         class={[
           "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
-          @filter == "pending" &&
-            "bg-blue-600 text-white border-blue-600" ||
+          (@filter == "pending" &&
+             "bg-blue-600 text-white border-blue-600") ||
             "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
         ]}
       >
@@ -19,8 +19,8 @@
         phx-value-filter="all"
         class={[
           "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
-          @filter == "all" &&
-            "bg-blue-600 text-white border-blue-600" ||
+          (@filter == "all" &&
+             "bg-blue-600 text-white border-blue-600") ||
             "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
         ]}
       >
@@ -40,21 +40,25 @@
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center gap-4">
               <%= if request.user.avatar_url do %>
-                <img src={request.user.avatar_url} alt={request.user.username} class="w-12 h-12 rounded-full object-cover" />
+                <img
+                  src={request.user.avatar_url}
+                  alt={request.user.username}
+                  class="w-12 h-12 rounded-full object-cover"
+                />
               <% else %>
                 <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                  <%= String.first(request.user.username) %>
+                  {String.first(request.user.username)}
                 </div>
               <% end %>
               <div>
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
                   <span class="flex items-center gap-1">
-                    <%= request.user.username %>
+                    {request.user.username}
                     <.verified_badge user={request.user} class="h-5 w-5" />
                   </span>
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Submitted <%= Timex.from_now(request.inserted_at) %>
+                  Submitted {Timex.from_now(request.inserted_at)}
                 </p>
               </div>
             </div>
@@ -62,13 +66,18 @@
             <div class="flex items-center gap-2">
               <span class={[
                 "px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide",
-                request.status == "approved" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" ||
-                request.status == "rejected" && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" ||
-                "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+                (request.status == "approved" &&
+                   "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300") ||
+                  (request.status == "rejected" &&
+                     "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300") ||
+                  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
               ]}>
-                <%= request.status %>
+                {request.status}
               </span>
-              <.link navigate={~p"/users/#{request.user.username}"} class="text-xs text-blue-600 hover:underline dark:text-blue-400">
+              <.link
+                navigate={~p"/users/#{request.user.username}"}
+                class="text-xs text-blue-600 hover:underline dark:text-blue-400"
+              >
                 View Profile
               </.link>
             </div>
@@ -80,7 +89,9 @@
             </h4>
             <div class="flex flex-wrap gap-2">
               <%= if Enum.empty?(request.social_links || []) do %>
-                <span class="text-xs text-gray-500 dark:text-gray-400">No social links provided.</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  No social links provided.
+                </span>
               <% else %>
                 <%= for link <- request.social_links do %>
                   <%= if String.starts_with?(link, "http") do %>
@@ -90,11 +101,11 @@
                       rel="noopener noreferrer"
                       class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-200 dark:hover:bg-zinc-700"
                     >
-                      <%= link %>
+                      {link}
                     </.link>
                   <% else %>
                     <span class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-gray-200">
-                      <%= link %>
+                      {link}
                     </span>
                   <% end %>
                 <% end %>

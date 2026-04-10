@@ -23,6 +23,7 @@ defmodule Vibeflow.Chat do
     case Ecto.UUID.cast(id_or_uuid) do
       {:ok, uuid} ->
         get_conversation_by_uuid!(uuid)
+
       :error ->
         Conversation
         |> Repo.get!(id_or_uuid)
@@ -34,6 +35,7 @@ defmodule Vibeflow.Chat do
     case Ecto.UUID.cast(id_or_uuid) do
       {:ok, uuid} ->
         get_conversation_by_uuid(uuid)
+
       :error ->
         Conversation
         |> Repo.get(id_or_uuid)
@@ -160,8 +162,10 @@ defmodule Vibeflow.Chat do
         select: convom.user_id
       )
       |> Repo.all()
+
     # Ensure the message has its associations preloaded (user, shared_post, reply_to)
     convo = Repo.get!(Conversation, conversation_id)
+
     preloaded_message =
       Repo.get(Message, message.id)
       |> Repo.preload([:user, shared_post: :user, reply_to: :user])
@@ -309,11 +313,11 @@ defmodule Vibeflow.Chat do
         case get_or_create_private_conversation(sender_id, recipient_id) do
           {:ok, conversation} ->
             case create_message(%{
-              content: content,
-              user_id: sender_id,
-              conversation_id: conversation.id,
-              shared_post_id: post.id
-            }) do
+                   content: content,
+                   user_id: sender_id,
+                   conversation_id: conversation.id,
+                   shared_post_id: post.id
+                 }) do
               {:ok, message} ->
                 # Create notification for the recipient
                 Notifications.create_notification(%{
@@ -323,10 +327,13 @@ defmodule Vibeflow.Chat do
                   post_id: post.id,
                   conversation_id: conversation.id
                 })
+
                 {:ok, message}
+
               error ->
                 error
             end
+
           error ->
             error
         end
@@ -336,6 +343,7 @@ defmodule Vibeflow.Chat do
     case Enum.all?(results, &match?({:ok, _}, &1)) do
       true ->
         {:ok, results}
+
       false ->
         failed_count = Enum.count(results, &match?({:error, _}, &1))
         {:error, "Failed to share to #{failed_count} recipients"}

@@ -8,7 +8,8 @@ defmodule Vibeflow.Waves do
   alias Vibeflow.Socials.Follow
   alias Vibeflow.Waves.Wave
   import Ecto.Query
-  alias Vibeflow.Waves.WaveView # <--- Added Alias
+  # <--- Added Alias
+  alias Vibeflow.Waves.WaveView
 
   @doc """
   Returns the list of waves.
@@ -19,7 +20,7 @@ defmodule Vibeflow.Waves do
       [%Wave{}, ...]
 
   """
-  #get all the waves
+  # get all the waves
   def get_all_waves do
     Wave
     |> order_by(desc: :inserted_at)
@@ -27,7 +28,6 @@ defmodule Vibeflow.Waves do
     |> Repo.preload(:user)
   end
 
-  
   def list_waves(current_user_id) do
     # get the people the user has followed and show their waves
     following_ids =
@@ -80,8 +80,8 @@ defmodule Vibeflow.Waves do
     end)
     |> Enum.split_with(fn map -> map.user.id == current_user_id end)
     |> (fn {current_user_waves, other_waves} ->
-      current_user_waves ++ Enum.sort_by(other_waves, fn map -> map.has_unseen end, :desc)
-    end).()
+          current_user_waves ++ Enum.sort_by(other_waves, fn map -> map.has_unseen end, :desc)
+        end).()
   end
 
   def list_user_waves(user_id) do

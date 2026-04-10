@@ -8,11 +8,12 @@ defmodule VibeflowWeb.PostShowLive do
     post = Posts.get_post!(id)
     {:ok, assign(socket, :post, post)}
   end
-@impl true
+
+  @impl true
   def render(assigns) do
     ~H"""
-    <.header><%= @post.title %></.header>
-    <p><%= @post.content %></p>what 
+    <.header>{@post.title}</.header>
+    <p><%= @post.content %></p>what
     """
   end
 end

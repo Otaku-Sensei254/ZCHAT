@@ -2,15 +2,19 @@ defmodule Vibeflow.Chat.Message do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @primary_key {:id, :id, autogenerate: true}
   schema "messages" do
-
+    field :uuid, Ecto.UUID, autogenerate: true
     field :content, :string
-    field :read_at, :utc_datetime_usec
-    field :media_files, {:array, :map}, default: [] # Or {:array, :json}
-    belongs_to :user, Vibeflow.Accounts.User
+    field :read_at, :naive_datetime
+    field :media_files, {:array, :map}, default: []
+
     belongs_to :conversation, Vibeflow.Chat.Conversation
-    belongs_to :shared_post, Vibeflow.Posts.Post
-    belongs_to :reply_to, Vibeflow.Chat.Message
+    belongs_to :user, Vibeflow.Accounts.User
+    belongs_to :shared_post, Vibeflow.Posts.Post, foreign_key: :shared_post_id
+    belongs_to :reply_to, Vibeflow.Chat.Message, foreign_key: :reply_to_id
+
+    has_many :replies, Vibeflow.Chat.Message, foreign_key: :reply_to_id
 
     timestamps()
   end
@@ -18,12 +22,23 @@ defmodule Vibeflow.Chat.Message do
   @doc false
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:content, :conversation_id, :user_id, :read_at, :shared_post_id, :media_files, :reply_to_id], empty_values: [])
+    |> cast(
+      attrs,
+      [
+        :content,
+        :conversation_id,
+        :user_id,
+        :read_at,
+        :shared_post_id,
+        :media_files,
+        :reply_to_id
+      ],
+      empty_values: []
+    )
     |> update_change(:content, &String.trim/1)
     |> validate_required([:conversation_id, :user_id])
     |> validate_length(:content, max: 5000)
     |> validate_message_payload()
-
   end
 
   defp validate_message_payload(changeset) do

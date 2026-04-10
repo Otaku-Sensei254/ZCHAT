@@ -35,10 +35,15 @@ defmodule Vibeflow.Notifications do
         Phoenix.PubSub.broadcast(
           Vibeflow.PubSub,
           "notifications:#{notif.user_id}",
-          {:new_notification, notif})
+          {:new_notification, notif}
+        )
+
         {:ok, notif}
-      error -> error
+
+      error ->
+        error
     end
+
     # |> put_flash(:info , "New notification")
   end
 
@@ -53,7 +58,9 @@ defmodule Vibeflow.Notifications do
 
   def mark_as_read(notification_id) do
     case Repo.get(Notification, notification_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       notification ->
         {:ok, updated} =
           notification
@@ -61,7 +68,12 @@ defmodule Vibeflow.Notifications do
           |> Repo.update()
 
         # Broadcast update
-        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{updated.user_id}", :update_notifications)
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "notifications:#{updated.user_id}",
+          :update_notifications
+        )
+
         {:ok, updated}
     end
   end
@@ -73,7 +85,7 @@ defmodule Vibeflow.Notifications do
     Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{user_id}", :update_notifications)
   end
 
-  #to clear notifications list
+  # to clear notifications list
   def clear_notifications(user_id) do
     from(n in Notification, where: n.user_id == ^user_id)
     |> Repo.delete_all()

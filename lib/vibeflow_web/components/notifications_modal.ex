@@ -11,7 +11,6 @@ defmodule VibeflowWeb.Components.NotificationsModal do
       Phoenix.PubSub.subscribe(Vibeflow.PubSub, "notifications:#{assigns.current_user.id}")
     end
 
-
     {:ok,
      socket
      |> assign(assigns)
@@ -96,20 +95,26 @@ defmodule VibeflowWeb.Components.NotificationsModal do
       _ -> "#"
     end
   end
+
   def notification_link(%{type: "follow", actor: %{username: username}}, _current_user) do
     ~p"/users/#{username}"
   end
-    def notification_link(%{post_id: post_id, type: "repost", actor: %{username: username}}, _current_user) do
+
+  def notification_link(
+        %{post_id: post_id, type: "repost", actor: %{username: username}},
+        _current_user
+      ) do
     case Vibeflow.Posts.get_post(post_id) do
       %{uuid: uuid} -> ~p"/posts/#{uuid}"
       _ -> "#"
     end
   end
 
-  def notification_link(%{type: "role_change", user: %{username: username}}, _current_user) when is_binary(username) do
-
+  def notification_link(%{type: "role_change", user: %{username: username}}, _current_user)
+      when is_binary(username) do
     ~p"/users/#{username}"
   end
+
   def notification_link(%{type: "verification_request"}, current_user) do
     cond do
       Accounts.user_has_role?(current_user, "admin") -> "/admin/verification-requests"
@@ -129,7 +134,6 @@ defmodule VibeflowWeb.Components.NotificationsModal do
   def notification_link(_unknown, _current_user) do
     ~p"/"
   end
-
 
   def format_text(n) do
     case n.type do

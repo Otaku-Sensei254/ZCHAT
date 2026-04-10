@@ -24,7 +24,8 @@ defmodule Vibeflow.Repo.Migrations.FixRolesAndPermissions do
     # Revert if needed
     alter table(:roles) do
       remove :permissions
-      add :permissions, :jsonb, default: "[]" # Assuming previous type was jsonb/json
+      # Assuming previous type was jsonb/json
+      add :permissions, :jsonb, default: "[]"
     end
   end
 end

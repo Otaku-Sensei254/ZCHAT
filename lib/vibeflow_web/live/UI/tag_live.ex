@@ -12,14 +12,16 @@ defmodule VibeflowWeb.UI.TagLive do
     socket =
       socket
       |> stream_configure(:posts, dom_id: &"post-#{&1.uuid}")
-      |> stream(:posts, [], reset: true)  # Initialize empty stream
+      # Initialize empty stream
+      |> stream(:posts, [], reset: true)
       |> assign(:tag, tag)
       |> assign(:similar_tags, [])
       |> assign(:page, 1)
       |> assign(:per_page, 20)
       |> assign(:loading, false)
       |> assign(:has_more, true)
-      |> assign(:show_similar_first, false)  # Show exact matches first by default
+      # Show exact matches first by default
+      |> assign(:show_similar_first, false)
 
     {:ok, socket |> load_posts()}
   end
@@ -69,6 +71,7 @@ defmodule VibeflowWeb.UI.TagLive do
     similar_posts =
       if socket.assigns.show_similar_first and similar_tags != [] do
         remaining = per_page - length(exact_posts)
+
         if remaining > 0 do
           Posts.list_posts_by_tags(similar_tags, page: 1, per_page: remaining, exclude_tag: tag)
         else
@@ -106,7 +109,11 @@ defmodule VibeflowWeb.UI.TagLive do
 
     similar_posts =
       if socket.assigns.show_similar_first and similar_tags != [] do
-        Posts.list_posts_by_tags(similar_tags, page: new_page, per_page: per_page, exclude_tag: tag)
+        Posts.list_posts_by_tags(similar_tags,
+          page: new_page,
+          per_page: per_page,
+          exclude_tag: tag
+        )
       else
         []
       end
@@ -166,12 +173,14 @@ defmodule VibeflowWeb.UI.TagLive do
       cond do
         String.contains?(tag1, tag2) or String.contains?(tag2, tag1) ->
           0.8
+
         true ->
           # Calculate Levenshtein distance similarity
           distance = levenshtein_distance(tag1, tag2)
           max_len = max(String.length(tag1), String.length(tag2))
+
           if max_len > 0 do
-            1.0 - (distance / max_len)
+            1.0 - distance / max_len
           else
             0.0
           end
@@ -204,17 +213,18 @@ defmodule VibeflowWeb.UI.TagLive do
 
     # Fill rest of matrix
     for i <- 1..s_len, j <- 1..t_len do
-      cost = if(Enum.at(s, i-1) == Enum.at(t, j-1), do: 0, else: 1)
+      cost = if(Enum.at(s, i - 1) == Enum.at(t, j - 1), do: 0, else: 1)
 
-      deletion = Enum.at(Enum.at(matrix, i-1), j) + 1
-      insertion = Enum.at(Enum.at(matrix, i), j-1) + 1
-      substitution = Enum.at(Enum.at(matrix, i-1), j-1) + cost
+      deletion = Enum.at(Enum.at(matrix, i - 1), j) + 1
+      insertion = Enum.at(Enum.at(matrix, i), j - 1) + 1
+      substitution = Enum.at(Enum.at(matrix, i - 1), j - 1) + cost
 
       min_cost = min(deletion, min(insertion, substitution))
 
       matrix =
         matrix
-        |> List.replace_at(i,
+        |> List.replace_at(
+          i,
           List.replace_at(Enum.at(matrix, i), j, min_cost)
         )
     end

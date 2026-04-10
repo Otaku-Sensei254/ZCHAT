@@ -25,6 +25,7 @@ defmodule VibeflowWeb.UserActivityHook do
       # 3. Track Presence
       if !socket.assigns[:presenced_tracked] do
         topic = "users:online"
+
         try do
           case Presence.track(self(), topic, user.id, %{
                  online_at: inspect(System.system_time(:second)),
@@ -36,6 +37,7 @@ defmodule VibeflowWeb.UserActivityHook do
               # to make the user appear in the Presence list.
               # Only subscribe if the hook itself needs to handle presence_diff.
               :ok
+
             other ->
               # Log non-fatal unexpected results; do not crash the LiveView
               Logger.warning("Presence.track returned: #{inspect(other)} for user=#{user.id}")
@@ -70,7 +72,6 @@ defmodule VibeflowWeb.UserActivityHook do
 
       # Don't show popup if I sent the message myself
       if message.user_id != current_user_id do
-
         # 1. Update the Header Badge Count
         new_count = Chat.count_unread_conversations(current_user_id)
 
@@ -88,13 +89,14 @@ defmodule VibeflowWeb.UserActivityHook do
           if Map.get(message, :shared_post_id) do
             "#{username} shared a post with you 🚀"
           else
-            "Message from #{username}: #{truncate(Map.get(message, :content) || "") }"
+            "Message from #{username}: #{truncate(Map.get(message, :content) || "")}"
           end
 
         # If the user is currently viewing the conversation, just update the
         # unread count silently (the Chat LiveView will handle inserting the
         # message). Otherwise, show the popup.
-        if socket.assigns[:conversation] && socket.assigns.conversation.uuid == message.conversation_uuid do
+        if socket.assigns[:conversation] &&
+             socket.assigns.conversation.uuid == message.conversation_uuid do
           {:cont, assign(socket, :unread_chats_count, new_count)}
         else
           browser_notification = %{
@@ -116,7 +118,10 @@ defmodule VibeflowWeb.UserActivityHook do
       end
     rescue
       e ->
-        Logger.error("UserActivityHook handle_global_event new_sidebar_message error: #{inspect(e)}")
+        Logger.error(
+          "UserActivityHook handle_global_event new_sidebar_message error: #{inspect(e)}"
+        )
+
         {:cont, socket}
     end
   end
@@ -126,7 +131,9 @@ defmodule VibeflowWeb.UserActivityHook do
     try do
       # Format the text like "Batman liked your post" (defensive)
       text = format_notification_text(notif)
-      browser_notification = build_browser_notification(notif, text, socket.assigns[:current_user])
+
+      browser_notification =
+        build_browser_notification(notif, text, socket.assigns[:current_user])
 
       # We use :cont so the specific page (Feed/Chat) can also update its UI if needed
       {:cont,
@@ -192,6 +199,7 @@ defmodule VibeflowWeb.UserActivityHook do
 
   defp build_browser_notification(notif, text, current_user) do
     actor = Map.get(notif || %{}, :actor) || %{}
+
     url =
       try do
         VibeflowWeb.Components.NotificationsModal.notification_link(notif, current_user)

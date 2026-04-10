@@ -6,8 +6,8 @@ defmodule Vibeflow.Repo.Migrations.CreateStoreItems do
       add :id, :binary_id, primary_key: true
       add :item_name, :string
       add :item_slug, :string
-      add :worth, :string #say maybe 500pts
-
+      # say maybe 500pts
+      add :worth, :string
     end
   end
 end

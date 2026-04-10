@@ -7,8 +7,10 @@ defmodule Vibeflow.Music.MusicTrack do
     field :artist, :string
     field :audio_url, :string
     field :cover_art, :string
-    field :itunes_track_id, :integer # To store the original iTunes track ID
-    field :duration_ms, :integer # Duration of the track in milliseconds
+    # To store the original iTunes track ID
+    field :itunes_track_id, :integer
+    # Duration of the track in milliseconds
+    field :duration_ms, :integer
 
     timestamps()
   end

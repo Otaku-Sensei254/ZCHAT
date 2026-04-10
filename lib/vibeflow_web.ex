@@ -54,8 +54,8 @@ defmodule VibeflowWeb do
       use Phoenix.LiveView,
         layout: {VibeflowWeb.Layouts, :app}
 
-        unquote(html_helpers())
-        import Canada.Can
+      unquote(html_helpers())
+      import Canada.Can
     end
   end
 

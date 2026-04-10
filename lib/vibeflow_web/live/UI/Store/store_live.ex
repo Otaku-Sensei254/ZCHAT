@@ -33,6 +33,7 @@ defmodule VibeflowWeb.UI.Store.StoreLive do
       case Store.purchase_item(user.id, id) do
         {:ok, _inv} ->
           points_balance = maybe_get_points(Repo.get!(User, user.id))
+
           socket =
             socket
             |> assign(points_balance: points_balance)
@@ -45,10 +46,16 @@ defmodule VibeflowWeb.UI.Store.StoreLive do
           end
 
         {:error, :already_active} ->
-          {:noreply, put_flash(socket, :error, "You already own this item. Try again after it expires.")}
+          {:noreply,
+           put_flash(socket, :error, "You already own this item. Try again after it expires.")}
 
         {:error, :insufficient_points} ->
-          {:noreply, put_flash(socket, :error, "Purchase failed. You do not have enough points for this item.")}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Purchase failed. You do not have enough points for this item."
+           )}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Purchase failed. Try again.")}
@@ -67,5 +74,6 @@ defmodule VibeflowWeb.UI.Store.StoreLive do
     |> Integer.to_string()
     |> String.replace(~r/(?<=\d)(?=(?:\d{3})+$)/, ",")
   end
+
   defp format_points(_), do: "0"
 end

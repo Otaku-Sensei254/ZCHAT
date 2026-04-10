@@ -19,12 +19,13 @@ defmodule VibeflowWeb.Admin.UserRolesLive do
   end
 
   @impl true
- def handle_event("toggle_role", %{"user_id" => u_id, "role_id" => r_id}, socket) do
+  def handle_event("toggle_role", %{"user_id" => u_id, "role_id" => r_id}, socket) do
     user_id = String.to_integer(u_id)
     role_id = String.to_integer(r_id)
     currentUser = socket.assigns.current_user
 
     user = Accounts.get_user!(user_id)
+
     case Accounts.update_user_roles(user, [role_id]) do
       {:ok, :added} ->
         # 1. Logic for when role was GRANTED

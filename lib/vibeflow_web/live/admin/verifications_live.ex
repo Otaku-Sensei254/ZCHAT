@@ -40,7 +40,11 @@ defmodule VibeflowWeb.Admin.VerificationsLive do
     request = Accounts.get_verification_request!(String.to_integer(id))
     admin_notes = normalize_notes(admin_notes)
 
-    case Accounts.reject_verification_request(request, socket.assigns.current_user.id, admin_notes) do
+    case Accounts.reject_verification_request(
+           request,
+           socket.assigns.current_user.id,
+           admin_notes
+         ) do
       {:ok, _} ->
         {:noreply,
          socket

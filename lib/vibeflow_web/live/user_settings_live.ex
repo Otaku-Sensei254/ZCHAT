@@ -91,7 +91,8 @@ defmodule VibeflowWeb.UserSettingsLive do
 
   @impl true
   def handle_event("validate_social", %{"platform" => platform, "username" => username}, socket) do
-    {:noreply, assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
+    {:noreply,
+     assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
   end
 
   @impl true
@@ -122,7 +123,9 @@ defmodule VibeflowWeb.UserSettingsLive do
     case Socials.delete_social_account(id) do
       {:ok, _} ->
         socials = Socials.list_social_accounts(socket.assigns.current_user.id)
-        {:noreply, assign(socket, :socials, socials) |> put_flash(:info, "Social account removed")}
+
+        {:noreply,
+         assign(socket, :socials, socials) |> put_flash(:info, "Social account removed")}
 
       _ ->
         {:noreply, put_flash(socket, :error, "Could not remove social account")}
@@ -261,7 +264,8 @@ defmodule VibeflowWeb.UserSettingsLive do
   def handle_info(:update_notifications, socket) do
     {:noreply, socket}
   end
-#help
+
+  # help
   @impl true
   def handle_info({:new_sidebar_message, _message}, socket) do
     {:noreply, socket}
@@ -299,8 +303,12 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
           <div class="px-4 py-6 sm:p-8 ">
             <div class="max-w-2xl">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Public Profile</h2>
-              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">This information will be displayed publicly so be careful what you share.</p>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Public Profile
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                This information will be displayed publicly so be careful what you share.
+              </p>
 
               <.simple_form
                 for={@profile_form}
@@ -313,28 +321,39 @@ defmodule VibeflowWeb.UserSettingsLive do
                   <div class="relative group">
                     <%= if @uploads.avatar.entries != [] do %>
                       <%= for entry <- @uploads.avatar.entries do %>
-                        <.live_img_preview entry={entry} class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700" />
+                        <.live_img_preview
+                          entry={entry}
+                          class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700"
+                        />
                       <% end %>
                     <% else %>
                       <%= if @current_user.avatar_url do %>
-                        <img src={@current_user.avatar_url} class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700" />
+                        <img
+                          src={@current_user.avatar_url}
+                          class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700"
+                        />
                       <% else %>
                         <div class="h-24 w-24 flex-none rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500 flex items-center justify-center text-3xl font-bold ring-2 ring-gray-200 dark:ring-zinc-700">
-                          <%= String.first(@current_user.username || "?") |> String.upcase() %>
+                          {String.first(@current_user.username || "?") |> String.upcase()}
                         </div>
                       <% end %>
                     <% end %>
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Profile photo</label>
+                    <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
+                      Profile photo
+                    </label>
                     <div class="mt-2 flex items-center gap-x-3">
                       <div class="relative">
                         <.live_file_input
                           upload={@uploads.avatar}
                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
-                        <button type="button" class="rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700 relative pointer-events-none">
+                        <button
+                          type="button"
+                          class="rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700 relative pointer-events-none"
+                        >
                           Change
                         </button>
                       </div>
@@ -342,7 +361,7 @@ defmodule VibeflowWeb.UserSettingsLive do
                     </div>
                     <%= for entry <- @uploads.avatar.entries do %>
                       <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-                        <p class="text-red-500 text-xs mt-1"><%= error_to_string(err) %></p>
+                        <p class="text-red-500 text-xs mt-1">{error_to_string(err)}</p>
                       <% end %>
                     <% end %>
                   </div>
@@ -354,13 +373,23 @@ defmodule VibeflowWeb.UserSettingsLive do
                   </div>
 
                   <div class="col-span-full">
-                    <.input field={@profile_form[:bio]} type="textarea" label="Bio" rows="3" placeholder="Tell us a little about yourself..." />
-                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Brief description for your profile.</p>
+                    <.input
+                      field={@profile_form[:bio]}
+                      type="textarea"
+                      label="Bio"
+                      rows="3"
+                      placeholder="Tell us a little about yourself..."
+                    />
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Brief description for your profile.
+                    </p>
                   </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
-                  <.button phx-disable-with="Saving..." class="bg-indigo-600 hover:bg-indigo-500">Save Profile</.button>
+                  <.button phx-disable-with="Saving..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Save Profile
+                  </.button>
                 </div>
               </.simple_form>
             </div>
@@ -370,9 +399,12 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
           <div class="px-4 py-6 sm:p-8">
             <div class="max-w-2xl">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Username Glow Styles</h2>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Username Glow Styles
+              </h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Unlock glow styles by purchasing <span class="font-semibold">Profile Glow</span> in the Wave Store.
+                Unlock glow styles by purchasing <span class="font-semibold">Profile Glow</span>
+                in the Wave Store.
               </p>
 
               <div class="mt-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
@@ -380,11 +412,13 @@ defmodule VibeflowWeb.UserSettingsLive do
                   <p class="text-sm text-gray-700 dark:text-gray-200">
                     Current style:
                     <span class={"ml-2 font-bold " <> VibeflowWeb.CoreComponents.username_glow_class(@current_user)}>
-                      <%= @current_user.username %>
+                      {@current_user.username}
                     </span>
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <%= if @glow_owned, do: "You own Profile Glow.", else: "Locked until you purchase Profile Glow." %>
+                    {if @glow_owned,
+                      do: "You own Profile Glow.",
+                      else: "Locked until you purchase Profile Glow."}
                   </p>
                 </div>
 
@@ -407,14 +441,18 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
           <div class="px-4 py-6 sm:p-8">
             <div class="max-w-2xl">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Social Accounts</h2>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Social Accounts
+              </h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
                 Add up to 3 socials to display on your profile and use for verification.
               </p>
 
               <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
-                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Add Social</h3>
+                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                    Add Social
+                  </h3>
 
                   <div class="mt-3 grid grid-cols-3 gap-3">
                     <%= for platform <- ["youtube", "instagram", "x", "twitch", "tiktok", "discord"] do %>
@@ -426,12 +464,12 @@ defmodule VibeflowWeb.UserSettingsLive do
                         phx-value-username={@social_form[:username].value || ""}
                         class={[
                           "h-12 rounded-lg border text-xs font-semibold uppercase tracking-wide transition-all",
-                          active &&
-                            "border-indigo-500/80 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-[0_0_12px_-6px_rgba(99,102,241,0.8)]" ||
+                          (active &&
+                             "border-indigo-500/80 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-[0_0_12px_-6px_rgba(99,102,241,0.8)]") ||
                             "border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-400"
                         ]}
                       >
-                        <span class="block text-[10px]"><%= String.upcase(platform) %></span>
+                        <span class="block text-[10px]">{String.upcase(platform)}</span>
                       </button>
                     <% end %>
                   </div>
@@ -441,10 +479,16 @@ defmodule VibeflowWeb.UserSettingsLive do
                       Username
                     </label>
                     <form phx-change="validate_social">
-                      <input type="hidden" name="platform" value={@social_form[:platform].value || "youtube"} />
+                      <input
+                        type="hidden"
+                        name="platform"
+                        value={@social_form[:platform].value || "youtube"}
+                      />
                       <div class="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 overflow-hidden">
                         <span class="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 dark:bg-zinc-900/60 border-r border-gray-200 dark:border-zinc-700">
-                          <%= Vibeflow.Socials.get_social_prefix(@social_form[:platform].value || "youtube") %>
+                          {Vibeflow.Socials.get_social_prefix(
+                            @social_form[:platform].value || "youtube"
+                          )}
                         </span>
                         <input
                           type="text"
@@ -472,8 +516,10 @@ defmodule VibeflowWeb.UserSettingsLive do
 
                 <div>
                   <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">Linked</h3>
-                    <span class="text-xs text-gray-400"><%= length(@socials || []) %>/3</span>
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                      Linked
+                    </h3>
+                    <span class="text-xs text-gray-400">{length(@socials || [])}/3</span>
                   </div>
 
                   <div class="mt-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-4 min-h-[180px]">
@@ -487,10 +533,10 @@ defmodule VibeflowWeb.UserSettingsLive do
                           <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2">
                             <div class="min-w-0">
                               <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                                <%= social.platform %>
+                                {social.platform}
                               </p>
                               <p class="text-xs text-gray-400 truncate">
-                                <%= social.username %>
+                                {social.username}
                               </p>
                             </div>
                             <button
@@ -514,8 +560,12 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
           <div class="px-4 py-6 sm:p-8 ">
             <div class="max-w-2xl">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Email Address</h2>
-              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Update the email associated with your account.</p>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Email Address
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Update the email associated with your account.
+              </p>
 
               <.simple_form
                 for={@email_form}
@@ -543,7 +593,9 @@ defmodule VibeflowWeb.UserSettingsLive do
                 </div>
 
                 <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
-                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">Update Email</.button>
+                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Update Email
+                  </.button>
                 </div>
               </.simple_form>
             </div>
@@ -553,8 +605,12 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
           <div class="px-4 py-6 sm:p-8 rounded-lg">
             <div class="max-w-2xl ">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Change Password</h2>
-              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Ensure your account is using a long, random password to stay secure.</p>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Change Password
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Ensure your account is using a long, random password to stay secure.
+              </p>
 
               <.simple_form
                 for={@password_form}
@@ -575,7 +631,12 @@ defmodule VibeflowWeb.UserSettingsLive do
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                   <div class="sm:col-span-3">
-                    <.input field={@password_form[:password]} type="password" label="New password" required />
+                    <.input
+                      field={@password_form[:password]}
+                      type="password"
+                      label="New password"
+                      required
+                    />
                   </div>
                   <div class="sm:col-span-3">
                     <.input
@@ -598,7 +659,9 @@ defmodule VibeflowWeb.UserSettingsLive do
                 </div>
 
                 <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
-                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">Update Password</.button>
+                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Update Password
+                  </.button>
                 </div>
               </.simple_form>
             </div>
@@ -608,7 +671,9 @@ defmodule VibeflowWeb.UserSettingsLive do
         <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
           <div class="px-4 py-6 sm:p-8">
             <div class="max-w-2xl" id="notification-settings" phx-hook="NotificationSettings">
-              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">Browser Notifications</h2>
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Browser Notifications
+              </h2>
               <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
                 Control desktop popup notifications for new messages and activity.
               </p>
@@ -632,41 +697,105 @@ defmodule VibeflowWeb.UserSettingsLive do
     </div>
 
     <%= if @show_glow_modal do %>
-      <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" phx-click="close_glow_modal">
-        <div class="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl" phx-click={JS.exec("event.stopPropagation()")}>
+      <div
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+        phx-click="close_glow_modal"
+      >
+        <div
+          class="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl"
+          phx-click={JS.exec("event.stopPropagation()")}
+        >
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Choose Username Style</h3>
-            <button type="button" phx-click="close_glow_modal" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button
+              type="button"
+              phx-click="close_glow_modal"
+              class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
             </button>
           </div>
 
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-green" class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-left transition-all">
-              <div class="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Neon Green</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-green"><%= @current_user.username %></div>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-green"
+              class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
+                Neon Green
+              </div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-green">
+                {@current_user.username}
+              </div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-blue" class="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-left transition-all">
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-blue"
+              class="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-left transition-all"
+            >
               <div class="text-sm font-semibold text-blue-600 dark:text-blue-300">Neon Blue</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-blue"><%= @current_user.username %></div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-blue">
+                {@current_user.username}
+              </div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="neon-pink" class="p-4 rounded-xl border border-pink-200 dark:border-pink-900/50 hover:border-pink-400 dark:hover:border-pink-700 bg-pink-50 dark:bg-pink-950/30 text-left transition-all">
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-pink"
+              class="p-4 rounded-xl border border-pink-200 dark:border-pink-900/50 hover:border-pink-400 dark:hover:border-pink-700 bg-pink-50 dark:bg-pink-950/30 text-left transition-all"
+            >
               <div class="text-sm font-semibold text-pink-900 dark:text-pink-300">Neon Pink</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-pink"><%= @current_user.username %></div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-pink">
+                {@current_user.username}
+              </div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-serif" class="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-left transition-all">
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-serif"
+              class="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-left transition-all"
+            >
               <div class="text-sm font-semibold text-amber-900 dark:text-amber-300">Regal Serif</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-serif"><%= @current_user.username %></div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-serif">
+                {@current_user.username}
+              </div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-mono" class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50 text-left transition-all">
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-mono"
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50 text-left transition-all"
+            >
               <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">Signal Mono</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-mono"><%= @current_user.username %></div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-mono">
+                {@current_user.username}
+              </div>
             </button>
-            <button type="button" phx-click="set_glow_style" phx-value-style="font-grotesk" class="p-4 rounded-xl border border-violet-200 dark:border-violet-900/50 hover:border-violet-400 dark:hover:border-violet-700 bg-violet-50 dark:bg-violet-950/30 text-left transition-all">
-              <div class="text-sm font-semibold text-violet-900 dark:text-violet-300">Pulse Grotesk</div>
-              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-grotesk"><%= @current_user.username %></div>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-grotesk"
+              class="p-4 rounded-xl border border-violet-200 dark:border-violet-900/50 hover:border-violet-400 dark:hover:border-violet-700 bg-violet-50 dark:bg-violet-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-violet-900 dark:text-violet-300">
+                Pulse Grotesk
+              </div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-grotesk">
+                {@current_user.username}
+              </div>
             </button>
-          </div>        </div>
+          </div>
+        </div>
       </div>
     <% end %>
     """

@@ -5,7 +5,8 @@ defmodule Vibeflow.Repo.Migrations.CreateRolesTable do
   def change do
     create table(:roles) do
       add :name, :string, null: false
-      add :permissions, :map, default: %{}  # Store permissions as JSON
+      # Store permissions as JSON
+      add :permissions, :map, default: %{}
 
       timestamps()
     end

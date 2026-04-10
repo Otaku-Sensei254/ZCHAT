@@ -9,7 +9,11 @@ defmodule Vibeflow.Waves.Wave do
     field :caption, :string
 
     belongs_to :user, Vibeflow.Accounts.User
-    belongs_to :music_track, Vibeflow.Music.MusicTrack, foreign_key: :music_track_id, type: :integer
+
+    belongs_to :music_track, Vibeflow.Music.MusicTrack,
+      foreign_key: :music_track_id,
+      type: :integer
+
     field :expires_at, :utc_datetime_usec
 
     timestamps(type: :utc_datetime_usec)

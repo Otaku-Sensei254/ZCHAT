@@ -161,7 +161,14 @@ defmodule Vibeflow.Accounts.User do
   """
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :bio, :avatar_url, :is_verified, :username_style, :active_message_skin])
+    |> cast(attrs, [
+      :username,
+      :bio,
+      :avatar_url,
+      :is_verified,
+      :username_style,
+      :active_message_skin
+    ])
     |> validate_required([:username])
     |> validate_length(:username, min: 3, max: 20)
     |> validate_length(:bio, max: 160)
@@ -247,7 +254,6 @@ defmodule Vibeflow.Accounts.User do
     user
     # No direct fields to cast, only associations
     |> cast(%{}, [])
-
     |> cast_assoc(:roles)
   end
 end

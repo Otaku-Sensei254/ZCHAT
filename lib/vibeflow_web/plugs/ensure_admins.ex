@@ -3,7 +3,6 @@ defmodule VibeflowWeb.Plugs.EnsureAdmin do
   import Plug.Conn
   import Phoenix.Controller
 
-
   def init(opts), do: opts
 
   def call(conn, _opts) do

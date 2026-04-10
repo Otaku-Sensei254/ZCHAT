@@ -37,7 +37,9 @@ defmodule Vibeflow.Music do
   """
   def get_or_create_music_track(attrs) do
     case get_music_track_by_itunes_id(attrs.itunes_track_id) do
-      nil -> create_music_track(attrs)
+      nil ->
+        create_music_track(attrs)
+
       music_track ->
         # If track exists, update it with new attrs (e.g., duration_ms might be new)
         music_track

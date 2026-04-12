@@ -202,7 +202,7 @@
           
           <!-- Settings Icon -->
           <div class="ml-2">
-            <.link navigate={~p"/chat/settings"} class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-all duration-200" title="Chat Settings">
+            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"} class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-all duration-200" title="Chat Settings">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -266,14 +266,15 @@
                     <% end %>
                   </.link>
                 <% else %>
-                  <div class={message_skin_classes(@active_message_skin, is_me)} data-skin={@active_message_skin}>
+                <% sender_skin = get_user_skin_for_conversation(@conversation, message.user_id) %>
+                  <div class={message_skin_classes(sender_skin, is_me)} data-skin={sender_skin}>
                     
                     <%= if message.reply_to do %>
                       <button 
                         phx-click="scroll_to_message" 
                         phx-value-id={message.reply_to.id}
                         class={"text-left w-full mb-2 rounded-lg p-2 border-l-4 text-xs overflow-hidden transition-opacity hover:opacity-80 " <> 
-                        reply_skin_classes(@active_message_skin, is_me)}
+                        reply_skin_classes(get_user_skin_for_conversation(@conversation, message.reply_to.user_id), message.reply_to.user_id == @current_user.id)}
                       >
                         <p class="font-bold opacity-100 mb-0.5 flex items-center gap-1">
                           <%= message.reply_to.user.username %>
@@ -407,9 +408,7 @@
                     
                     <%= if @active_message_skin not in ["default", nil] do %>
                       <div class="flex items-center gap-1 mt-1 opacity-60">
-                        <span class="text-[8px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-medium">
-                          <%= @active_message_skin %>
-                        </span>
+                      
                       </div>
                     <% end %>
 

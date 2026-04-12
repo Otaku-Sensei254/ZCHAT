@@ -71,23 +71,29 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # HELPERS
   # ===========================================================================
 
+  def get_user_skin_for_conversation(conversation, user_id) do
+    case Enum.find(conversation.conversation_members, fn m -> m.user_id == user_id end) do
+      nil -> "default"
+      member -> member.message_skin || "default"
+    end
+  end
+
   def message_skin_classes(active_skin, is_me) do
     base_classes = "max-w-[75%] px-6 py-5 text-sm break-words relative leading-relaxed word-wrap"
 
-    # Skins only apply to messages the current user SENDS
-    # Received messages always use default styling
-    case {active_skin, is_me} do
-      {"Glassmorphism Pro", true} ->
-        glassmorphism_classes(true)
+    # Apply skin based on the sender's preference for this conversation
+    case active_skin do
+      "Glassmorphism Pro" ->
+        glassmorphism_classes(is_me)
 
-      {"Matrix Rain", true} ->
-        matrix_rain_classes(true)
+      "Matrix Rain" ->
+        matrix_rain_classes(is_me)
 
-      {"Holographic Foil", true} ->
-        holographic_foil_classes(true)
+      "Holographic Foil" ->
+        holographic_foil_classes(is_me)
 
-      {"Vantablack", true} ->
-        vantablack_classes(true)
+      "Vantablack" ->
+        vantablack_classes(is_me)
 
       _ ->
         default_classes(is_me)
@@ -95,19 +101,18 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   def reply_skin_classes(active_skin, is_me) do
-    # Reply skins only apply to messages the current user SENDS
-    # Received message replies always use default styling
-    case {active_skin, is_me} do
-      {"Glassmorphism Pro", true} ->
+    # Apply skin based on the sender's preference for this conversation
+    case active_skin do
+      "Glassmorphism Pro" ->
         "bg-white/20 border-l-4 border-white/60 text-white px-3 py-2"
 
-      {"Matrix Rain", true} ->
+      "Matrix Rain" ->
         "bg-green-900/30 border-l-4 border-green-400/80 text-green-300 px-3 py-2"
 
-      {"Holographic Foil", true} ->
+      "Holographic Foil" ->
         "bg-purple-900/30 border-l-4 border-purple-400/80 text-purple-200 px-3 py-2"
 
-      {"Vantablack", true} ->
+      "Vantablack" ->
         "bg-gray-800/50 border-l-4 border-gray-600 text-gray-300 px-3 py-2"
 
       _ ->
@@ -121,41 +126,41 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   defp glassmorphism_classes(is_me) do
     if is_me do
-      "bg-white/20 backdrop-blur-xl border border-white/40 text-white rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
+      "bg-purple/40 p-3 backdrop-blur-xl border border-blue/40 text-blue-500 rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
     else
-      "bg-white/15 backdrop-blur-lg border border-white/30 text-gray-900 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
+      "bg-purple/15 p-3 backdrop-blur-lg border border-white/30 text-gray-900 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
     end
   end
 
   defp matrix_rain_classes(is_me) do
     if is_me do
-      "bg-black/95 border-2 border-green-500/50 text-green-400 rounded-2xl rounded-br-none shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/50 before:border-b-0"
+      "bg-black/95 p-3 w-fit border-2 border-green-500/50 text-green-400 rounded-2xl rounded-br-none shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/50 before:border-b-0"
     else
-      "bg-black/90 border-2 border-green-500/30 text-green-300 rounded-2xl rounded-bl-none shadow-2xl shadow-green-500/20 hover:shadow-green-500/40 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/30 before:border-b-0"
+      "bg-black/90 p-3 border-2 border-green-500/30 text-green-300 rounded-2xl rounded-bl-none shadow-2xl shadow-green-500/20 hover:shadow-green-500/40 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/30 before:border-b-0"
     end
   end
 
   defp holographic_foil_classes(is_me) do
     if is_me do
-      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-blue-600/90 before:border-b-0"
+      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 p-3 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-blue-600/90 before:border-b-0"
     else
-      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-purple-500/80 before:border-b-0"
+      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 p-3 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-purple-500/80 before:border-b-0"
     end
   end
 
   defp vantablack_classes(is_me) do
     if is_me do
-      "bg-black/95 border-2 border-gray-700 text-gray-200 rounded-3xl rounded-br-none shadow-2xl shadow-black/60 hover:shadow-black/80 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
+      "bg-black/95 p-3 border-2 border-gray-700 text-gray-200 rounded-3xl rounded-br-none shadow-2xl shadow-black/60 hover:shadow-black/80 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
     else
-      "bg-gray-900/95 border-2 border-gray-700 text-gray-300 rounded-3xl rounded-bl-none shadow-2xl shadow-black/50 hover:shadow-black/70 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
+      "bg-gray-900/95 p-3 border-2 border-gray-700 text-gray-300 rounded-3xl rounded-bl-none shadow-2xl shadow-black/50 hover:shadow-black/70 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
     end
   end
 
   defp default_classes(is_me) do
     if is_me do
-      "bg-blue-500 text-white rounded-3xl rounded-br-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-blue-500 before:border-b-0"
+      "bg-blue-800 p-3 text-white rounded-3xl rounded-br-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-blue-500 before:border-b-0"
     else
-      "bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-gray-100 dark:before:border-t-zinc-700 before:border-b-0"
+      "bg-gray-100 p-3 dark:bg-zinc-700 text-gray-800 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-gray-100 dark:before:border-t-zinc-700 before:border-b-0"
     end
   end
 
@@ -666,6 +671,22 @@ defmodule VibeflowWeb.Chat.ChatLive do
     {:noreply, assign(socket, :active_message_skin, new_skin)}
   end
 
+  # Handle skin change broadcasts from conversation settings
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "skin_changed", payload: payload}, socket) do
+    # Only update if this is about the other user in the conversation
+    if payload.user_id != socket.assigns.current_user.id do
+      # Force a re-render of messages by refreshing the stream
+      messages = Chat.list_messages(socket.assigns.conversation)
+
+      {:noreply,
+       socket
+       |> stream(:messages, messages, reset: true)}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_info(:update_notifications, socket) do
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
@@ -723,6 +744,14 @@ defmodule VibeflowWeb.Chat.ChatLive do
   defp link_domain(url) when is_binary(url) do
     uri = URI.parse(url)
     uri.host || url
+  end
+
+  # Helper function to get user's skin for a specific conversation
+  def get_user_skin_for_conversation(conversation, user_id) do
+    case Enum.find(conversation.conversation_members, fn m -> m.user_id == user_id end) do
+      nil -> "default"
+      member -> member.message_skin || "default"
+    end
   end
 
   defp schedule_link_previews(socket, messages) when is_list(messages) do

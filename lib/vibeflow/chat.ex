@@ -17,12 +17,16 @@ defmodule Vibeflow.Chat do
     Conversation
     |> Repo.get_by(uuid: uuid)
     |> Repo.preload(conversation_members: :user)
+
+
   end
 
   def get_conversation!(id_or_uuid) do
+    
     case Ecto.UUID.cast(id_or_uuid) do
       {:ok, uuid} ->
         get_conversation_by_uuid!(uuid)
+
 
       :error ->
         Conversation
@@ -66,6 +70,7 @@ defmodule Vibeflow.Chat do
 
     Repo.all(query)
   end
+  #get convo member active chat text skinny
 
   def get_or_create_private_conversation(user_id_1, user_id_2) do
     case find_private_conversation(user_id_1, user_id_2) do

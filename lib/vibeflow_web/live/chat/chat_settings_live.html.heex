@@ -1,5 +1,5 @@
 <div class="max-w-4xl mx-auto p-6">
-  <.back navigate={~p"/chat"} class="mb-6">
+  <.back navigate={if @conversation, do: ~p"/chat/#{@conversation.uuid}", else: ~p"/chat"} class="mb-6">
     <div class="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -11,8 +11,20 @@
   <header class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Chat Settings</h1>
     <p class="text-gray-600 dark:text-gray-400">
-      Customize your chat experience with premium skins and preferences
+      <%= if @conversation do %>
+        Choose the skin for YOUR messages in this conversation with <%= @conversation.name || @conversation.conversation_members |> Enum.find(&(&1.user.id != @current_user.id)) |> then(fn m -> m.user.username end) %>. Your messages will appear in this skin for both you and them.
+      <% else %>
+        Customize your global chat experience with premium skins and preferences
+      <% end %>
     </p>
+    <%= if @conversation do %>
+      <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+        </svg>
+        Per-Conversation Settings
+      </div>
+    <% end %>
   </header>
 
   <div class="space-y-8">
@@ -32,7 +44,7 @@
         <div>
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">Message Skins</h2>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Choose a premium skin for your chat messages
+            Choose the skin for your messages in this conversation
           </p>
         </div>
       </div>
@@ -229,6 +241,7 @@
       <div class="mt-6 p-4 bg-gray-50 dark:bg-zinc-700 rounded-lg">
         <p class="text-sm text-gray-600 dark:text-gray-400">
           <span class="font-semibold">Note:</span>
+          Your skin choice applies to YOUR messages only. Each user can choose their own skin for their messages.
           Message skins are purchased from the Wave Store and last for 30 days.
           <.link
             navigate={~p"/wave-store"}

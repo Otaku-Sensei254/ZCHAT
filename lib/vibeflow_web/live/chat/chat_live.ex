@@ -4,8 +4,10 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   alias Vibeflow.Chat
   alias Vibeflow.Store
+  alias Vibeflow.Accounts
   alias VibeflowWeb.Presence
   import Phoenix.HTML.Form
+  import Ecto.Changeset
 
   @impl true
   def mount(_params, _session, socket) do
@@ -51,6 +53,15 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:audio_retry_count, 0)
      |> assign(:active_message_skin, current_user.active_message_skin || "default")
      |> stream(:messages, [])
+     |> assign(:processed_messages, [])
+     |> assign(:show_new_chat_modal, false)
+     |> assign(:show_chat_menu, false)
+     |> assign(:show_group_modal, false)
+     |> assign(:selected_tab, "followers")
+     |> assign(:filtered_users, [])
+     |> assign(:selected_group_members, [])
+     |> assign(:group_name, "")
+     |> assign(:chat_filter, "all")
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
        max_entries: 3,
@@ -104,7 +115,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
     # Apply skin based on the sender's preference for this conversation
     case active_skin do
       "Glassmorphism Pro" ->
-        "bg-white/20 border-l-4 border-white/60 text-white px-3 py-2"
+        "bg-white/20 border-l-4 border-white text-blue-400 px-3 py-2"
 
       "Matrix Rain" ->
         "bg-green-900/30 border-l-4 border-green-400/80 text-green-300 px-3 py-2"
@@ -126,9 +137,9 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   defp glassmorphism_classes(is_me) do
     if is_me do
-      "bg-purple/40 p-3 backdrop-blur-xl border border-blue/40 text-blue-500 rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
+      "bg-blue-400/20 p-3  border border-blue/40 text-blue-500 dark:text-white rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
     else
-      "bg-purple/15 p-3 backdrop-blur-lg border border-white/30 text-gray-900 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
+      "bg-blue-500/40 p-3  border border-white/30 text-blue-6000 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
     end
   end
 
@@ -142,9 +153,9 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   defp holographic_foil_classes(is_me) do
     if is_me do
-      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 p-3 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-blue-600/90 before:border-b-0"
+      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 p-3 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow "
     else
-      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 p-3 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow backdrop-blur-sm before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-purple-500/80 before:border-b-0"
+      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 p-3 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow "
     end
   end
 
@@ -206,7 +217,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      # Reset typing when switching chats
      |> assign(:typing_users, %{})
      |> schedule_link_previews(messages)
-     |> stream(:messages, messages, reset: true)
+     |> assign(:processed_messages, process_messages_with_separators(messages, conversation))
      |> assign(:hide_bottom_nav, true)}
   end
 
@@ -222,6 +233,52 @@ defmodule VibeflowWeb.Chat.ChatLive do
   @impl true
   def handle_event("validate", _params, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("update_typing_indicator", %{"is_typing" => is_typing}, socket) do
+    current_user = socket.assigns.current_user
+    conversation = socket.assigns.conversation
+
+    if conversation do
+      # Broadcast typing status to other users in the conversation
+      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "typing", %{
+        user: %{id: current_user.id, username: current_user.username},
+        typing: is_typing
+      })
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("change_conversation_skin", %{"skin" => skin}, socket) do
+    current_user_id = socket.assigns.current_user.id
+    conversation = socket.assigns.conversation
+
+    case Enum.find(conversation.conversation_members, fn m -> m.user_id == current_user_id end) do
+      nil ->
+        {:noreply, socket}
+
+      member ->
+        changeset = member |> Ecto.Changeset.change(message_skin: skin)
+
+        case Vibeflow.Repo.update(changeset) do
+          {:ok, _updated_member} ->
+            Logger.info("Broadcasting skin change for user #{current_user_id} to skin #{skin} in conversation #{conversation.uuid}")
+            VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "skin_changed", %{
+              user_id: current_user_id,
+              skin: skin
+            })
+
+            # Refresh the conversation to show the new skin
+            updated_conversation = Chat.get_conversation!(conversation.uuid)
+            {:noreply, assign(socket, :conversation, updated_conversation)}
+
+          {:error, _} ->
+            {:noreply, socket}
+        end
+    end
   end
 
   @impl true
@@ -373,169 +430,280 @@ defmodule VibeflowWeb.Chat.ChatLive do
         socket = send_audio_message(socket)
         {:noreply, assign(socket, :audio_retry_count, 0)}
 
-      length(entries) > 0 and socket.assigns.audio_retry_count < 20 ->
+      socket.assigns.audio_retry_count < 10 ->
         Process.send_after(self(), :retry_audio_upload, 300)
         {:noreply, assign(socket, :audio_retry_count, socket.assigns.audio_retry_count + 1)}
-
-      length(entries) > 0 ->
-        {:noreply,
-         socket
-         |> assign(:audio_retry_count, 0)
-         |> put_flash(:error, "Audio upload still processing. Please try again.")}
 
       true ->
         {:noreply, assign(socket, :audio_retry_count, 0)}
     end
   end
 
-  # get to the replied messo
-  def handle_event("scroll_to_message", _params, socket) do
-    # The server doesn't need to do anything, but it must acknowledge the event.
-    {:noreply, socket}
+  def handle_event("toggle_new_chat_modal", _, socket) do
+    current_user = socket.assigns.current_user
+
+    # Load user's followers and following
+    followers = Accounts.get_user_followers(current_user.id)
+    following = Accounts.get_user_following(current_user.id)
+
+    # Set initial filtered users based on selected tab
+    filtered_users = if socket.assigns.selected_tab == "followers", do: followers, else: following
+
+    {:noreply,
+     socket
+     |> assign(:show_new_chat_modal, not socket.assigns.show_new_chat_modal)
+     |> assign(:followers, followers)
+     |> assign(:following, following)
+     |> assign(:filtered_users, filtered_users)
+    |> put_flash(:info, "Select users to start a new chat or create a group!")
+  }
+  end
+
+  @impl true
+  def handle_event("select_user_tab", %{"tab" => tab}, socket) do
+    current_user = socket.assigns.current_user
+
+    # Load users based on selected tab
+    filtered_users = case tab do
+      "followers" -> Accounts.get_user_followers(current_user.id)
+      "following" -> Accounts.get_user_following(current_user.id)
+      _ -> []
+    end
+
+    {:noreply,
+     socket
+     |> assign(:selected_tab, tab)
+     |> assign(:filtered_users, filtered_users)}
+  end
+
+  @impl true
+  def handle_event("search_users_in_modal", %{"_target" => ["query"], "query" => query}, socket) do
+    current_user = socket.assigns.current_user
+
+    search_results = if String.length(query) >= 2 do
+      Accounts.search_users(query, current_user.id)
+    else
+      # Return empty list when query is too short
+      []
+    end
+
+    {:noreply,
+     socket
+     |> assign(:filtered_users, search_results)}
+  end
+
+  @impl true
+  def handle_event("search_users_in_modal", %{}, socket) do
+    # Handle empty search - return default list
+    current_user = socket.assigns.current_user
+
+    default_users = case socket.assigns.selected_tab do
+      "followers" -> Accounts.get_user_followers(current_user.id)
+      "following" -> Accounts.get_user_following(current_user.id)
+      _ -> []
+    end
+
+    {:noreply, assign(socket, :filtered_users, default_users)}
   end
 
   @impl true
   def handle_event("search_new_chat", %{"query" => query}, socket) do
-    if String.length(query) >= 2 do
-      current_user_id = socket.assigns.current_user.id
+    current_user = socket.assigns.current_user
 
-      results =
-        Vibeflow.Search.global_search(query)
-        |> Enum.filter(fn result -> Map.get(result, :type) == :user end)
-        |> Enum.filter(&(&1.id != current_user_id))
-        |> Enum.map(fn r ->
-          %{
-            id: r.id,
-            username: r.title,
-            avatar_url: r.image,
-            is_verified: Map.get(r, :is_verified, false)
-          }
-        end)
-
-      {:noreply, assign(socket, user_search_results: results, user_search_query: query)}
+    search_results = if String.length(query) >= 2 do
+      Accounts.search_users(query, current_user.id)
     else
-      {:noreply, assign(socket, user_search_results: [], user_search_query: query)}
+      []
     end
+
+    {:noreply,
+     socket
+     |> assign(:user_search_query, query)
+     |> assign(:user_search_results, search_results)}
   end
 
   @impl true
   def handle_event("clear_user_search", _, socket) do
-    {:noreply, assign(socket, user_search_results: [], user_search_query: "")}
+    {:noreply,
+     socket
+     |> assign(:user_search_query, "")
+     |> assign(:user_search_results, [])}
   end
 
   @impl true
-  def handle_event("start_new_chat", %{"user_id" => target_user_id}, socket) do
-    target_user_id = String.to_integer(target_user_id)
+  def handle_event("toggle_chat_menu", _, socket) do
+    {:noreply, assign(socket, :show_chat_menu, not socket.assigns.show_chat_menu)}
+  end
 
-    {:ok, conversation} =
-      Chat.get_or_create_private_conversation(socket.assigns.current_user.id, target_user_id)
+  @impl true
+  def handle_event("toggle_group_modal", _, socket) do
+    current_user = socket.assigns.current_user
+
+    # Load user's followers and following for group creation
+    followers = Accounts.get_user_followers(current_user.id)
+    following = Accounts.get_user_following(current_user.id)
+
+    # Set initial filtered users based on selected tab
+    filtered_users = if socket.assigns.selected_tab == "followers", do: followers, else: following
 
     {:noreply,
      socket
-     |> assign(user_search_results: [], user_search_query: "")
-     |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
+     |> assign(:show_group_modal, not socket.assigns.show_group_modal)
+     |> assign(:show_chat_menu, false)  # Close dropdown when opening modal
+     |> assign(:followers, followers)
+     |> assign(:following, following)
+     |> assign(:filtered_users, filtered_users)
+     |> put_flash(:info, "Create a new group chat!")}
   end
 
   @impl true
-  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-    socket =
-      if socket.assigns.preview_entry && socket.assigns.preview_entry.ref == ref do
-        assign(socket, preview_entry: nil)
-      else
-        socket
-      end
+  def handle_event("start_new_chat", %{"user_id" => user_id}, socket) do
+    current_user = socket.assigns.current_user
+    target_user_id = String.to_integer(user_id)
 
-    {:noreply, cancel_upload(socket, :media_file, ref)}
+    # Check if conversation already exists
+    case Chat.find_or_create_direct_conversation(current_user.id, target_user_id) do
+      {:ok, conversation} ->
+        {:noreply,
+         socket
+         |> assign(:user_search_query, "")
+         |> assign(:user_search_results, [])
+         |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to start chat: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("toggle_user_selection", %{"user-id" => user_id}, socket) do
+    current_members = socket.assigns.selected_group_members || []
+    user_id = String.to_integer(user_id)
+
+    new_members = if user_id in current_members do
+      List.delete(current_members, user_id)
+    else
+      [user_id | current_members]
+    end
+
+    {:noreply, assign(socket, :selected_group_members, new_members)}
+  end
+
+  @impl true
+  def handle_event("update_group_name", %{"group_name" => group_name}, socket) do
+    {:noreply, assign(socket, :group_name, group_name)}
+  end
+
+  @impl true
+  def handle_event("reset_group_form", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:group_name, "")
+     |> assign(:selected_group_members, [])}
+  end
+
+  @impl true
+  def handle_event("create_group", %{"group_name" => group_name}, socket) do
+    current_user = socket.assigns.current_user
+    selected_members = socket.assigns.selected_group_members || []
+
+    if group_name != "" and length(selected_members) > 0 do
+      # Create new group conversation
+      case Chat.create_group_conversation(current_user.id, group_name, selected_members) do
+        {:ok, conversation} ->
+          # Notify all users in real-time
+          Enum.each(selected_members, fn member_id ->
+            if member_id != current_user.id do
+              VibeflowWeb.Endpoint.broadcast_from(
+                self(),
+                "user:#{member_id}",
+                "group_invitation",
+                %{
+                  conversation_id: conversation.conversation.id,
+                  conversation_name: group_name,
+                  invited_by: current_user.username,
+                  invited_by_id: current_user.id
+                }
+              )
+            end
+          end)
+
+          {:noreply,
+           socket
+           |> assign(:show_group_modal, false)
+           |> assign(:show_chat_menu, false)
+           |> assign(:group_name, "")
+           |> assign(:selected_group_members, [])
+           |> put_flash(:info, "Group '#{group_name}' created successfully!")
+           |> push_patch(to: ~p"/chat/#{conversation.conversation.uuid}")}
+
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "Failed to create group: #{inspect(reason)}")}
+      end
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, "Please provide a group name and select at least one member")}
+    end
   end
 
   @impl true
   def handle_event("prepare_reply", %{"id" => message_id}, socket) do
-    message =
-      Vibeflow.Repo.get!(Vibeflow.Chat.Message, message_id) |> Vibeflow.Repo.preload([:user])
+    # Find the message to reply to
+    message = Enum.find(socket.assigns.processed_messages, fn processed ->
+      processed.message.id == String.to_integer(message_id)
+    end)
 
-    {:noreply, assign(socket, :replying_to, message)}
+    if message do
+      {:noreply, assign(socket, :replying_to, message.message)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
-  def handle_event("cancel_reply", _, socket) do
-    {:noreply, assign(socket, :replying_to, nil)}
-  end
+  def handle_event("filter_chats", %{"filter" => filter}, socket) do
+    current_user_id = socket.assigns.current_user.id
 
-  @impl true
-  def handle_event("delete_message", %{"id" => message_id}, socket) do
-    message = Vibeflow.Repo.get(Vibeflow.Chat.Message, message_id)
-
-    if message && message.user_id == socket.assigns.current_user.id do
-      Chat.delete_message(message)
+    filtered_conversations = case filter do
+      "groups" ->
+        Chat.get_my_group_chats(current_user_id, nil)
+      "chats" ->
+        Chat.list_user_conversations(current_user_id)
+        |> Enum.filter(&(&1.type != "group"))
+      _ ->
+        Chat.list_user_conversations(current_user_id)
     end
 
-    {:noreply, socket}
-  end
-
-  # TYPING EVENT (Sent by the client Hook)
-  @impl true
-  def handle_event("update_typing_indicator", params, socket) do
-    # Only broadcast if we are in a conversation
-    if socket.assigns.conversation do
-      is_typing = Map.get(params, "is_typing", false)
-      topic = "conversation:#{socket.assigns.conversation.uuid}"
-
-      payload = %{
-        user: %{
-          id: socket.assigns.current_user.id,
-          username: socket.assigns.current_user.username
-        },
-        typing: is_typing
-      }
-
-      # Broadcast to everyone else in the topic
-      VibeflowWeb.Endpoint.broadcast_from(self(), topic, "typing", payload)
-    end
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("display_new_message", _, socket), do: {:noreply, socket}
-
-  @impl true
-  # ======to check out the media shared=====
-  def handle_event("preview_entry", %{"ref" => ref}, socket) do
-    check =
-      socket.assigns.uploads.media_file.entries
-      |> Enum.find(fn ck -> ck.ref == ref end)
-
-    {:noreply, assign(socket, preview_entry: check)}
-  end
-
-  @impl true
-  # close the preview modal
-  def handle_event("close_preview", _params, socket) do
-    {:noreply, assign(socket, preview_entry: nil)}
-  end
-
-  @impl true
-  # Handle clicking an image in the chat history
-  def handle_event("zoom_image", params, socket) do
-    {:noreply, assign(socket, zoomed_image: params)}
-  end
-
-  @impl true
-  # Handle closing the full-screen view
-  def handle_event("close_zoom", _params, socket) do
-    {:noreply, assign(socket, zoomed_image: nil)}
-  end
-
-  @impl true
-  def handle_event("close_modals", %{"key" => "Escape"}, socket) do
     {:noreply,
      socket
-     |> assign(:zoomed_image, nil)
-     |> assign(:preview_entry, nil)}
+     |> assign(:chat_filter, filter)
+     |> assign(:conversations, filtered_conversations)}
   end
 
   @impl true
-  def handle_event("close_modals", _, socket), do: {:noreply, socket}
+  def handle_event("start_chat_with_user", %{"user_id" => user_id}, socket) do
+    current_user = socket.assigns.current_user
+    target_user_id = String.to_integer(user_id)
+
+    # Check if conversation already exists
+    case Chat.find_or_create_direct_conversation(current_user.id, target_user_id) do
+      {:ok, conversation} ->
+        {:noreply,
+         socket
+         |> assign(:show_new_chat_modal, false)
+         |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to start chat: #{inspect(reason)}")}
+    end
+  end
+
   # ===========================================================================
   # HANDLE INFO - All grouped together
   # ===========================================================================
@@ -562,9 +730,10 @@ defmodule VibeflowWeb.Chat.ChatLive do
         end
 
         # 2. Insert message and scroll
+        updated_messages = [message | Chat.list_messages(active_conversation)]
         socket
         |> schedule_link_previews([message])
-        |> stream_insert(:messages, message)
+        |> assign(:processed_messages, process_messages_with_separators(updated_messages, active_conversation))
         |> push_event("scroll-to-bottom", %{})
         # 3. Stop typing indicator for the sender (since they sent a msg)
         |> remove_typing_indicator(message.user_id)
@@ -630,7 +799,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
        socket
        |> assign(:other_last_read_at, last_read_at)
        |> schedule_link_previews(messages)
-       |> stream(:messages, messages, reset: true)}
+       |> assign(:processed_messages, process_messages_with_separators(messages, socket.assigns.conversation))}
     else
       {:noreply, socket}
     end
@@ -674,14 +843,20 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # Handle skin change broadcasts from conversation settings
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "skin_changed", payload: payload}, socket) do
+    Logger.info("Received skin change broadcast: user_id=#{payload.user_id}, skin=#{payload.skin}, current_user=#{socket.assigns.current_user.id}")
+
     # Only update if this is about the other user in the conversation
     if payload.user_id != socket.assigns.current_user.id do
-      # Force a re-render of messages by refreshing the stream
-      messages = Chat.list_messages(socket.assigns.conversation)
+      # Refresh conversation data to get updated skin information
+      updated_conversation = Chat.get_conversation!(socket.assigns.conversation.uuid)
+      messages = Chat.list_messages(updated_conversation)
+
+      Logger.info("Updating conversation with new skin for user #{payload.user_id}")
 
       {:noreply,
        socket
-       |> stream(:messages, messages, reset: true)}
+       |> assign(:conversation, updated_conversation)
+       |> assign(:processed_messages, process_messages_with_separators(messages, updated_conversation))}
     else
       {:noreply, socket}
     end
@@ -700,6 +875,82 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # HELPERS
   # ===========================================================================
   @url_regex ~r/(https?:\/\/[^\s<]+)/u
+
+  defp format_date_separator(message_datetime) do
+    message_date = case message_datetime do
+      %DateTime{} -> DateTime.to_date(message_datetime)
+      %NaiveDateTime{} -> NaiveDateTime.to_date(message_datetime)
+      _ -> Date.utc_today()
+    end
+
+    today = Date.utc_today()
+    yesterday = Date.add(today, -1)
+
+    case message_date do
+      ^today -> "Today"
+      ^yesterday -> "Yesterday"
+      date ->
+        if Date.diff(today, date) < 7 do
+          day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+          day_number = Date.day_of_week(date)
+          Enum.at(day_names, day_number - 1)
+        else
+          Calendar.strftime(date, "%B %d, %Y")
+        end
+    end
+  end
+
+  defp should_show_date_separator?(current_message, previous_message) do
+    case {current_message, previous_message} do
+      {nil, _} -> false
+      {_, nil} -> true  # Always show date for first message
+      {curr, prev} ->
+        curr_date = case curr.inserted_at do
+          %DateTime{} -> DateTime.to_date(curr.inserted_at)
+          %NaiveDateTime{} -> NaiveDateTime.to_date(curr.inserted_at)
+          _ -> Date.utc_today()
+        end
+        prev_date = case prev.inserted_at do
+          %DateTime{} -> DateTime.to_date(prev.inserted_at)
+          %NaiveDateTime{} -> NaiveDateTime.to_date(prev.inserted_at)
+          _ -> Date.utc_today()
+        end
+        Date.compare(curr_date, prev_date) != :eq
+    end
+  end
+
+  defp get_skin_change_notification(current_message, previous_message, conversation) do
+    case {current_message, previous_message} do
+      {nil, _} -> nil
+      {_, nil} -> nil
+      {curr, prev} ->
+        curr_skin = get_user_skin_for_conversation(conversation, curr.user_id)
+        prev_skin = get_user_skin_for_conversation(conversation, prev.user_id)
+
+        if curr_skin != prev_skin and curr_skin != "default" and curr.user_id == prev.user_id do
+          "changed to #{curr_skin}"
+        else
+          nil
+        end
+    end
+  end
+
+  defp process_messages_with_separators(messages, conversation) do
+    messages
+    |> Enum.with_index()
+    |> Enum.map(fn {message, index} ->
+      previous_message = if index > 0, do: Enum.at(messages, index - 1), else: nil
+
+      %{
+        message: message,
+        show_date_separator: should_show_date_separator?(message, previous_message),
+        date_separator_text: if should_show_date_separator?(message, previous_message) do
+          format_date_separator(message.inserted_at)
+        end,
+        skin_change_notification: get_skin_change_notification(message, previous_message, conversation)
+      }
+    end)
+  end
 
   defp remove_typing_indicator(socket, user_id) do
     new_typing = Map.delete(socket.assigns.typing_users, user_id)

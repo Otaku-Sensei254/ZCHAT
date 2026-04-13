@@ -17,16 +17,12 @@ defmodule Vibeflow.Chat do
     Conversation
     |> Repo.get_by(uuid: uuid)
     |> Repo.preload(conversation_members: :user)
-
-
   end
 
   def get_conversation!(id_or_uuid) do
-    
     case Ecto.UUID.cast(id_or_uuid) do
       {:ok, uuid} ->
         get_conversation_by_uuid!(uuid)
-
 
       :error ->
         Conversation
@@ -70,7 +66,8 @@ defmodule Vibeflow.Chat do
 
     Repo.all(query)
   end
-  #get convo member active chat text skinny
+
+  # get convo member active chat text skinny
 
   def get_or_create_private_conversation(user_id_1, user_id_2) do
     case find_private_conversation(user_id_1, user_id_2) do
@@ -103,6 +100,54 @@ defmodule Vibeflow.Chat do
     end
   end
 
+  # lets create group chats now..BOOYAAH
+  def create_group_chats(creator, attrs, invited_users_ids) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:conversation, Conversation.changeset(%Conversation{}, attrs))
+    |> Ecto.Multi.insert(:creator_member, fn %{conversation: conv} ->
+      ConversationMember.changeset(%ConversationMember{}, %{
+        conversation_id: conv.id,
+        user_id: creator.id,
+        role: "admin"
+      })
+    end)
+    |> Ecto.Multi.merge(fn %{conversation: conv} ->
+      invited_users_ids
+      |> Enum.reduce(Ecto.Multi.new(), fn user_id, multi ->
+       Ecto.Multi.insert(
+          multi,
+          "member_#{user_id}",
+          ConversationMember.changeset(%ConversationMember{}, %{
+            user_id: user_id,
+            conversation_id: conv.id,
+            role: "member"
+          })
+        )
+      end)
+    end)
+    |> Repo.transaction()
+  end
+
+  #fetch all group chats
+  def list_group_conversations do
+    from(c in Conversation,
+      where: c.type == "group",
+      preload: [conversation_members: :user],
+      order_by: [desc: c.updated_at]
+    )
+    |> Repo.all()
+  end
+#get user group chats
+def get_my_group_chats(user_id, conversation) do
+  from(c in Conversation,
+    where: c.type == "group",
+    join: cm in assoc(c, :conversation_members),
+    where: cm.user_id == ^user_id,
+    preload: [conversation_members: :user],
+    order_by: [desc: c.updated_at]
+  )
+  |> Repo.all()
+end
   def subscribe_to_conversation(conversation) do
     Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
   end
@@ -353,5 +398,103 @@ defmodule Vibeflow.Chat do
         failed_count = Enum.count(results, &match?({:error, _}, &1))
         {:error, "Failed to share to #{failed_count} recipients"}
     end
+  end
+
+  # Add user to conversation
+  def add_user_to_conversation(conversation_id, user_id) do
+    %ConversationMember{}
+    |> ConversationMember.changeset(%{
+        conversation_id: conversation_id,
+        user_id: user_id,
+        role: "member"
+      })
+    |> Repo.insert()
+  end
+
+  # Find or create direct conversation
+  def find_or_create_direct_conversation(current_user_id, target_user_id) do
+    # Check if conversation already exists between these two users
+    case find_direct_conversation(current_user_id, target_user_id) do
+      nil ->
+        # Create new direct conversation
+        create_direct_conversation(current_user_id, target_user_id)
+
+      conversation ->
+        {:ok, conversation}
+    end
+  end
+
+  # Find direct conversation between two users
+  defp find_direct_conversation(user1_id, user2_id) do
+    from(c in Conversation,
+      where: c.type == "direct",
+      join: cm in ConversationMember,
+      where:
+        (cm.user_id == ^user1_id and cm.conversation_id == c.id) or
+        (cm.user_id == ^user2_id and cm.conversation_id == c.id)
+    )
+    |> Repo.one()
+  end
+
+  # Create direct conversation
+  defp create_direct_conversation(user1_id, user2_id) do
+    %Conversation{}
+    |> Conversation.changeset(%{
+        type: "direct",
+        name: "Direct Chat"
+      })
+    |> Repo.insert()
+    |> case do
+      {:ok, conversation} ->
+        # Add both users as members
+        Ecto.Multi.new()
+        |> Ecto.Multi.insert(:member1, ConversationMember.changeset(%ConversationMember{}, %{
+            conversation_id: conversation.id,
+            user_id: user1_id,
+            role: "admin"
+          }))
+        |> Ecto.Multi.insert(:member2, ConversationMember.changeset(%ConversationMember{}, %{
+            conversation_id: conversation.id,
+            user_id: user2_id,
+            role: "admin"
+          }))
+        |> Repo.transaction()
+        |> case do
+          {:ok, _} ->
+            {:ok, conversation}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+
+    end
+  end
+
+  # Update conversation
+  def update_conversation(conversation, attrs) do
+    conversation
+    |> Conversation.changeset(attrs)
+    |> Repo.update()
+  end
+
+  # Remove user from conversation
+  def remove_user_from_conversation(conversation_id, user_id) do
+    from(cm in ConversationMember,
+      where: cm.conversation_id == ^conversation_id and cm.user_id == ^user_id)
+    |> Repo.delete_all()
+
+    {:ok, get_conversation!(conversation_id)}
+  end
+
+  # Create group conversation (alias for existing function)
+  def create_group_conversation(creator_id, group_name, member_ids) do
+    create_group_chats(
+      %Vibeflow.Accounts.User{id: creator_id},
+      %{
+        type: "group",
+        name: group_name
+      },
+      member_ids
+    )
   end
 end

@@ -13,13 +13,14 @@
           </svg>
         </div>
 
+        
         <form phx-change="search_new_chat" onsubmit="return false;">
           <input 
             type="text" 
             name="query"
             value={@user_search_query}
             placeholder="Search users..." 
-            class="block w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
             phx-debounce="300"
             autocomplete="off"
           />
@@ -71,6 +72,40 @@
       <% end %>
     </div>
     
+    <!-- Chat Filter Tabs -->
+    <div class="flex space-x-1 p-2 bg-gray-50 dark:bg-zinc-800 rounded-lg mx-2 mb-2">
+      <button 
+        phx-click="filter_chats" 
+        phx-value-filter="all"
+        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
+          if(@chat_filter == "all", 
+            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
+            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
+      >
+        All Chats
+      </button>
+      <button 
+        phx-click="filter_chats" 
+        phx-value-filter="chats"
+        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
+          if(@chat_filter == "chats", 
+            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
+            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
+      >
+        Direct Chats
+      </button>
+      <button 
+        phx-click="filter_chats" 
+        phx-value-filter="groups"
+        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
+          if(@chat_filter == "groups", 
+            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
+            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
+      >
+        Groups
+      </button>
+    </div>
+    
     <div class="flex-1 overflow-y-auto">
       <%= for conv <- @conversations do %>
         <% 
@@ -83,6 +118,16 @@
            
            is_active = @conversation && conv.uuid == @conversation.uuid
            is_online = if !is_group && other_member, do: Map.has_key?(@online_users, to_string(other_member.user.id)), else: false
+           
+           # For groups: count online members
+           online_member_count = if is_group do
+             Enum.count(conv.conversation_members, fn member -> 
+               Map.has_key?(@online_users, to_string(member.user_id)) 
+             end)
+           else
+             0
+           end
+           total_member_count = if is_group, do: length(conv.conversation_members), else: 0
         %>
         
         <.link navigate={~p"/chat/#{conv.uuid}"} class={[
@@ -132,7 +177,11 @@
               <% end %>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
-              <%= if is_online, do: "Active now", else: "Offline" %>
+              <%= if is_group do %>
+                <%= online_member_count %> of <%= total_member_count %> online
+              <% else %>
+                <%= if is_online, do: "Active now", else: "Offline" %>
+              <% end %>
             </p>
           </div>
         </.link>
@@ -212,9 +261,30 @@
         </div>
 
         <div id="chat-scroll-container" phx-hook="ScrollToBottom" class="flex-1 min-w-full overflow-y-auto p-4 pb-28 sm:pb-4 space-y-4 bg-white dark:bg-zinc-900 min-h-0">
-          <div id="messages" phx-update="stream" class="flex flex-col space-y-2 min-h-0">
-            <%= for {dom_id, message} <- @streams.messages do %>
+          <div id="messages" class="flex flex-col space-y-2 min-h-0">
+            <%= for processed <- @processed_messages do %>
+              <% message = processed.message %>
               <% is_me = message.user_id == @current_user.id %>
+              <% dom_id = "message-#{message.id}" %>
+              
+              <!-- Date Separator -->
+              <%= if processed.show_date_separator do %>
+                <div class="flex justify-center my-4">
+                  <div class="bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-xs text-gray-600 dark:text-gray-400 font-medium">
+                    <%= processed.date_separator_text %>
+                  </div>
+                </div>
+              <% end %>
+              
+              <!-- Skin Change Notification -->
+              <%= if processed.skin_change_notification do %>
+                <div class="flex justify-center my-2">
+                  <div class="bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full text-xs text-blue-600 dark:text-blue-400 font-medium italic">
+                    <%= message.user.username %> <%= processed.skin_change_notification %>
+                  </div>
+                </div>
+              <% end %>
+              
               <div id={dom_id} class={"group flex w-full " <> if(is_me, do: "justify-end", else: "justify-start")}>
                 
                 <div class={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 " <> if(is_me, do: "order-first", else: "order-last")}>
@@ -355,6 +425,15 @@
                             <% end %>
                  <% end %>
                 </div>
+                    <% end %>
+
+                    <%= if @conversation.type == "group" && !is_me do %>
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                          <%= message.user.username %>
+                        </span>
+                        <.verified_badge user={message.user} class="h-4 w-4" />
+                      </div>
                     <% end %>
 
                     <div class="leading-relaxed break-words">
@@ -733,4 +812,265 @@
     <% end %>
 
   </div>
+
+  <!-- Floating Action Button - Only in Sidebar -->
+<div class={"fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[60] " <> if(@conversation, do: "hidden", else: "block")}>
+    <div class="relative" id="chat-menu-dropdown">
+      <button 
+        phx-click="toggle_chat_menu" 
+        class="flex items-center justify-center w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+        title="New chat or group"
+      >
+        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+        </svg>
+      </button>
+      
+      <!-- Dropdown Menu -->
+      <%= if @show_chat_menu do %>
+        <div class="absolute bottom-full right-0 mb-2 w-52 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 overflow-hidden z-[70]" phx-click-away="toggle_chat_menu">
+          <button 
+            phx-click="toggle_new_chat_modal" 
+            class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-zinc-700"
+          >
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <span class="text-gray-700 dark:text-gray-300 font-medium">New Chat</span>
+          </button>
+          <button 
+            phx-click="toggle_group_modal" 
+            class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center gap-3"
+          >
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span class="text-gray-700 dark:text-gray-300 font-medium">Create Group</span>
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
 </div>
+
+<!-- New Chat Modal (Simplified for Direct Chats) -->
+<%= if @show_new_chat_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" phx-click-away="toggle_new_chat_modal">
+    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" phx-stop-propagation>
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-zinc-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Start a New Chat</h2>
+        <button phx-click="toggle_new_chat_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- Search Bar -->
+        <div class="mb-6">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              phx-change="search_users_in_modal"
+              phx-debounce="300"
+              placeholder="Search users..."
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex space-x-1 mb-6 bg-gray-100 dark:bg-zinc-700 rounded-lg p-1">
+          <button 
+            phx-click="select_user_tab" 
+            phx-value-tab="followers"
+            class={"flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors " <>
+              if(@selected_tab == "followers", 
+                do: "bg-white dark:bg-zinc-600 text-blue-600 dark:text-blue-400", 
+                else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
+          >
+            Followers
+          </button>
+          <button 
+            phx-click="select_user_tab" 
+            phx-value-tab="following"
+            class={"flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors " <>
+              if(@selected_tab == "following", 
+                do: "bg-white dark:bg-zinc-600 text-blue-600 dark:text-blue-400", 
+                else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
+          >
+            Following
+          </button>
+        </div>
+
+        <!-- User List -->
+        <div class="space-y-2 max-h-80 overflow-y-auto">
+          <%= for user <- @filtered_users do %>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-700 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
+              <div class="flex items-center gap-3">
+                <%= if user.avatar_url && user.avatar_url != "" do %>
+                  <img src={user.avatar_url} class={"w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
+                <% else %>
+                  <div class={"w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
+                    <%= VibeflowWeb.CoreComponents.initials(user) %>
+                  </div>
+                <% end %>
+                <div>
+                  <p class="font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                    <%= user.username %>
+                    <.verified_badge user={user} class="h-5 w-5" />
+                  </p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <%= if @selected_tab == "followers", do: "Follows you", else: "You follow" %>
+                  </p>
+                </div>
+              </div>
+              <button 
+                phx-click="start_chat_with_user" 
+                phx-value-user-id={user.id}
+                class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors"
+              >
+                Chat
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Group Creation Modal -->
+<%= if @show_group_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" phx-click-away="toggle_group_modal">
+    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" phx-stop-propagation>
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-zinc-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Create New Group</h2>
+        <button phx-click="toggle_group_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <form phx-submit="create_group" class="space-y-6">
+          <!-- Group Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group Name</label>
+            <input 
+              type="text" 
+              name="group_name"
+              value={@group_name}
+              phx-change="update_group_name"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter group name..."
+              required
+            />
+          </div>
+
+          <!-- Member Search -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Members</label>
+            <div class="relative mb-4">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <input 
+                type="text" 
+                phx-change="search_users_in_modal"
+                phx-debounce="300"
+                placeholder="Search users to add..."
+                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            
+            <!-- User Selection List -->
+            <div class="space-y-2 max-h-60 overflow-y-auto border border-gray-300 dark:border-zinc-600 rounded-lg p-3">
+              <%= for user <- @filtered_users do %>
+                <div class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-700 rounded cursor-pointer" phx-click="toggle_user_selection" phx-value-user-id={user.id}>
+                  <input 
+                    type="checkbox" 
+                    class="rounded text-blue-600 focus:ring-blue-500 pointer-events-none"
+                    checked={user.id in @selected_group_members}
+                  />
+                  <%= if user.avatar_url && user.avatar_url != "" do %>
+                    <img src={user.avatar_url} class={"w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
+                  <% else %>
+                    <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
+                      <%= VibeflowWeb.CoreComponents.initials(user) %>
+                    </div>
+                  <% end %>
+                  <div class="flex-1">
+                    <p class="font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                      <%= user.username %>
+                      <.verified_badge user={user} class="h-5 w-5" />
+                    </p>
+                                      </div>
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Selected Members Display -->
+            <%= if @selected_group_members != [] do %>
+              <div class="mt-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Members (<%= length(@selected_group_members) %>)</p>
+                <div class="flex flex-wrap gap-2">
+                  <%= for member_id <- @selected_group_members do %>
+                    <% member_user = Enum.find(@filtered_users, &(&1.id == member_id)) %>
+                    <%= if member_user do %>
+                      <div class="flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
+                        <%= member_user.username %>
+                        <button 
+                          type="button"
+                          phx-click="toggle_user_selection" 
+                          phx-value-user-id={member_id}
+                          class="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3">
+            <button 
+              type="submit" 
+              disabled={@group_name == "" or @selected_group_members == []}
+              class="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            >
+              Create Group
+            </button>
+            <button 
+              type="button"
+              phx-click="reset_group_form"
+              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>

@@ -27,6 +27,140 @@
     <% end %>
   </header>
 
+  <!-- Group Information Section (only for groups) -->
+  <%= if @conversation && @conversation.type == "group" do %>
+    <section class="bg-white dark:bg-zinc-800 rounded-2xl p-6 border border-gray-200 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Group Information</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <%= length(@conversation.conversation_members) %> members
+          </p>
+        </div>
+      </div>
+
+      <!-- Group Bio -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group Bio</label>
+        <%= if @is_admin do %>
+          <form phx-submit="update_group_bio" class="space-y-2">
+            <textarea 
+              name="bio" 
+              rows="3"
+              class="w-full rounded-lg border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="Add a description for this group..."
+            ><%= @conversation.bio || "" %></textarea>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+            >
+              Update Bio
+            </button>
+          </form>
+        <% else %>
+          <div class="p-3 bg-gray-50 dark:bg-zinc-700 rounded-lg">
+            <p class="text-gray-700 dark:text-gray-300">
+              <%= if @conversation.bio && @conversation.bio != "", do: @conversation.bio, else: "No bio set for this group." %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Members List -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Members</h3>
+          <%= if @is_admin do %>
+            <button 
+              phx-click="toggle_add_member_modal"
+              class="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+            >
+              Add Member
+            </button>
+          <% end %>
+        </div>
+
+        <!-- Member Search -->
+        <%= if @is_admin do %>
+        <div class="relative">
+          <input 
+            type="text" 
+            phx-change="search_members"
+            placeholder="Search users to add..."
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <%= if @member_search_results != [] do %>
+          <div class="mt-2 border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+            <%= for user <- @member_search_results do %>
+              <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-zinc-700">
+                <div class="flex items-center gap-3">
+                  <%= if user.avatar_url && user.avatar_url != "" do %>
+                    <img src={user.avatar_url} class="w-8 h-8 rounded-full object-cover" />
+                  <% else %>
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                      <%= String.first(user.username) %>
+                    </div>
+                  <% end %>
+                  <span class="font-medium text-gray-900 dark:text-white"><%= user.username %></span>
+                </div>
+                <button 
+                  phx-click="add_member" 
+                  phx-value-user_id={user.id}
+                  class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
+                >
+                  Add
+                </button>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <% end %>
+
+        <!-- Current Members -->
+        <div class="space-y-2">
+          <%= for member <- @conversation.conversation_members do %>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-700 rounded-lg">
+              <div class="flex items-center gap-3">
+                <%= if member.user.avatar_url && member.user.avatar_url != "" do %>
+                  <img src={member.user.avatar_url} class="w-8 h-8 rounded-full object-cover" />
+                <% else %>
+                  <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                    <%= String.first(member.user.username) %>
+                  </div>
+                <% end %>
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-white"><%= member.user.username %></span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                    <%= if member.role == "admin", do: "Admin", else: "Member" %>
+                  </span>
+                </div>
+              </div>
+              <%= if @is_admin && member.user_id != @current_user.id do %>
+                <button 
+                  phx-click="remove_member" 
+                  phx-value-user_id={member.user_id}
+                  class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+                >
+                  Remove
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </section>
+  <% end %>
+
   <div class="space-y-8">
     <!-- Message Skins Section -->
     <section class="bg-white dark:bg-zinc-800 rounded-2xl p-6 border border-gray-200 dark:border-zinc-700">
@@ -50,6 +184,43 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Default -->
+        <div class="relative group">
+          <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-gray-900 dark:text-white">Default</h3>
+              <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-full">
+                Free
+              </span>
+            </div>
+
+            <div class="mb-4 h-24 rounded-lg bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center">
+              <div class="bg-white dark:bg-zinc-700 rounded-lg px-3 py-2">
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Preview</p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-600 dark:text-gray-400">Classic clean look</p>
+                <%= if @active_message_skin in [nil, "default", ""] do %>
+                  <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                <% end %>
+              </div>
+              <button
+                phx-click="select_message_skin"
+                phx-value-skin=""
+                class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                  if(@active_message_skin in [nil, "default", ""], 
+                    do: "bg-green-600 text-white", 
+                    else: "bg-purple-600 text-white hover:bg-purple-700")}
+              >
+                {if @active_message_skin in [nil, "default", ""], do: "Active", else: "Select"}
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <!-- Glassmorphism Pro -->
         <div class="relative group">
           <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">

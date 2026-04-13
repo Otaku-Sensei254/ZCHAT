@@ -379,6 +379,28 @@ defmodule Vibeflow.Accounts do
     user_has_role?(user, role_name)
   end
 
+  # Get user's followers
+  def get_user_followers(user_id) do
+    from(u in User,
+      join: f in "follows",
+      on: f.follower_id == u.id,
+      where: f.following_id == ^user_id,
+      select: u
+    )
+    |> Repo.all()
+  end
+
+  # Get user's following
+  def get_user_following(user_id) do
+    from(u in User,
+      join: f in "follows",
+      on: f.following_id == u.id,
+      where: f.follower_id == ^user_id,
+      select: u
+    )
+    |> Repo.all()
+  end
+
   def has_permission?(%User{} = user, permission_slug) do
     user = Repo.preload(user, roles: :permissions)
 

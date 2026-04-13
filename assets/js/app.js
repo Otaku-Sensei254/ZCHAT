@@ -32,7 +32,12 @@ Hooks.ChatInput = {
     this.el.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault(); 
-        this.el.form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+        // Use LiveView's pushEvent instead of form submit to avoid double submission
+        const form = this.el.closest("form");
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton && !submitButton.disabled) {
+          submitButton.click();
+        }
       } else if (e.key === "Escape") {
         this.hideEmojiPicker();
       }

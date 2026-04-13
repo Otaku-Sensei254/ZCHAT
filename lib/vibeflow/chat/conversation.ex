@@ -5,6 +5,7 @@ defmodule Vibeflow.Chat.Conversation do
   schema "conversations" do
     field :uuid, Ecto.UUID, autogenerate: true
     field :name, :string
+    field :bio, :string
     # Matches your DB 'type' column
     field :type, :string, default: "direct"
 
@@ -19,7 +20,8 @@ defmodule Vibeflow.Chat.Conversation do
 
   def changeset(conversation, attrs) do
     conversation
-    |> cast(attrs, [:name, :type])
+    |> cast(attrs, [:name, :bio, :type])
     |> validate_length(:name, max: 100)
+    |> validate_length(:bio, max: 500)
   end
 end

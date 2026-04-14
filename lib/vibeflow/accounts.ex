@@ -421,6 +421,17 @@ defmodule Vibeflow.Accounts do
     |> Repo.update()
   end
 
+  def update_user_message_skin(user_id, skin) do
+    from(u in User, where: u.id == ^user_id)
+    |> Repo.update_all([set: [active_message_skin: skin]], returning: true)
+    |> case do
+      {1, [user]} -> {:ok, user}
+      {1, [nil]} -> {:ok, %{id: user_id, active_message_skin: skin}} # Handle nil case
+      {0, []} -> {:error, :not_found}
+      {count, _} -> {:error, {:unexpected_count, count}}
+    end
+  end
+
   def list_permissions do
     Repo.all(Permission)
   end
@@ -436,15 +447,25 @@ defmodule Vibeflow.Accounts do
     |> Repo.insert()
   end
 
-  def search_users(query) do
+  def search_users(query), do: search_users(query, nil)
+
+  def search_users(query, exclude_user_id) do
     search_term = "%#{query}%"
 
-    from(u in User,
+    query = from(u in User,
       where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term),
       order_by: [asc: u.inserted_at],
       preload: [:roles]
     )
-    |> Repo.all()
+
+    # Exclude current user if exclude_user_id is provided
+    query = if exclude_user_id do
+      from(u in query, where: u.id != ^exclude_user_id)
+    else
+      query
+    end
+
+    Repo.all(query)
   end
 
   # --- ASSIGNMENT HELPERS ---

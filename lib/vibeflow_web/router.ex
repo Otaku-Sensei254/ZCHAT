@@ -190,7 +190,9 @@ defmodule VibeflowWeb.Router do
       ] do
       live "/chat", Chat.ChatLive, :index
       live "/chat/settings", Chat.ChatSettingsLive, :index
-      live "/chat/:uuid/settings", Chat.ChatSettingsLive, :index
+      live "/chat/:uuid/settings", Chat.ChatSettingsRouterLive, :index
+      live "/chat/:uuid/group-settings", Chat.ChatGroupSettingsLive, :index
+      live "/chat/:uuid/individual-settings", Chat.ChatSettingsLive, :index
       live "/chat/:uuid", Chat.ChatLive, :index
     end
   end

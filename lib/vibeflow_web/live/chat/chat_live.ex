@@ -217,6 +217,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      # Reset typing when switching chats
      |> assign(:typing_users, %{})
      |> schedule_link_previews(messages)
+     |> stream(:messages, Enum.reverse(messages), reset: true)
      |> assign(:processed_messages, process_messages_with_separators(messages, conversation))
      |> assign(:hide_bottom_nav, true)}
   end
@@ -729,11 +730,13 @@ defmodule VibeflowWeb.Chat.ChatLive do
           Chat.mark_conversation_as_read(current_user_id, message.conversation_id)
         end
 
-        # 2. Insert message and scroll
+        # 2. Insert message into stream and update processed_messages
         updated_messages = [message | Chat.list_messages(active_conversation)]
+
         socket
-        |> schedule_link_previews([message])
+        |> stream_insert(:messages, message, at: :beginning)
         |> assign(:processed_messages, process_messages_with_separators(updated_messages, active_conversation))
+        |> schedule_link_previews([message])
         |> push_event("scroll-to-bottom", %{})
         # 3. Stop typing indicator for the sender (since they sent a msg)
         |> remove_typing_indicator(message.user_id)
@@ -845,21 +848,16 @@ defmodule VibeflowWeb.Chat.ChatLive do
   def handle_info(%Phoenix.Socket.Broadcast{event: "skin_changed", payload: payload}, socket) do
     Logger.info("Received skin change broadcast: user_id=#{payload.user_id}, skin=#{payload.skin}, current_user=#{socket.assigns.current_user.id}")
 
-    # Only update if this is about the other user in the conversation
-    if payload.user_id != socket.assigns.current_user.id do
-      # Refresh conversation data to get updated skin information
-      updated_conversation = Chat.get_conversation!(socket.assigns.conversation.uuid)
-      messages = Chat.list_messages(updated_conversation)
+    # Always update conversation data for any skin change (including current user's)
+    updated_conversation = Chat.get_conversation!(socket.assigns.conversation.uuid)
+    messages = Chat.list_messages(updated_conversation)
 
-      Logger.info("Updating conversation with new skin for user #{payload.user_id}")
+    Logger.info("Updating conversation with new skin for user #{payload.user_id}")
 
-      {:noreply,
-       socket
-       |> assign(:conversation, updated_conversation)
-       |> assign(:processed_messages, process_messages_with_separators(messages, updated_conversation))}
-    else
-      {:noreply, socket}
-    end
+    {:noreply,
+     socket
+     |> assign(:conversation, updated_conversation)
+     |> assign(:processed_messages, process_messages_with_separators(messages, updated_conversation))}
   end
 
   @impl true

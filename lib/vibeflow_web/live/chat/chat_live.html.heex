@@ -2,7 +2,7 @@
   
   <div class={[  
     "border-r border-gray-200 dark:border-zinc-800 flex-col",
-    if(@conversation, do: "hidden md:flex md:w-80", else: "flex w-full md:w-80")
+    if(@conversation, do: "hidden md:flex md:w-[22rem]", else: "flex w-full md:w-[23rem]")
   ]}>
     
     <div class="p-3 px-4 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-20 sticky top-0">
@@ -215,38 +215,42 @@
             other_user_online = if @conversation.type != "group" && header_member, do: Map.has_key?(@online_users, to_string(header_member.user.id)), else: false
           %>
           
-          <div class="relative">
-            <%= cond do %>
-               <% @conversation.type == "group" -> %>
-                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                 </div>
-               <% header_avatar -> %>
-                 <img src={header_avatar} class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(header_user)} />
-               <% header_user -> %>
-                 <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
-                   <%= VibeflowWeb.CoreComponents.initials(header_user) %>
-                 </div>
-               <% true -> %>
-                 <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-sm">
-                   ?
-                 </div>
-            <% end %>
-            <%= if other_user_online do %>
-              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
-            <% end %>
-          </div>
+          <.link navigate={~p"/chat/#{@conversation.uuid}/settings"}>
+              <div class="relative">
+                <%= cond do %>
+                   <% @conversation.type == "group" -> %>
+                   <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                   </div>
+                 <% header_avatar -> %>
+                   <img src={header_avatar} class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(header_user)} />
+                 <% header_user -> %>
+                   <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                     <%= VibeflowWeb.CoreComponents.initials(header_user) %>
+                   </div>
+                 <% true -> %>
+                   <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-sm">
+                     ?
+                   </div>
+                <% end %>
+                <%= if other_user_online do %>
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
+                <% end %>
+              </div>
+            </.link>
           
           <div class="flex-1 min-w-0">
-            <span class={"font-bold text-gray-900 dark:text-gray-100 text-base leading-tight inline-flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(header_user)}>
-              <%= header_name %>
-              <%= if @conversation.type != "group" && header_user do %>
-                <.verified_badge user={header_user} class="h-5 w-5" />
+            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"} class="block">
+              <span class={"font-bold text-gray-900 dark:text-gray-100 text-base leading-tight inline-flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(header_user)}>
+                <%= header_name %>
+                <%= if @conversation.type != "group" && header_user do %>
+                  <.verified_badge user={header_user} class="h-5 w-5" />
+                <% end %>
+              </span>
+              <%= if other_user_online do %>
+                <p class="text-xs text-green-500 font-medium">Active now</p>
               <% end %>
-            </span>
-            <%= if other_user_online do %>
-              <p class="text-xs text-green-500 font-medium">Active now</p>
-            <% end %>
+              </.link>
           </div>
           
           <!-- Settings Icon -->
@@ -748,6 +752,7 @@
             
           </div>
         </div>
+        </div>
 
   <%!-- NEW: LIGHTBOX MODAL FOR PREVIEW --%>
   <%= if @preview_entry do %>
@@ -800,7 +805,6 @@
       </div>
     </div>
   <% end %>
-      </div> 
     <% else %>
       <div class="hidden md:flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 bg-white dark:bg-zinc-900 h-full">
         <div class="text-center">

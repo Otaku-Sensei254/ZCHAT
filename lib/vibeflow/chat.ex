@@ -87,11 +87,14 @@ defmodule Vibeflow.Chat do
 
   defp find_private_conversation(u1, u2) do
     query =
-      from(cm in ConversationMember,
+      from(c in Conversation,
+        where: c.type == "direct",
+        join: cm in ConversationMember,
+        on: cm.conversation_id == c.id,
         where: cm.user_id in [^u1, ^u2],
-        group_by: cm.conversation_id,
+        group_by: c.id,
         having: count(cm.user_id) == 2,
-        select: cm.conversation_id
+        select: c.id
       )
 
     case Repo.one(query) do
@@ -134,6 +137,15 @@ defmodule Vibeflow.Chat do
       where: c.type == "group",
       preload: [conversation_members: :user],
       order_by: [desc: c.updated_at]
+    )
+    |> Repo.all()
+  end
+
+  #list all group members
+  def list_conversation_members(conversation_id) do
+    from(cm in ConversationMember,
+      where: cm.conversation_id == ^conversation_id,
+      preload: [:user]
     )
     |> Repo.all()
   end
@@ -428,10 +440,12 @@ end
   defp find_direct_conversation(user1_id, user2_id) do
     from(c in Conversation,
       where: c.type == "direct",
-      join: cm in ConversationMember,
-      where:
-        (cm.user_id == ^user1_id and cm.conversation_id == c.id) or
-        (cm.user_id == ^user2_id and cm.conversation_id == c.id)
+      # Check that user1 is a member
+      join: cm1 in ConversationMember,
+      on: cm1.conversation_id == c.id and cm1.user_id == ^user1_id,
+      # Check that user2 is also a member
+      join: cm2 in ConversationMember,
+      on: cm2.conversation_id == c.id and cm2.user_id == ^user2_id
     )
     |> Repo.one()
   end

@@ -86,6 +86,12 @@ defmodule VibeflowWeb.CoreComponents do
     """
   end
 
+  def icon(%{name: "hero-document"} = assigns) do
+    ~H"""
+    <Heroicons.document solid class={@class} />
+    """
+  end
+
   def icon(%{name: "hero-document-text"} = assigns) do
     ~H"""
     <Heroicons.document_text solid class={@class} />
@@ -95,6 +101,66 @@ defmodule VibeflowWeb.CoreComponents do
   def icon(%{name: "hero-video-camera"} = assigns) do
     ~H"""
     <Heroicons.video_camera solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-arrow-left"} = assigns) do
+    ~H"""
+    <Heroicons.arrow_left solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-chevron-left"} = assigns) do
+    ~H"""
+    <Heroicons.chevron_left solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-chevron-right"} = assigns) do
+    ~H"""
+    <Heroicons.chevron_right solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-users"} = assigns) do
+    ~H"""
+    <Heroicons.users solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-link"} = assigns) do
+    ~H"""
+    <Heroicons.link solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-paint-brush"} = assigns) do
+    ~H"""
+    <Heroicons.paint_brush solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-check-circle"} = assigns) do
+    ~H"""
+    <Heroicons.check_circle solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-information-circle"} = assigns) do
+    ~H"""
+    <Heroicons.information_circle solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-arrow-down-tray"} = assigns) do
+    ~H"""
+    <Heroicons.arrow_down_tray solid class={@class} />
+    """
+  end
+
+  def icon(%{name: "hero-trash"} = assigns) do
+    ~H"""
+    <Heroicons.trash solid class={@class} />
     """
   end
 

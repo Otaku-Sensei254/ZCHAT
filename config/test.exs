@@ -34,9 +34,3 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
-
-# Cloudex configuration for tests
-config :cloudex,
-  api_key: "576125769822254",
-  secret: "yNxdsd0kWa_OtysW-x5ve8LGyEOw",
-  cloud_name: "dahpsrzjh"

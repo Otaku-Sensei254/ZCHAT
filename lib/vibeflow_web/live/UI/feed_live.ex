@@ -30,6 +30,7 @@ defmodule VibeflowWeb.UI.FeedLive do
         has_more: true,
         search_term: nil,
         category: nil,
+        highlight_post_uuid: nil,
         search_results: [],
         show_search: false,
         data_loaded: false,
@@ -51,6 +52,7 @@ defmodule VibeflowWeb.UI.FeedLive do
   def handle_params(params, _uri, socket) do
     new_search = params["search"]
     new_category = params["category"]
+    highlight_post_uuid = params["highlight_post"]
 
     filters_changed =
       new_search != socket.assigns.search_term or
@@ -60,6 +62,7 @@ defmodule VibeflowWeb.UI.FeedLive do
       socket
       |> assign(:search_term, new_search)
       |> assign(:category, new_category)
+      |> assign(:highlight_post_uuid, highlight_post_uuid)
 
     socket =
       if filters_changed or !socket.assigns.data_loaded do
@@ -73,6 +76,10 @@ defmodule VibeflowWeb.UI.FeedLive do
       else
         socket
       end
+
+    if highlight_post_uuid do
+      Process.send_after(self(), :clear_highlight_post_url, 0)
+    end
 
     {:noreply, socket}
   end
@@ -292,6 +299,11 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
+  def handle_info(:clear_highlight_post_url, socket) do
+    {:noreply, push_patch(socket, to: feed_path(socket))}
+  end
+
+  @impl true
   def handle_info({:post_created, post}, socket) do
     post = Vibeflow.Repo.preload(post, [:user, :likes, comments: :user])
     # If the current user created the post, insert it at the top immediately
@@ -387,7 +399,8 @@ defmodule VibeflowWeb.UI.FeedLive do
         )
       end
       |> Enum.map(&Post.ensure_media_files/1)
-      |> maybe_shuffle_first_page(page)
+      |> maybe_prioritize_post(socket.assigns[:highlight_post_uuid])
+      |> maybe_shuffle_first_page(page, socket.assigns[:highlight_post_uuid])
 
     has_more = length(posts) == per_page
 
@@ -407,8 +420,17 @@ defmodule VibeflowWeb.UI.FeedLive do
     |> update_stream_based_on_page(page, posts)
   end
 
-  defp maybe_shuffle_first_page(posts, 1), do: Enum.shuffle(posts)
-  defp maybe_shuffle_first_page(posts, _page), do: posts
+  defp maybe_shuffle_first_page(posts, 1, nil), do: Enum.shuffle(posts)
+  defp maybe_shuffle_first_page(posts, _page, _highlight_post_uuid), do: posts
+
+  defp maybe_prioritize_post(posts, nil), do: posts
+
+  defp maybe_prioritize_post(posts, highlight_post_uuid) do
+    case Enum.split_with(posts, fn post -> to_string(post.uuid) == to_string(highlight_post_uuid) end) do
+      {[highlight_post | _], rest} -> [highlight_post | rest]
+      {[], _} -> posts
+    end
+  end
 
   defp has_content_from_followed_users(posts, user_id) do
     Enum.any?(posts, fn post ->
@@ -443,5 +465,25 @@ defmodule VibeflowWeb.UI.FeedLive do
     else
       socket
     end
+  end
+
+  defp feed_path(socket) do
+    params = []
+
+    params =
+      if socket.assigns[:search_term] in [nil, ""] do
+        params
+      else
+        Keyword.put(params, :search, socket.assigns.search_term)
+      end
+
+    params =
+      if socket.assigns[:category] in [nil, ""] do
+        params
+      else
+        Keyword.put(params, :category, socket.assigns.category)
+      end
+
+    if params == [], do: ~p"/feed", else: ~p"/feed?#{params}"
   end
 end

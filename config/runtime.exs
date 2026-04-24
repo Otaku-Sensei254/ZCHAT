@@ -36,12 +36,13 @@ if config_env() == :prod do
     secret_key_base: secret_key_base,
     server: true
 
-  # --- Cloudinary ---
-  config :cloudex,
-    api_key: System.fetch_env!("CLOUDEX_API_KEY"),
-    api_secret: System.fetch_env!("CLOUDEX_SECRET"),
-    cloud_name: System.fetch_env!("CLOUDEX_CLOUD_NAME"),
-    upload_preset: System.fetch_env!("CLOUDINARY_PRESET")
+  # --- Cloudflare R2 ---
+  config :vibeflow, :cloudflare_r2,
+    access_key_id: System.fetch_env!("CLOUDFLARE_R2_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
+    account_id: System.fetch_env!("CLOUDFLARE_R2_ACCOUNT_ID"),
+    bucket: System.fetch_env!("CLOUDFLARE_R2_BUCKET"),
+    public_base_url: System.fetch_env!("CLOUDFLARE_R2_PUBLIC_BASE_URL")
 end
 
 # If we are in Dev mode but have a Cloud URL, use the Cloud!

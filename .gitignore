@@ -44,6 +44,8 @@ Git SSH.TXT
 
 
 /dev.local.exs
+/.env
+/.env.*
 
 /.superpowers
 
@@ -52,3 +54,7 @@ Git SSH.TXT
 
 # Ignore live_view_upload files in uploads directory
 /priv/static/uploads/live_view_upload-*
+
+# Ignore LiveView temp upload files wherever they are created
+live_view_upload-*
+/tmp/live_view_upload-*

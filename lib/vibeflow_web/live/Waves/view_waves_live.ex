@@ -2,7 +2,8 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
   use VibeflowWeb, :live_view
 
   alias Vibeflow.Waves
-
+  alias Vibeflow.Chat
+  alias Vibeflow.Accounts
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
@@ -67,7 +68,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
   def render(assigns) do
     ~H"""
     <div id="wave-viewer" class="fixed inset-0 bg-black z-50 flex flex-col text-white select-none">
-      
+
     <!-- Top Controls (Mute, Pause, Three Dots) -->
       <div class="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 pt-8">
         <div class="flex items-center gap-4">
@@ -158,7 +159,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
           </svg>
         </button>
       </div>
-      
+
     <!-- Progress Bars -->
       <div class="absolute top-0 left-0 right-0 z-20 flex gap-1 p-2 pt-4">
         <%= for {_, index} <- Enum.with_index(@waves) do %>
@@ -170,7 +171,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
       </div>
 
       <% current_wave = Enum.at(@waves, @current_index) %>
-      
+
     <!-- User Info -->
       <div class="absolute top-20 left-4 right-4 z-20 flex justify-between items-center">
         <div class="flex items-center gap-3">
@@ -198,7 +199,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
           </div>
         </div>
       </div>
-      
+
     <!-- Main Content Area -->
       <div
         id="media-control-container"
@@ -219,12 +220,12 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
         <% else %>
           <img src={current_wave.media_url} class="max-h-full max-w-full object-contain" />
         <% end %>
-        
+
     <!-- Navigation Areas -->
         <div phx-click="prev" class="absolute inset-y-0 left-0 w-[30%] z-10 cursor-pointer"></div>
         <div phx-click="next" class="absolute inset-y-0 right-0 w-[70%] z-10 cursor-pointer"></div>
       </div>
-      
+
     <!-- Music Info with Animated Bars -->
       <%= if current_wave.music_track do %>
         <div class="absolute bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-20">
@@ -255,12 +256,13 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
         >
         </audio>
       <% end %>
-      
+
     <!-- Bottom Message Input -->
       <div class="absolute bottom-0 left-0 right-0 z-20 p-4 pb-8">
         <form phx-submit="send_message" class="flex items-center gap-3">
           <input
             type="text"
+            name="message"
             value={@message}
             phx-change="update_message"
             placeholder="Send a message..."
@@ -330,18 +332,55 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
   end
 
   @impl true
-  def handle_event("update_message", %{"value" => value}, socket) do
+  def handle_event("update_message", %{"message" => value}, socket) do
     {:noreply, assign(socket, :message, value)}
   end
 
   @impl true
-  def handle_event("send_message", %{"value" => message}, socket) do
-    if String.trim(message) != "" do
-      current_wave = Enum.at(socket.assigns.waves, socket.assigns.current_index)
-      # TODO: Send message to wave author
-      {:noreply, assign(socket, :message, "")}
-    else
+  def handle_event("send_message", %{"message" => message}, socket) do
+    current_user = socket.assigns.current_user
+    current_wave = Enum.at(socket.assigns.waves, socket.assigns.current_index)
+    wave_owner = current_wave.user
+
+    if String.trim(message) == "" do
       {:noreply, socket}
+    else
+      # Find or create conversation between viewer and wave owner
+      case Chat.find_or_create_direct_conversation(current_user.id, wave_owner.id) do
+        {:ok, conversation} ->
+          # Create message with wave reference
+          case Chat.create_message(%{
+            content: message,
+            user_id: current_user.id,
+            conversation_id: conversation.id,
+            shared_wave_id: current_wave.id
+          }) do
+            {:ok, _message} ->
+              # Broadcast to update sidebar for both sender and wave owner
+              Phoenix.PubSub.broadcast(
+                Vibeflow.PubSub,
+                "user_sidebar:#{wave_owner.id}",
+                {:update_sidebar, %{conversation_id: conversation.id}}
+              )
+
+              Phoenix.PubSub.broadcast(
+                Vibeflow.PubSub,
+                "user_sidebar:#{current_user.id}",
+                {:update_sidebar, %{conversation_id: conversation.id}}
+              )
+
+              {:noreply,
+               socket
+               |> assign(:message, "")
+               |> put_flash(:info, "Message sent to #{wave_owner.username}")}
+
+            {:error, _changeset} ->
+              {:noreply, put_flash(socket, :error, "Failed to send message")}
+          end
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, "Could not start conversation")}
+      end
     end
   end
 

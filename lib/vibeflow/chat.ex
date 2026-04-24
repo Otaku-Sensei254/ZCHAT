@@ -176,7 +176,7 @@ end
     from(m in Message,
       where: m.conversation_id == ^conversation_id,
       order_by: [asc: m.inserted_at],
-      preload: [:user, shared_post: :user, reply_to: :user]
+      preload: [:user, shared_post: :user, shared_wave: :user, reply_to: :user]
     )
     |> Repo.all()
   end
@@ -230,7 +230,7 @@ end
 
     preloaded_message =
       Repo.get(Message, message.id)
-      |> Repo.preload([:user, shared_post: :user, reply_to: :user])
+      |> Repo.preload([:user, shared_post: :user, shared_wave: :user, reply_to: :user])
       |> Map.put(:conversation_uuid, convo.uuid)
 
     Enum.each(members, fn user_id ->
@@ -252,7 +252,7 @@ end
 
   def broadcast_message(conversation, message) do
     # Preload user so the LiveView can display avatar/username immediately
-    message = Repo.preload(message, [:user, shared_post: :user, reply_to: :user])
+    message = Repo.preload(message, [:user, shared_post: :user, shared_wave: :user, reply_to: :user])
 
     # Include conversation_uuid in the message map for easier routing in LiveView
     message_with_uuid = Map.put(message, :conversation_uuid, conversation.uuid)

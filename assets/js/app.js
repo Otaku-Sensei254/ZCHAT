@@ -161,6 +161,7 @@ Hooks.ChatInput = {
     this.el.value = nextValue;
     const cursor = start + emoji.length;
     this.el.setSelectionRange(cursor, cursor);
+    this.el.dispatchEvent(new Event("input", { bubbles: true }));
     this.el.focus();
     this.hideEmojiPicker();
     this.pushTyping();
@@ -998,6 +999,7 @@ Hooks.AudioRecorder = {
     this.timerInterval = null;
     this.startBtn = this.el.querySelector('[data-rec-action="start"]');
     this.stopBtn = this.el.querySelector('[data-rec-action="stop"]');
+    if (this.stopBtn) this.stopBtn.classList.add("hidden");
 
     const startRecording = async () => {
       if (this.recording) return;
@@ -1010,6 +1012,8 @@ Hooks.AudioRecorder = {
         this.recorder = new MediaRecorder(this.stream, { mimeType });
         this.chunks = [];
         this.recording = true;
+        if (this.startBtn) this.startBtn.classList.add("hidden");
+        if (this.stopBtn) this.stopBtn.classList.remove("hidden");
         this.startTime = Date.now();
         
         // Start timer
@@ -1072,6 +1076,8 @@ Hooks.AudioRecorder = {
         this.stream.getTracks().forEach(track => track.stop());
       }
       this.recording = false;
+      if (this.startBtn) this.startBtn.classList.remove("hidden");
+      if (this.stopBtn) this.stopBtn.classList.add("hidden");
       
       // Clear timer
       if (this.timerInterval) {
@@ -1237,14 +1243,9 @@ Hooks.WavePlayer = {
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {
   mounted() {
-    this.scrollToBottom();
-    // CRITICAL: Listen for the event sent by ChatLive.ex
-    this.handleEvent("scroll-to-bottom", () => this.scrollToBottom());
-  },
-
-  updated() {
-    // This runs when the DOM changes (e.g. typing indicator appears/disappears)
-    this.scrollToBottom();
+    const scrollAfterPaint = () => requestAnimationFrame(() => this.scrollToBottom());
+    requestAnimationFrame(scrollAfterPaint);
+    this.handleEvent("scroll-to-bottom", scrollAfterPaint);
   },
 
   scrollToBottom() {

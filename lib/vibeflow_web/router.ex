@@ -180,14 +180,8 @@ defmodule VibeflowWeb.Router do
       live "/wave-store", UI.Store.StoreLive, :index
       live "/notifications", UI.NotificationsLive
       live "/posts/:uuid/edit", CreatePostLive, :edit
-    end
 
-    live_session :chat,
-      on_mount: [
-        {VibeflowWeb.UserAuth, :mount_current_user},
-        {VibeflowWeb.ChatAuthHook, :require_member},
-        VibeflowWeb.UserActivityHook
-      ] do
+      # Chat routes moved inside this session
       live "/chat", Chat.ChatLive, :index
       live "/chat/settings", Chat.ChatSettingsLive, :index
       live "/chat/:uuid/settings", Chat.ChatSettingsRouterLive, :index

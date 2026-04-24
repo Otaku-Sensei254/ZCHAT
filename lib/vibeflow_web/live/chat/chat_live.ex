@@ -10,41 +10,53 @@ defmodule VibeflowWeb.Chat.ChatLive do
   import Ecto.Changeset
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     current_user = socket.assigns.current_user
 
-    if connected?(socket) do
-      # 1. Subscribe to Sidebar updates
-      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user_sidebar:#{current_user.id}")
+    socket =
+      if connected?(socket) do
+        # 1. Subscribe to Sidebar updates
+        Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user_sidebar:#{current_user.id}")
 
-      # 2. Subscribe to user settings changes (including skin)
-      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user:#{current_user.id}:settings")
+        # 2. Subscribe to user settings changes (including skin)
+        Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user:#{current_user.id}:settings")
 
-      # 3. Track Presence
-      Presence.track(self(), "users:online", current_user.id, %{
-        username: current_user.username,
-        online_at: inspect(System.system_time(:second))
-      })
+        # 3. Track Presence
+        Presence.track(self(), "users:online", current_user.id, %{
+          username: current_user.username,
+          online_at: inspect(System.system_time(:second))
+        })
 
-      VibeflowWeb.Endpoint.subscribe("users:online")
+        VibeflowWeb.Endpoint.subscribe("users:online")
 
-      # 4. Async load sidebar
-      send(self(), :load_sidebar_data)
-    end
+        # 4. Subscribe to the active conversation immediately.
+        # handle_params still loads the conversation, but this keeps the socket hot.
+        case params["uuid"] do
+          nil -> socket
+          uuid -> subscribe_to_conversation(socket, uuid)
+        end
+      else
+        socket
+      end
+
+    # Load sidebar data synchronously
+    conversations = Chat.list_user_conversations(current_user.id)
 
     # Initial Assigns
     {:ok,
      socket
-     # Will load async
-     |> assign(:conversations, [])
-     |> assign(:loading_sidebar, true)
+     |> assign(:conversations, conversations)
+     |> assign(:loading_sidebar, false)
      |> assign(:conversation, nil)
+     |> assign(:pending_local_message_id, nil)
      |> assign(:typing_users, %{})
+     |> assign(:self_typing, false)
      |> assign(:online_users, Presence.list("users:online"))
      |> assign(:other_last_read_at, nil)
      |> assign(:user_search_query, "")
      |> assign(:user_search_results, [])
      |> assign(:replying_to, nil)
+     |> assign(:composer_content, "")
      |> assign(:preview_entry, nil)
      |> assign(:zoomed_image, nil)
      |> assign(:link_previews, %{})
@@ -52,8 +64,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:recording, false)
      |> assign(:audio_retry_count, 0)
      |> assign(:active_message_skin, current_user.active_message_skin || "default")
-     |> stream(:messages, [])
-     |> assign(:processed_messages, [])
+     |> assign(:messages, [])
      |> assign(:show_new_chat_modal, false)
      |> assign(:show_chat_menu, false)
      |> assign(:show_group_modal, false)
@@ -90,8 +101,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   def message_skin_classes(active_skin, is_me) do
-    base_classes = "max-w-[75%] px-6 py-5 text-sm break-words relative leading-relaxed word-wrap"
-
     # Apply skin based on the sender's preference for this conversation
     case active_skin do
       "Glassmorphism Pro" ->
@@ -113,65 +122,66 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   def reply_skin_classes(active_skin, is_me) do
     # Apply skin based on the sender's preference for this conversation
+    # Reply bubbles use lighter/softer tones to distinguish from main message
     case active_skin do
       "Glassmorphism Pro" ->
-        "bg-white/20 border-l-4 border-white text-blue-400 px-3 py-2"
+        "bg-white/40 border-l-4 border-white/70 text-white/90 px-3 py-2"
 
       "Matrix Rain" ->
-        "bg-green-900/30 border-l-4 border-green-400/80 text-green-300 px-3 py-2"
+        "bg-green-400/20 border-l-4 border-green-400/50 text-green-200 px-3 py-2"
 
       "Holographic Foil" ->
-        "bg-purple-900/30 border-l-4 border-purple-400/80 text-purple-200 px-3 py-2"
+        "bg-pink-300/30 border-l-4 border-pink-300/60 text-pink-100 px-3 py-2"
 
       "Vantablack" ->
-        "bg-gray-800/50 border-l-4 border-gray-600 text-gray-300 px-3 py-2"
+        "bg-gray-700/60 border-l-4 border-gray-500/60 text-gray-200 px-3 py-2"
 
       _ ->
         if is_me do
-          "bg-blue-100/20 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 px-3 py-2"
+          "bg-blue-300/40 dark:bg-blue-400/30 border-l-4 border-blue-300 text-blue-800 dark:text-blue-100 px-3 py-2"
         else
-          "bg-gray-200/30 dark:bg-gray-700/30 border-l-4 border-gray-400 text-gray-600 dark:text-gray-300 px-3 py-2"
+          "bg-gray-100 dark:bg-gray-600/40 border-l-4 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 px-3 py-2"
         end
     end
   end
 
   defp glassmorphism_classes(is_me) do
     if is_me do
-      "bg-blue-400/20 p-3  border border-blue/40 text-blue-500 dark:text-white rounded-3xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/40 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words bg-blue-400/20 px-4 py-2 border border-blue-300/40 text-blue-700 dark:text-white rounded-2xl rounded-br-none shadow-xl shadow-white/10 hover:shadow-white/20 transition-shadow"
     else
-      "bg-blue-500/40 p-3  border border-white/30 text-blue-6000 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-white/30 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-blue-500/40 px-4 py-2 border border-white/30 text-black dark:text-gray-100 rounded-2xl rounded-bl-none shadow-xl shadow-white/5 hover:shadow-white/15 transition-shadow"
     end
   end
 
   defp matrix_rain_classes(is_me) do
     if is_me do
-      "bg-black/95 p-3 w-fit border-2 border-green-500/50 text-green-400 rounded-2xl rounded-br-none shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/50 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-black/95 px-4 py-2 border-2 border-green-500/50 text-green-400 rounded-2xl rounded-br-none shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-shadow font-mono"
     else
-      "bg-black/90 p-3 border-2 border-green-500/30 text-green-300 rounded-2xl rounded-bl-none shadow-2xl shadow-green-500/20 hover:shadow-green-500/40 transition-shadow font-mono before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-green-500/30 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-black/90 px-4 py-2 border-2 border-green-500/30 text-green-300 rounded-2xl rounded-bl-none shadow-2xl shadow-green-500/20 hover:shadow-green-500/40 transition-shadow font-mono"
     end
   end
 
   defp holographic_foil_classes(is_me) do
     if is_me do
-      "bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 p-3 text-white rounded-3xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow "
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-gradient-to-br from-purple-600/90 via-pink-600/90 to-blue-600/90 px-4 py-2 text-white rounded-2xl rounded-br-none shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-shadow"
     else
-      "bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 p-3 text-white rounded-3xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow "
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-blue-500/80 px-4 py-2 text-white rounded-2xl rounded-bl-none shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow"
     end
   end
 
   defp vantablack_classes(is_me) do
     if is_me do
-      "bg-black/95 p-3 border-2 border-gray-700 text-gray-200 rounded-3xl rounded-br-none shadow-2xl shadow-black/60 hover:shadow-black/80 transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-black/95 px-4 py-2 border-2 border-gray-700 text-gray-200 rounded-2xl rounded-br-none shadow-2xl shadow-black/60 hover:shadow-black/80 transition-shadow"
     else
-      "bg-gray-900/95 p-3 border-2 border-gray-700 text-gray-300 rounded-3xl rounded-bl-none shadow-2xl shadow-black/50 hover:shadow-black/70 transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-10px] before:w-0 before:h-0 before:border-l-[12px] before:border-r-[12px] before:border-t-[12px] before:border-l-transparent before:border-r-transparent before:border-t-gray-700 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words  bg-gray-900/95 px-4 py-2 border-2 border-gray-700 text-gray-300 rounded-2xl rounded-bl-none shadow-2xl shadow-black/50 hover:shadow-black/70 transition-shadow"
     end
   end
 
   defp default_classes(is_me) do
     if is_me do
-      "bg-blue-800 p-3 text-white rounded-3xl rounded-br-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:right-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-blue-500 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words bg-blue-600 px-4 py-2 text-white rounded-2xl rounded-br-none shadow-lg hover:shadow-xl transition-shadow"
     else
-      "bg-gray-100 p-3 dark:bg-zinc-700 text-gray-800 dark:text-gray-100 rounded-3xl rounded-bl-none shadow-lg hover:shadow-xl transition-shadow before:content-[''] before:absolute before:bottom-0 before:left-[-8px] before:w-0 before:h-0 before:border-l-[10px] before:border-r-[10px] before:border-t-[10px] before:border-l-transparent before:border-r-transparent before:border-t-gray-100 dark:before:border-t-zinc-700 before:border-b-0"
+      "max-w-[50vw] w-fit min-w-0 break-words bg-gray-100 dark:bg-zinc-700 px-4 py-2 text-black  rounded-bl dark:text-gray-100 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
     end
   end
 
@@ -184,17 +194,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
     current_user_id = socket.assigns.current_user.id
     conversation = Chat.get_conversation!(conversation_uuid)
 
-    if connected?(socket) do
-      # Unsubscribe from previous if exists
-      if socket.assigns.conversation do
-        Phoenix.PubSub.unsubscribe(
-          Vibeflow.PubSub,
-          "conversation:#{socket.assigns.conversation.uuid}"
-        )
+    socket =
+      if connected?(socket) do
+        subscribe_to_conversation(socket, conversation.uuid)
+      else
+        socket
       end
-
-      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
-    end
 
     # Mark as Read
     Chat.mark_conversation_as_read(current_user_id, conversation.id)
@@ -216,14 +221,27 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:replying_to, nil)
      # Reset typing when switching chats
      |> assign(:typing_users, %{})
+     |> assign(:self_typing, false)
      |> schedule_link_previews(messages)
-     |> stream(:messages, Enum.reverse(messages), reset: true)
-     |> assign(:processed_messages, process_messages_with_separators(messages, conversation))
+     |> assign(:messages, messages)
+     |> push_event("scroll-to-bottom", %{})
      |> assign(:hide_bottom_nav, true)}
   end
 
   @impl true
   def handle_params(_params, _uri, socket) do
+    socket =
+      if connected?(socket) and socket.assigns[:subscribed_conversation_uuid] do
+        Phoenix.PubSub.unsubscribe(
+          Vibeflow.PubSub,
+          "conversation:#{socket.assigns.subscribed_conversation_uuid}"
+        )
+
+        assign(socket, :subscribed_conversation_uuid, nil)
+      else
+        socket
+      end
+
     {:noreply, assign(socket, :hide_bottom_nav, false)}
   end
 
@@ -232,6 +250,10 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # ===========================================================================
 
   @impl true
+  def handle_event("validate", %{"message" => %{"content" => content}}, socket) do
+    {:noreply, assign(socket, :composer_content, content || "")}
+  end
+
   def handle_event("validate", _params, socket) do
     {:noreply, socket}
   end
@@ -249,7 +271,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
       })
     end
 
-    {:noreply, socket}
+    {:noreply, assign(socket, :self_typing, is_typing)}
   end
 
   @impl true
@@ -317,9 +339,16 @@ defmodule VibeflowWeb.Chat.ChatLive do
     if final_params["content"] != "" || uploaded_files != [] do
       case Chat.create_message(final_params) do
         {:ok, _message} ->
+          messages = Chat.list_messages(conversation)
+
           {:noreply,
            socket
            |> assign(:replying_to, nil)
+           |> assign(:composer_content, "")
+           |> assign(:messages, messages)
+           |> schedule_link_previews(messages)
+           |> push_event("scroll-to-bottom", %{})
+           |> assign(:self_typing, false)
            |> push_event("clear-input", %{})}
 
         {:error, _changeset} ->
@@ -654,14 +683,38 @@ defmodule VibeflowWeb.Chat.ChatLive do
   @impl true
   def handle_event("prepare_reply", %{"id" => message_id}, socket) do
     # Find the message to reply to
-    message = Enum.find(socket.assigns.processed_messages, fn processed ->
-      processed.message.id == String.to_integer(message_id)
+    message = Enum.find(socket.assigns.messages, fn message ->
+      message.id == String.to_integer(message_id)
     end)
 
     if message do
-      {:noreply, assign(socket, :replying_to, message.message)}
+      {:noreply, assign(socket, :replying_to, message |> Vibeflow.Repo.preload([:user]))}
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("clear_reply", _params, socket) do
+    {:noreply, assign(socket, :replying_to, nil)}
+  end
+
+  @impl true
+  def handle_event("delete_message", %{"id" => message_id}, socket) do
+    message_id = String.to_integer(message_id)
+    message = Chat.get_message!(message_id)
+    current_user = socket.assigns.current_user
+
+    if message.user_id == current_user.id do
+      Chat.delete_message(message)
+      messages = Chat.list_messages(socket.assigns.conversation)
+
+      {:noreply,
+       socket
+       |> assign(:messages, messages)
+       |> assign(:replying_to, nil)}
+    else
+      {:noreply, put_flash(socket, :error, "You can only delete your own messages.")}
     end
   end
 
@@ -718,49 +771,44 @@ defmodule VibeflowWeb.Chat.ChatLive do
     # Check if we are currently looking at this conversation
     is_current_chat = active_conversation && active_conversation.uuid == message.conversation_uuid
 
-    socket =
-      if is_current_chat do
-        message =
-          message
-          |> Vibeflow.Repo.preload(user: [], reply_to: [:user])
+    if is_current_chat do
+      message =
+        message
+        |> Vibeflow.Repo.preload(user: [], reply_to: [:user])
 
-        # We are in the chat:
-        # 1. Mark as read immediately if from someone else
-        if message.user_id != current_user_id do
-          Chat.mark_conversation_as_read(current_user_id, message.conversation_id)
-        end
-
-        # 2. Insert message into stream and update processed_messages
-        updated_messages = [message | Chat.list_messages(active_conversation)]
-
-        socket
-        |> stream_insert(:messages, message, at: :beginning)
-        |> assign(:processed_messages, process_messages_with_separators(updated_messages, active_conversation))
-        |> schedule_link_previews([message])
-        |> push_event("scroll-to-bottom", %{})
-        # 3. Stop typing indicator for the sender (since they sent a msg)
-        |> remove_typing_indicator(message.user_id)
-      else
-        # We are NOT in the chat:
-        if message.user_id != current_user_id do
-          # Safely determine username even if message.user wasn't preloaded
-          message_user =
-            case message.user do
-              %Vibeflow.Accounts.User{} = u -> u
-              _ -> Vibeflow.Repo.get(Vibeflow.Accounts.User, message.user_id)
-            end
-
-          username = (message_user && message_user.username) || "Someone"
-
-          # 1. Show flash notification (ONLY here)
-          put_flash(socket, :info, "New message from #{username}")
-        else
-          socket
-        end
+      if message.user_id != current_user_id do
+        Chat.mark_conversation_as_read(current_user_id, message.conversation_id)
       end
 
-    {:noreply, socket}
+      messages = Chat.list_messages(active_conversation)
+
+      {:noreply,
+       socket
+       |> assign(:messages, messages)
+       |> schedule_link_previews(messages)
+       |> push_event("scroll-to-bottom", %{})
+       |> assign(:typing_users, %{})
+       |> assign(:self_typing, false)
+       |> assign(:conversations, Chat.list_user_conversations(current_user_id))}
+    else
+      socket = assign(socket, :conversations, Chat.list_user_conversations(current_user_id))
+
+      if message.user_id != current_user_id do
+        message_user =
+          case message.user do
+            %Vibeflow.Accounts.User{} = u -> u
+            _ -> Vibeflow.Repo.get(Vibeflow.Accounts.User, message.user_id)
+          end
+
+        username = (message_user && message_user.username) || "Someone"
+
+        {:noreply, put_flash(socket, :info, "New message from #{username}")}
+      else
+        {:noreply, socket}
+      end
+    end
   end
+
 
   # 2. TYPING INDICATOR (Received Broadcast)
   @impl true
@@ -791,6 +839,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
     {:noreply, assign(socket, :conversations, conversations)}
   end
 
+  @impl true
+  def handle_info({:new_sidebar_message, _message}, socket) do
+    conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
+    {:noreply, assign(socket, :conversations, conversations)}
+  end
+
   # 4. READ RECEIPT
   @impl true
   def handle_info({:message_read, %{last_read_at: last_read_at, user_id: reader_id}}, socket) do
@@ -802,7 +856,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
        socket
        |> assign(:other_last_read_at, last_read_at)
        |> schedule_link_previews(messages)
-       |> assign(:processed_messages, process_messages_with_separators(messages, socket.assigns.conversation))}
+       |> assign(:messages, messages)}
     else
       {:noreply, socket}
     end
@@ -816,18 +870,19 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> maybe_store_link_preview(url, preview)}
   end
 
-  # 5. MESSAGE DELETED
+  # 6. MESSAGE DELETED
   @impl true
   def handle_info({:message_deleted, message}, socket) do
-    {:noreply, stream_delete(socket, :messages, message)}
-  end
+    if socket.assigns.conversation &&
+         socket.assigns.conversation.id == message.conversation_id do
+      messages = Chat.list_messages(socket.assigns.conversation)
 
-  # 6. LOAD SIDEBAR ASYNC (Fixed assign/4 error)
-  @impl true
-  def handle_info(:load_sidebar_data, socket) do
-    conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
-    # FIX: Use keyword list for assign/2
-    {:noreply, assign(socket, conversations: conversations, loading_sidebar: false)}
+      {:noreply,
+       socket
+       |> assign(:messages, messages)}
+    else
+      {:noreply, socket}
+    end
   end
 
   # 7. PRESENCE
@@ -857,7 +912,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
     {:noreply,
      socket
      |> assign(:conversation, updated_conversation)
-     |> assign(:processed_messages, process_messages_with_separators(messages, updated_conversation))}
+     |> assign(:messages, messages)}
   end
 
   @impl true
@@ -874,7 +929,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # ===========================================================================
   @url_regex ~r/(https?:\/\/[^\s<]+)/u
 
-  defp format_date_separator(message_datetime) do
+  def format_date_separator(message_datetime) do
     message_date = case message_datetime do
       %DateTime{} -> DateTime.to_date(message_datetime)
       %NaiveDateTime{} -> NaiveDateTime.to_date(message_datetime)
@@ -898,7 +953,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
-  defp should_show_date_separator?(current_message, previous_message) do
+  def should_show_date_separator?(current_message, previous_message) do
     case {current_message, previous_message} do
       {nil, _} -> false
       {_, nil} -> true  # Always show date for first message
@@ -995,14 +1050,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
     uri.host || url
   end
 
-  # Helper function to get user's skin for a specific conversation
-  def get_user_skin_for_conversation(conversation, user_id) do
-    case Enum.find(conversation.conversation_members, fn m -> m.user_id == user_id end) do
-      nil -> "default"
-      member -> member.message_skin || "default"
-    end
-  end
-
   defp schedule_link_previews(socket, messages) when is_list(messages) do
     Enum.reduce(messages, socket, fn message, acc ->
       schedule_link_preview(acc, first_link(message.content || ""))
@@ -1038,6 +1085,23 @@ defmodule VibeflowWeb.Chat.ChatLive do
   defp maybe_store_link_preview(socket, url, preview) do
     update(socket, :link_previews, &Map.put(&1, url, preview))
   end
+
+  defp subscribe_to_conversation(socket, conversation_uuid) when is_binary(conversation_uuid) do
+    current_uuid = socket.assigns[:subscribed_conversation_uuid]
+
+    if current_uuid == conversation_uuid do
+      socket
+    else
+      if current_uuid do
+        Phoenix.PubSub.unsubscribe(Vibeflow.PubSub, "conversation:#{current_uuid}")
+      end
+
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation_uuid}")
+      assign(socket, :subscribed_conversation_uuid, conversation_uuid)
+    end
+  end
+
+  defp subscribe_to_conversation(socket, _), do: socket
 
   defp fetch_link_preview(url) do
     with {:ok, uri} <- validate_preview_url(url),

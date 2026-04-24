@@ -2,6 +2,7 @@ defmodule VibeflowWeb.CreatePostLive do
   use VibeflowWeb, :live_view
 
   import VibeflowWeb.CoreComponents
+  require Logger
 
   alias Vibeflow.Posts
   alias Vibeflow.Posts.Post
@@ -59,7 +60,7 @@ defmodule VibeflowWeb.CreatePostLive do
     if all_done? do
       uploaded_results =
         consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-          case UploadCloudinary.upload_file(path) do
+          case UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
             {:ok, result} ->
               {:ok,
                %{
@@ -74,8 +75,7 @@ defmodule VibeflowWeb.CreatePostLive do
           end
         end)
 
-      # Append new results to existing ones (don't overwrite)
-      {:noreply, update(socket, :uploaded_files, &(&1 ++ uploaded_results))}
+      {:noreply, store_uploaded_media(socket, uploaded_results)}
     else
       # If a new file started uploading in the meantime, do nothing.
       # We will get another progress event later when that one finishes.
@@ -89,27 +89,50 @@ defmodule VibeflowWeb.CreatePostLive do
 
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
-    # 1. Use files that were already consumed and stored in assigns
+    # Use the form's media state first, then any already-stored uploads,
+    # then fall back to a final consume attempt.
     clean_media =
-      socket.assigns.uploaded_files
-      |> Enum.map(fn file -> Map.take(file, ["url", "type"]) end)
+      socket
+      |> media_files_from_socket()
+      |> case do
+        [] ->
+          consume_pending_media(socket)
 
-    post_params =
-      if clean_media != [] do
-        Map.put(post_params, "media_files", clean_media)
-      else
-        post_params
+        media ->
+          media
       end
 
-    case Posts.create_post(socket.assigns.current_user, post_params) do
-      {:ok, _post} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Post created successfully!")
-         |> push_navigate(to: ~p"/feed")}
+    clean_media =
+      clean_media
+      |> normalize_media_files()
+      |> Enum.uniq_by(& &1["url"])
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset, as: :post))}
+    if clean_media == [] do
+      Logger.warning(
+        "Create post save blocked because no media files were attached: " <>
+          "#{inspect(%{uploaded_files: socket.assigns.uploaded_files, form_media: Ecto.Changeset.get_field(socket.assigns.changeset, :media_files, []), upload_entries: Enum.map(socket.assigns.uploads.media.entries, &%{ref: &1.ref, done: &1.done?})})}"
+      )
+
+      {:noreply,
+       socket
+       |> put_flash(:error, "Please wait for the image or video upload to finish.")
+       |> assign(:form, to_form(socket.assigns.changeset, as: :post))}
+    else
+      post_params =
+        Map.put(post_params, "media_files", clean_media)
+
+      case Posts.create_post(socket.assigns.current_user, post_params) do
+        {:ok, post} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Post created successfully!")
+           |> push_navigate(to: ~p"/feed?#{[highlight_post: to_string(post.uuid)]}")}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          Logger.error("Create post failed: #{inspect(changeset.errors)}")
+
+          {:noreply, assign(socket, form: to_form(changeset, as: :post))}
+      end
     end
   end
 
@@ -129,7 +152,14 @@ defmodule VibeflowWeb.CreatePostLive do
       socket.assigns.uploaded_files
       |> List.delete_at(String.to_integer(index))
 
-    {:noreply, assign(socket, :uploaded_files, new_files)}
+    media_files = normalize_media_files(new_files)
+    changeset = Ecto.Changeset.put_change(socket.assigns.changeset, :media_files, media_files)
+
+    {:noreply,
+     socket
+     |> assign(:uploaded_files, new_files)
+     |> assign(:changeset, changeset)
+     |> assign(:form, to_form(changeset, as: :post))}
   end
 
   @impl true
@@ -170,4 +200,78 @@ defmodule VibeflowWeb.CreatePostLive do
   def error_to_string(:too_large), do: "File is too large (Max 100MB)"
   def error_to_string(:too_many_files), do: "You have selected too many files"
   def error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
+
+  defp media_files_from_socket(socket) do
+    socket.assigns.changeset
+    |> Ecto.Changeset.get_field(:media_files, [])
+    |> normalize_media_files()
+    |> case do
+      [] -> normalize_media_files(socket.assigns.uploaded_files || [])
+      media -> media
+    end
+  end
+
+  defp normalize_media_files(media_files) when is_list(media_files) do
+    Enum.map(media_files, fn
+      %{"url" => _url, "type" => _type} = item ->
+        item
+
+      %{url: url, type: type} when is_binary(url) and is_binary(type) ->
+        %{"url" => url, "type" => type}
+
+      _ ->
+        nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp normalize_media_files(_), do: []
+
+  defp store_uploaded_media(socket, uploaded_results) do
+    current = socket.assigns.uploaded_files || []
+    updated_files = Enum.uniq_by(current ++ uploaded_results, & &1["url"])
+    media_files = normalize_media_files(updated_files)
+    changeset = Ecto.Changeset.put_change(socket.assigns.changeset, :media_files, media_files)
+
+    socket
+    |> assign(:uploaded_files, updated_files)
+    |> assign(:changeset, changeset)
+    |> assign(:form, to_form(changeset, as: :post))
+  end
+
+  defp consume_pending_media(socket) do
+    if Enum.any?(socket.assigns.uploads.media.entries, & &1.done?) do
+      consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
+        case UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+          {:ok, result} ->
+            {:ok,
+             %{
+               "url" => result.url,
+               "type" => result.resource_type,
+               "client_name" => entry.client_name,
+               "client_size" => entry.client_size
+             }}
+
+          {:error, _reason} ->
+            {:postpone, :upload_failed}
+        end
+      end)
+    else
+      []
+    end
+  end
+
+  defp upload_kind_for(entry) do
+    client_type = entry.client_type || ""
+    client_name = String.downcase(entry.client_name || "")
+    ext = Path.extname(client_name)
+
+    cond do
+      String.starts_with?(client_type, "image/") -> :image
+      String.starts_with?(client_type, "video/") -> :video
+      ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif"] -> :image
+      ext in [".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"] -> :video
+      true -> :auto
+    end
+  end
 end

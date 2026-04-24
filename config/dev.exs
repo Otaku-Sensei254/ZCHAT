@@ -87,12 +87,6 @@ config :phoenix, :plug_init_mode, :runtime
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 
-config :cloudex,
-  api_key: "576125769822254",
-  secret: "yNxdsd0kWa_OtysW-x5ve8LGyEOw",
-  cloud_name: "dahpsrzjh",
-  upload_preset: "zchat_uploads"
-
 if File.exists?("config/dev.local.exs") do
   import_config "dev.local.exs"
 end

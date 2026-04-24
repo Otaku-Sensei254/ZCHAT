@@ -1,38 +1,43 @@
-<div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 pl-safe pr-safe" phx-window-keydown="close_modals" phx-key="Escape">
-  
-  <div class={[  
-    "border-r border-gray-200 dark:border-zinc-800 flex-col",
-    if(@conversation, do: "hidden md:flex md:w-[22rem]", else: "flex w-full md:w-[23rem]")
-  ]}>
-    
-    <div class="p-3 px-4 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-20 sticky top-0">
+<div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+  <div class={
+    "border-r border-gray-200 dark:border-zinc-800 flex-col " <>
+    if(@conversation, do: "hidden md:flex md:w-80", else: "flex w-full md:w-80")
+  }>
+    <div class="p-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-20 sticky top-0">
       <div class="relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            <path
+              fill-rule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clip-rule="evenodd"
+            />
           </svg>
         </div>
 
-        
         <form phx-change="search_new_chat" onsubmit="return false;">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="query"
             value={@user_search_query}
-            placeholder="Search users..." 
-            class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
+            placeholder="Search users..."
+            class="block w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
             phx-debounce="300"
             autocomplete="off"
           />
         </form>
 
         <%= if @user_search_query != "" do %>
-          <button 
-            phx-click="clear_user_search" 
+          <button
+            phx-click="clear_user_search"
             class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd"
+              />
             </svg>
           </button>
         <% end %>
@@ -41,22 +46,18 @@
       <%= if @user_search_results != [] do %>
         <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 overflow-hidden z-50 max-h-64 overflow-y-auto">
           <%= for user <- @user_search_results do %>
-            <button 
-              phx-click="start_new_chat" 
+            <button
+              phx-click="start_new_chat"
               phx-value-user_id={user.id}
               class="w-full text-left flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
             >
-              <%= if user.avatar_url && user.avatar_url != "" do %>
-                <img src={user.avatar_url} class={"h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
-              <% else %>
-                <div class={"h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm mr-3 border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
-                  <%= VibeflowWeb.CoreComponents.initials(user) %>
-                </div>
-              <% end %>
+              <img
+                src={user.avatar_url || "/images/default_avatar.png"}
+                class="h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600"
+              />
               <div>
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1">
-                  <%= user.username %>
-                  <.verified_badge user={user} class="h-5 w-5" />
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {user.username}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
               </div>
@@ -64,124 +65,96 @@
           <% end %>
         </div>
       <% end %>
-      
+
       <%= if @user_search_query != "" && String.length(@user_search_query) >= 2 && @user_search_results == [] do %>
         <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 p-4 text-center z-50">
           <p class="text-sm text-gray-500 dark:text-gray-400">No users found.</p>
         </div>
       <% end %>
     </div>
-    
-    <!-- Chat Filter Tabs -->
-    <div class="flex space-x-1 p-2 bg-gray-50 dark:bg-zinc-800 rounded-lg mx-2 mb-2">
-      <button 
-        phx-click="filter_chats" 
-        phx-value-filter="all"
-        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
-          if(@chat_filter == "all", 
-            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
-            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
-      >
-        All Chats
-      </button>
-      <button 
-        phx-click="filter_chats" 
-        phx-value-filter="chats"
-        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
-          if(@chat_filter == "chats", 
-            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
-            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
-      >
-        Direct Chats
-      </button>
-      <button 
-        phx-click="filter_chats" 
-        phx-value-filter="groups"
-        class={"flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors " <>
-          if(@chat_filter == "groups", 
-            do: "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm", 
-            else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
-      >
-        Groups
-      </button>
-    </div>
-    
+
     <div class="flex-1 overflow-y-auto">
       <%= for conv <- @conversations do %>
-        <% 
-           is_group = conv.type == "group"
-           other_member = Enum.find(conv.conversation_members, &(&1.user.id != @current_user.id))
-           display_name = if is_group, do: conv.name || "Unnamed Group", else: (other_member && other_member.user.username) || "Unknown"
-           
-           avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
-           avatar_user = if !is_group && other_member, do: other_member.user
-           
-           is_active = @conversation && conv.uuid == @conversation.uuid
-           is_online = if !is_group && other_member, do: Map.has_key?(@online_users, to_string(other_member.user.id)), else: false
-           
-           # For groups: count online members
-           online_member_count = if is_group do
-             Enum.count(conv.conversation_members, fn member -> 
-               Map.has_key?(@online_users, to_string(member.user_id)) 
-             end)
-           else
-             0
-           end
-           total_member_count = if is_group, do: length(conv.conversation_members), else: 0
-        %>
-        
-        <.link navigate={~p"/chat/#{conv.uuid}"} class={[
-          "flex items-center gap-3 p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
-          is_active && "bg-blue-50 dark:bg-blue-900/20 md:border-l-4 md:border-l-blue-500"
-        ]}>
-          
+        <% is_group = conv.type == "group"
+        other_member = Enum.find(conv.conversation_members, &(&1.user.id != @current_user.id))
+
+        display_name =
+          if is_group,
+            do: conv.name || "Unnamed Group",
+            else: (other_member && other_member.user.username) || "Unknown"
+
+        avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
+
+        name_for_initial =
+          if !is_group && other_member,
+            do: other_member.user.username || other_member.user.email,
+            else: "?"
+
+        initial = String.first(name_for_initial || "?") |> String.upcase()
+
+        is_active = @conversation && conv.id == @conversation.id
+
+        is_online =
+          if !is_group && other_member,
+            do: Map.has_key?(@online_users, to_string(other_member.user.id)),
+            else: false %>
+
+        <.link
+          navigate={~p"/chat/#{conv.uuid}"}
+          class={[
+            "flex items-center gap-3 p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
+            is_active && "bg-blue-50 dark:bg-blue-900/20 md:border-l-4 md:border-l-blue-500"
+          ]}
+        >
           <div class="relative shrink-0">
             <%= cond do %>
               <% is_group -> %>
                 <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
               <% avatar_url -> %>
-                <img src={avatar_url} class={"w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-zinc-700 " <> VibeflowWeb.CoreComponents.avatar_frame_class(other_member.user)} />
-              <% avatar_user -> %>
-                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-200 dark:border-indigo-800">
-                  <%= VibeflowWeb.CoreComponents.initials(avatar_user) %>
-                </div>
+                <img
+                  src={avatar_url}
+                  class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-zinc-700"
+                />
               <% true -> %>
-                <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-lg border border-gray-200 dark:border-gray-800">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-200 dark:border-indigo-800">
+                  {initial}
                 </div>
             <% end %>
 
             <%= if is_online do %>
-              <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-zinc-900 border-2 border-white dark:border-zinc-900"></span>
+              <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-zinc-900 border-2 border-white dark:border-zinc-900">
+              </span>
             <% end %>
           </div>
 
           <div class="flex-1 min-w-0">
             <div class="flex justify-between items-center mb-1">
-              <p class={"font-semibold text-gray-900 dark:text-gray-100 truncate text-base flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(other_member && other_member.user)}>
-                <%= display_name %>
-                <%= if !is_group && other_member && other_member.user do %>
-                  <.verified_badge user={other_member.user} class="h-5 w-5" />
-                <% end %>
+              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
+                {display_name}
               </p>
               <%= if conv.unread_count > 0 do %>
                 <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                  <%= conv.unread_count %>
+                  {conv.unread_count}
                 </span>
               <% end %>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
-              <%= if is_group do %>
-                <%= online_member_count %> of <%= total_member_count %> online
-              <% else %>
-                <%= if is_online, do: "Active now", else: "Offline" %>
-              <% end %>
+              {if is_online, do: "Active now", else: "Offline"}
             </p>
           </div>
         </.link>
@@ -194,887 +167,484 @@
     if(@conversation, do: "flex w-full md:flex-1", else: "hidden md:flex md:flex-1")
   }>
     <%= if @conversation do %>
-      <div 
-        id={"chat-container-#{@conversation.uuid}"}
-        class="flex-1 flex flex-col h-full"
-        data-conversation-id={@conversation.uuid}
+      <div
+        id={"chat-container-#{@conversation.id}"}
+        class="flex-1 flex flex-col h-full overflow-hidden"
+        data-conversation-id={@conversation.id}
         data-user-token={@user_token}
       >
-        <div class="sticky top-16 left-0 right-0 p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 z-20 shadow-sm shrink-0">
-          <div class="md:hidden ">
-            <.link navigate={~p"/chat"} class="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-            </.link>
-          </div>
-          
-          <% 
-            header_member = Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
-            header_name = if @conversation.type == "group", do: @conversation.name, else: (header_member && header_member.user.username) || "Unknown"
-            header_avatar = if @conversation.type != "group" && header_member, do: header_member.user.avatar_url
-            header_user = if @conversation.type != "group" && header_member, do: header_member.user
-            other_user_online = if @conversation.type != "group" && header_member, do: Map.has_key?(@online_users, to_string(header_member.user.id)), else: false
-          %>
-          
-          <.link navigate={~p"/chat/#{@conversation.uuid}/settings"}>
-              <div class="relative">
-                <%= cond do %>
-                   <% @conversation.type == "group" -> %>
-                   <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                   </div>
-                 <% header_avatar -> %>
-                   <img src={header_avatar} class={"w-10 h-10 rounded-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(header_user)} />
-                 <% header_user -> %>
-                   <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
-                     <%= VibeflowWeb.CoreComponents.initials(header_user) %>
-                   </div>
-                 <% true -> %>
-                   <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400 flex items-center justify-center font-bold text-sm">
-                     ?
-                   </div>
-                <% end %>
-                <%= if other_user_online do %>
-                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
-                <% end %>
-              </div>
-            </.link>
-          
-          <div class="flex-1 min-w-0">
-            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"} class="block">
-              <span class={"font-bold text-gray-900 dark:text-gray-100 text-base leading-tight inline-flex items-center gap-1 " <> VibeflowWeb.CoreComponents.username_glow_class(header_user)}>
-                <%= header_name %>
-                <%= if @conversation.type != "group" && header_user do %>
-                  <.verified_badge user={header_user} class="h-5 w-5" />
-                <% end %>
-              </span>
-              <%= if other_user_online do %>
-                <p class="text-xs text-green-500 font-medium">Active now</p>
-              <% end %>
-              </.link>
-          </div>
-          
-          <!-- Settings Icon -->
-          <div class="ml-2">
-            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"} class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-all duration-200" title="Chat Settings">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <div class="p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 z-10 shadow-sm shrink-0">
+          <div class="md:hidden">
+            <.link
+              navigate={~p"/chat"}
+              class="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </.link>
           </div>
-        </div>
 
-        <div id="chat-scroll-container" phx-hook="ScrollToBottom" class="flex-1 min-w-full overflow-y-auto p-4 pb-28 sm:pb-4 space-y-4 bg-white dark:bg-zinc-900 min-h-0">
-          <div id="messages" class="flex flex-col space-y-2 min-h-0">
-            <%= for processed <- @processed_messages do %>
-              <% message = processed.message %>
-              <% is_me = message.user_id == @current_user.id %>
-              <% dom_id = "message-#{message.id}" %>
-              
-              <!-- Date Separator -->
-              <%= if processed.show_date_separator do %>
-                <div class="flex justify-center my-4">
-                  <div class="bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    <%= processed.date_separator_text %>
-                  </div>
+          <% header_member =
+            Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
+
+          header_name =
+            if @conversation.type == "group",
+              do: @conversation.name,
+              else: (header_member && header_member.user.username) || "Unknown"
+
+          header_avatar =
+            if @conversation.type != "group" && header_member, do: header_member.user.avatar_url
+
+          header_name_source =
+            if @conversation.type != "group" && header_member,
+              do: header_member.user.username || header_member.user.email,
+              else: "?"
+
+          header_initial = String.first(header_name_source || "?") |> String.upcase()
+
+          other_user_online =
+            if @conversation.type != "group" && header_member,
+              do: Map.has_key?(@online_users, to_string(header_member.user.id)),
+              else: false %>
+
+          <div class="relative">
+            <%= cond do %>
+              <% @conversation.type == "group" -> %>
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
                 </div>
-              <% end %>
-              
-              <!-- Skin Change Notification -->
-              <%= if processed.skin_change_notification do %>
-                <div class="flex justify-center my-2">
-                  <div class="bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full text-xs text-blue-600 dark:text-blue-400 font-medium italic">
-                    <%= message.user.username %> <%= processed.skin_change_notification %>
-                  </div>
+              <% header_avatar -> %>
+                <img src={header_avatar} class="w-10 h-10 rounded-full object-cover" />
+              <% true -> %>
+                <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                  {header_initial}
                 </div>
-              <% end %>
-              
-              <div id={dom_id} class={"group flex w-full " <> if(is_me, do: "justify-end", else: "justify-start")}>
-                
-                <div class={"opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 " <> if(is_me, do: "order-first", else: "order-last")}>
-                   <button phx-click="prepare_reply" phx-value-id={message.id} class="text-gray-400 hover:text-blue-500" title="Reply">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                   </button>
-                   <%= if is_me do %>
-                     <button phx-click="delete_message" phx-value-id={message.id} data-confirm="Are you sure?" class="text-gray-400 hover:text-red-500" title="Delete">
-                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                     </button>
-                   <% end %>
-                </div>
-
-                <%= if message.shared_post do %>
-                  <% post = message.shared_post %>
-                  <% media = List.first(post.media_files || []) %>
-                  <.link navigate={~p"/posts/#{post.uuid}"} class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}>
-                    <%= if media do %>
-                      <%= if media["type"] == "video" do %>
-                        <video phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" src={media["url"]} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
-                        <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" type="button" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
-                        </button>
-                      <% else %>
-                        <img phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" src={media["url"]} class="absolute inset-0 w-full h-full object-cover cursor-pointer" />
-                        <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" type="button" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
-                        </button>
-                      <% end %>
-                    <% else %>
-                      <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4"><p class="text-xs text-gray-500 line-clamp-3 text-center italic"><%= post.content %></p></div>
-                    <% end %>
-                    <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
-                    <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
-                      <%= if post.user.avatar_url && post.user.avatar_url != "" do %>
-                      <img src={post.user.avatar_url} class={"w-6 h-6 rounded-full border border-white/50 object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(post.user)}>
-                    <% else %>
-                      <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-xs border border-white/50">
-                        <%= VibeflowWeb.CoreComponents.initials(post.user) %>
-                      </div>
-                    <% end %>
-                      <span class="text-xs font-bold text-white shadow-sm flex items-center gap-1">
-                        <%= post.user.username %>
-                        <.verified_badge user={post.user} class="h-5 w-5" />
-                      </span>
-                    </div>
-                    <%= if post.content do %>
-                      <div class="absolute bottom-3 left-3 right-3 z-10"><p class="text-xs text-white/90 font-medium drop-shadow-md break-words"><%= content_cut(post.content, 80) %></p></div>
-                    <% end %>
-                  </.link>
-                <% else %>
-                <% sender_skin = get_user_skin_for_conversation(@conversation, message.user_id) %>
-                  <div class={message_skin_classes(sender_skin, is_me)} data-skin={sender_skin}>
-                    
-                    <%= if message.reply_to do %>
-                      <button 
-                        phx-click="scroll_to_message" 
-                        phx-value-id={message.reply_to.id}
-                        class={"text-left w-full mb-2 rounded-lg p-2 border-l-4 text-xs overflow-hidden transition-opacity hover:opacity-80 " <> 
-                        reply_skin_classes(get_user_skin_for_conversation(@conversation, message.reply_to.user_id), message.reply_to.user_id == @current_user.id)}
-                      >
-                        <p class="font-bold opacity-100 mb-0.5 flex items-center gap-1">
-                          <%= message.reply_to.user.username %>
-                          <.verified_badge user={message.reply_to.user} class="h-5 w-5" />
-                        </p>
-                        
-                        <%= if message.reply_to.media_files && message.reply_to.media_files != [] && (!message.reply_to.content || message.reply_to.content == "") do %>
-                          <p class="opacity-90 truncate font-normal italic flex items-center gap-1">
-                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                             Media Attachment
-                          </p>
-                        <% else %>
-                          <p class="opacity-90 truncate font-normal line-clamp-1"><%= message.reply_to.content %></p>
-                        <% end %>
-                      </button>
-                    <% end %>
-
-                    <%= if message.media_files && message.media_files != [] do %>
-                <div class="mb-2 space-y-2">
-                 <%= for media <- message.media_files do %>
-                   <%= if media["type"] == "image" do %>
-                     <img phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="image" src={media["url"]} class="rounded-lg w-full h-auto object-cover max-h-64 cursor-zoom-in" loading="lazy" />
-                   <% end %>
-                            <%= if media["type"] == "video" do %>
-                               <div class="relative">
-                                 <video phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" src={media["url"]} controls class="rounded-lg w-full max-h-64"></video>
-                                 <button phx-click="zoom_image" phx-value-url={media["url"]} phx-value-type="video" type="button" class="absolute top-2 right-2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60">
-                                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553M9 14l-4.553 4.553M21 21l-6-6M3 3l6 6"/></svg>
-                                 </button>
-                               </div>
-                            <% end %>
-                            <%= if media["type"] == "audio" do %>
-                              <div class="py-1">
-                                <div class="flex items-center bg-emerald-900/40 p-3 rounded-2xl w-full max-w-sm border border-emerald-500/20 backdrop-blur-sm"
-                                     id={"voice-note-#{message.id}"}
-                                     phx-hook="WavePlayer"
-                                     data-url={media["url"]}>
-                                  
-                                  <!-- Play Button with Visual Feedback -->
-                                  <button class="play-btn w-10 h-10 flex items-center justify-center rounded-full text-white shadow-lg active:scale-90 transition-all duration-200 relative overflow-hidden group">
-                                    <div class="absolute inset-0 bg-white/20 rounded-full transform scale-0 group-hover:scale-100 transition-transform"></div>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 play-icon relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                                      <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 pause-icon hidden relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                                    </svg>
-                                  </button>
-
-                                  <!-- Audio Info Section -->
-                                  <div class="flex-1 flex flex-col gap-2">
-                                    <!-- Progress Bar -->
-                                    <div class="relative w-full h-2 bg-emerald-800/50 rounded-full overflow-hidden cursor-pointer group">
-                                      <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 to-emerald-300 w-0 transition-all duration-100"></div>
-                                      <!-- Hover effect -->
-                                      <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    </div>
-                                    
-                                    <!-- Time Display -->
-                                    <div class="flex justify-between items-center">
-                                      <!-- Voice Indicator -->
-                                      <div class="flex items-center gap-1 opacity-70">
-                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse"></div>
-                                        <div class="w-1 h-3 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.1s"></div>
-                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
-                                        <div class="w-1 h-4 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.3s"></div>
-                                        <div class="w-1 h-3 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
-                                        <div class="w-1 h-2 bg-emerald-400/60 rounded-full animate-pulse" style="animation-delay: 0.5s"></div>
-                                      </div>
-                                      <span class="timer text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider">0:00</span>
-                                    </div>
-                                  </div>
-
-                                  <!-- Hidden Audio Element -->
-                                  <audio class="hidden-audio" preload="metadata" style="display: none !important;"></audio>
-                                </div>
-                              </div>
-                            <% end %>
-                 <% end %>
-                </div>
-                    <% end %>
-
-                    <%= if @conversation.type == "group" && !is_me do %>
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                          <%= message.user.username %>
-                        </span>
-                        <.verified_badge user={message.user} class="h-4 w-4" />
-                      </div>
-                    <% end %>
-
-                    <div class="leading-relaxed break-words">
-                      <%= for segment <- message_segments(message.content || "") do %><%= case segment do %><% {:text, text} -> %><%= text %><% {:link, url} -> %>
-                      <a href={url} target="_blank" rel="noopener noreferrer" class={"font-semibold underline break-all " <> if(is_me, do: "text-white", else: "text-blue-600 dark:text-blue-400")}><%= url %></a><% end %><% end %>
-                    </div>
-
-                    <%= if preview_url = first_link(message.content || "") do %>
-                      <% preview = Map.get(@link_previews, preview_url) %>
-                      <a
-                        href={preview_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class={"mt-2 block overflow-hidden rounded-xl border transition-colors " <>
-                          if(is_me,
-                            do: "border-white/30 bg-white/10 hover:bg-white/15",
-                            else: "border-gray-200 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-900")}
-                      >
-                        <%= if preview && preview.image do %>
-                          <img
-                            src={preview.image}
-                            alt="Link preview image"
-                            class="w-full max-h-44 object-cover border-b border-white/20 dark:border-zinc-700"
-                            loading="lazy"
-                          />
-                        <% end %>
-
-                        <div class="p-2.5">
-                          <p class={"text-[11px] uppercase tracking-wide " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
-                            <%= (preview && preview.domain) || link_domain(preview_url) %>
-                          </p>
-
-                          <%= if preview && preview.title && preview.title != "" do %>
-                            <p class={"text-sm font-semibold mt-0.5 line-clamp-2 " <> if(is_me, do: "text-white", else: "text-gray-900 dark:text-gray-100")}>
-                              <%= preview.title %>
-                            </p>
-                          <% end %>
-
-                          <%= if preview && preview.description && preview.description != "" do %>
-                            <p class={"text-xs mt-1 line-clamp-2 " <> if(is_me, do: "text-blue-100", else: "text-gray-600 dark:text-gray-300")}>
-                              <%= preview.description %>
-                            </p>
-                          <% end %>
-
-                          <p class={"text-xs mt-1 break-all " <> if(is_me, do: "text-blue-100", else: "text-gray-700 dark:text-gray-200")}>
-                            <%= preview_url %>
-                          </p>
-                        </div>
-                      </a>
-                    <% end %>
-                    
-                    <%= if @active_message_skin not in ["default", nil] do %>
-                      <div class="flex items-center gap-1 mt-1 opacity-60">
-                      
-                      </div>
-                    <% end %>
-
-                    <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
-                      <span class="text-[10px]">
-                        <%= if message.inserted_at do %>
-                          <%= message.inserted_at 
-                              |> DateTime.from_naive!("Etc/UTC") 
-                              |> Timex.Timezone.convert("Africa/Nairobi") 
-                              |> Timex.format!("%H:%M", :strftime) %>
-                        <% end %>
-                      </span>
-                      <%= if is_me do %>
-                        <% 
-                           msg_time = DateTime.from_naive!(message.inserted_at, "Etc/UTC") |> DateTime.truncate(:second)
-                           is_read = if @other_last_read_at, do: DateTime.compare(msg_time, DateTime.truncate(@other_last_read_at, :second)) != :gt, else: false
-                        %>
-                        <%= if is_read do %>
-                          <div class="flex"><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg><svg class="w-3 h-3 text-green-500 -ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
-                        <% else %>
-                          <div class="flex opacity-50"><svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  </div>
-                <% end %>
+            <% end %>
+            <%= if other_user_online do %>
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900">
               </div>
             <% end %>
           </div>
 
-          <%= if typing_text = get_typing_text(@typing_users) do %>
+          <div class="flex-1">
+            <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight">
+              {header_name}
+            </span>
+            <%= if other_user_online do %>
+              <p class="text-xs text-green-500 font-medium">Active now</p>
+            <% end %>
+          </div>
+
+          <!-- Chat Settings Icon -->
+          <div class="relative">
+            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"}>
+              
+              <button
+                phx-click="toggle_chat_menu"
+                class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </button>
+            </.link>
+          </div>
+        </div>
+
+        <div
+          id="chat-scroll-container"
+          phx-hook="ScrollToBottom"
+          class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-white dark:bg-zinc-900"
+        >
+          <div id="messages" class="flex flex-col space-y-2 min-h-0">
+            <%= for {message, index} <- Enum.with_index(@messages) do %>
+              <% previous_message = if index > 0, do: Enum.at(@messages, index - 1), else: nil %>
+              <% is_me = message.user_id == @current_user.id %>
+              <% show_date = should_show_date_separator?(message, previous_message) %>
+              <% bubble_class =
+                message_skin_classes(
+                  get_user_skin_for_conversation(@conversation, message.user_id),
+                  is_me
+                ) %>
+
+              <div id={"message-#{message.id}"} class="flex w-full flex-col min-w-0">
+                <%= if show_date do %>
+                  <div class="flex justify-center my-4">
+                    <div class="px-4 py-1.5 rounded-full border border-gray-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 shadow-sm">
+                      <span class="text-[11px] uppercase tracking-widest text-gray-600 dark:text-gray-300 font-semibold">
+                        {format_date_separator(message.inserted_at)}
+                        
+                      </span>
+                    </div>
+                  </div>
+                <% end %>
+
+                <%= if get_skin_change_notification(message, previous_message, @conversation) do %>
+                  <div class="flex justify-center my-2">
+                    <div class="px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium shadow-sm">
+                      <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 4a1 1 0 110 2h-2v6h2a1 1 0 001-1v-2a1 1 0 00-1-1h-2z" clip-rule="evenodd" />
+                        </svg>
+                        {get_skin_change_notification(message, previous_message, @conversation)}
+                      </span>
+                    </div>
+                  </div>
+                <% end %>
+
+                <div class={"flex w-full group " <> if(is_me, do: "justify-end", else: "justify-start")}>
+                  <%= if message.shared_post do %>
+                    <% post = message.shared_post %>
+                    <% media = List.first(post.media_files || []) %>
+                    <.link
+                      navigate={~p"/posts/#{post.id}"}
+                      class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}
+                    >
+                      <%= if media do %>
+                        <%= if media["type"] == "video" do %>
+                          <video
+                            src={media["url"]}
+                            class="absolute inset-0 w-full h-full object-cover"
+                            muted
+                            loop
+                            autoplay
+                            playsinline
+                          >
+                          </video>
+                        <% else %>
+                          <img
+                            src={media["url"]}
+                            class="absolute inset-0 w-full h-full object-cover"
+                          />
+                        <% end %>
+                      <% else %>
+                        <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4">
+                          <p class="text-xs text-gray-500 line-clamp-3 text-center italic">
+                            {post.content}
+                          </p>
+                        </div>
+                      <% end %>
+                      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none">
+                      </div>
+                      <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
+                        <img
+                          src={post.user.avatar_url || "/images/default_avatar.png"}
+                          class="w-6 h-6 rounded-full border border-white/50 object-cover"
+                        />
+                        <span class="text-xs font-bold text-white shadow-sm">
+                          {post.user.username}
+                        </span>
+                      </div>
+                      <%= if post.content do %>
+                        <div class="absolute bottom-3 left-3 right-3 z-10">
+                          <p class="text-xs text-white/90 font-medium drop-shadow-md break-words">
+                            {content_cut(post.content, 80)}
+                          </p>
+                        </div>
+                      <% end %>
+                    </.link>
+                  <% else %>
+                    <div class={"relative min-w-0 " <> bubble_class}>
+                      <div class={"absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 " <> if(is_me, do: "right-full pr-2", else: "left-full pl-2")}>
+                        <button
+                          type="button"
+                          phx-click="prepare_reply"
+                          phx-value-id={message.id}
+                          class="rounded-full bg-black/70 text-white p-1.5 shadow-md hover:bg-black/80"
+                          aria-label="Reply to message"
+                          title="Reply"
+                        >
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M7 7V4l-5 5 5 5v-3c4.5 0 7.6 1.2 10 5-1-5-4-10-10-10z" />
+                          </svg>
+                        </button>
+                        <%= if is_me do %>
+                          <button
+                            type="button"
+                            phx-click="delete_message"
+                            phx-value-id={message.id}
+                            class="rounded-lg bg-red-600/20 p-1.5 hover:bg-red-600/40"
+                            aria-label="Delete message"
+                            title="Delete"
+                          >
+                           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M10 12V17" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M14 12V17" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M4 7H20" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M6 10V18C6 19.6569 7.34315 21 9 21H15C16.6569 21 18 19.6569 18 18V10" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5V7H9V5Z" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                          </button>
+                        <% end %>
+                      </div>
+                      <%= if message.shared_wave do %>
+                        <% wave = message.shared_wave %>
+                        <.link navigate={~p"/waves/view/#{wave.user.username}"} class="block relative w-56 aspect-[9/16] rounded-xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-white/20 mb-2">
+                          <%= if wave.media_type == "video" do %>
+                            <video src={wave.media_url} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
+                          <% else %>
+                            <img src={wave.media_url} class="absolute inset-0 w-full h-full object-cover" />
+                          <% end %>
+                          <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
+                          <div class="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+                            <%= if wave.user.avatar_url && wave.user.avatar_url != "" do %>
+                              <img src={wave.user.avatar_url} class="w-5 h-5 rounded-full border border-white/50 object-cover">
+                            <% else %>
+                              <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px] border border-white/50">
+                                <%= VibeflowWeb.CoreComponents.initials(wave.user) %>
+                              </div>
+                            <% end %>
+                            <span class="text-[10px] font-bold text-white shadow-sm"><%= wave.user.username %></span>
+                          </div>
+                          <div class="absolute top-2 right-2 z-10">
+                            <span class="px-1.5 py-0.5 rounded-full bg-pink-500 text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">Wave</span>
+                          </div>
+                          <%= if wave.caption do %>
+                            <div class="absolute bottom-2 left-2 right-2 z-10"><p class="text-[10px] text-white/90 font-medium drop-shadow-md break-words line-clamp-2"><%= wave.caption %></p></div>
+                          <% end %>
+                        </.link>
+                      <% end %>
+                      <%= if message.reply_to do %>
+                        <% reply_skin = reply_skin_classes(get_user_skin_for_conversation(@conversation, message.user_id), is_me) %>
+                        <div class={"mb-2 rounded-lg " <> reply_skin}>
+                          <div class="flex items-center gap-1.5 mb-1">
+                            <svg class="w-3 h-3 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a5 5 0 015 5v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L15 12.586V12a3 3 0 00-3-3H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <p class="text-[10px] font-semibold opacity-80">
+                              <%= message.reply_to.user.username %>
+                            </p>
+                          </div>
+                          <p class="text-xs leading-snug break-words whitespace-pre-wrap line-clamp-2 opacity-90">
+                            <%= content_cut(message.reply_to.content, 110) %>
+                          </p>
+                        </div>
+                      <% end %>
+                      <div class="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</div>
+                      <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                        <span class="text-[10px]">
+                          <%= if message.inserted_at do %>
+                            {message.inserted_at
+                            |> DateTime.from_naive!("Etc/UTC")
+                            |> Timex.Timezone.convert("Africa/Nairobi")
+                            |> Timex.format!("%H:%M", :strftime)}
+                          <% end %>
+                        </span>
+                        <%= if is_me do %>
+                          <% msg_time =
+                            DateTime.from_naive!(message.inserted_at, "Etc/UTC")
+                            |> DateTime.truncate(:second)
+
+                          is_read =
+                            if @other_last_read_at,
+                              do:
+                                DateTime.compare(
+                                  msg_time,
+                                  DateTime.truncate(@other_last_read_at, :second)
+                                ) != :gt,
+                              else: false %>
+                          <%= if is_read do %>
+                            <div class="flex">
+                              <svg
+                                class="w-3 h-3 text-green-500 -ml-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg><svg
+                                class="w-3 h-3 text-green-500 -ml-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              ><path
+                                fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd"
+                              /></svg>
+                            </div>
+                          <% else %>
+                            <div class="flex opacity-50">
+                              <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+        <%= if typing_text = (get_typing_text(@typing_users) || if(@self_typing, do: "You are typing...", else: nil)) do %>
             <div class="flex items-center gap-2 px-4 py-2 mt-1">
               <div class="flex gap-1">
-                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                <div class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 0ms"
+                >
+                </div>
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 150ms"
+                >
+                </div>
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 300ms"
+                >
+                </div>
               </div>
               <span class="text-xs text-gray-500 dark:text-gray-400 italic animate-pulse">
-                <%= typing_text %>
+                {typing_text}
               </span>
             </div>
           <% end %>
-
         </div>
 
-      <div class="sticky min-w-full bottom-0 right-0 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shrink-0 z-50">
-          
-          <%!-- REPLY INDICATOR (Keep your existing code here) --%>
+        <div class="p-4 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shrink-0">
           <%= if @replying_to do %>
-            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-100 dark:border-zinc-800/50 animate-in slide-in-from-bottom-2 fade-in duration-200">
-              <div class="w-1 h-8 bg-blue-500 rounded-full shrink-0"></div>
-              <div class="flex-1 min-w-0 flex flex-col justify-center text-sm">
-                <span class="text-blue-500 font-bold text-xs mb-0.5 truncate flex items-center gap-1">
+            <div class="mb-3 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">
                   Replying to <%= @replying_to.user.username %>
-                  <.verified_badge user={@replying_to.user} class="h-5 w-5" />
-                </span>
-                <p class="text-gray-500 dark:text-gray-400 truncate opacity-90">
-                  <%= cond do %>
-                    <% @replying_to.content && @replying_to.content != "" -> %><%= @replying_to.content %>
-                    <% @replying_to.media_files && @replying_to.media_files != [] -> %>Media Attachment
-                    <% true -> %>...
-                  <% end %>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <%= content_cut(@replying_to.content, 80) %>
                 </p>
               </div>
-              <button phx-click="cancel_reply" class="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-400 transition-colors" type="button">
-                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              <button
+                type="button"
+                phx-click="clear_reply"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                aria-label="Clear reply"
+                title="Clear reply"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-5.707a1 1 0 010-1.414L8.586 10 6.293 7.707a1 1 0 011.414-1.414L10 8.586l2.293-2.293a1 1 0 011.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
               </button>
             </div>
           <% end %>
+          <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
+            <div class="relative flex-1">
+              <textarea
+                name="message[content]"
+                id="chat-message-input"
+                phx-hook="ChatInput"
+                value={@composer_content}
+                placeholder="Message..."
+                autocomplete="off"
+                rows="1"
+                class="w-full resize-none rounded-3xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-3 pr-28 focus:ring-blue-500 focus:border-blue-500 shadow-sm leading-6"
+              ></textarea>
 
-          <%!-- NEW: UPLOAD PREVIEW AREA --%>
-          <%= if @uploads.media_file.entries != [] do %>
-            <div class="px-4 pt-3 flex flex-row gap-3 overflow-x-auto custom-scrollbar pb-2">
-              <%= for entry <- @uploads.media_file.entries do %>
-                <div class="relative flex-shrink-0 group">
-                  
-                  <%!-- Image Container --%>
-                  <div 
-                    phx-click="preview_entry" 
-                    phx-value-ref={entry.ref}
-                    class="h-20 w-20 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700 relative cursor-zoom-in"
-                  >
-                    <.live_img_preview entry={entry} class="h-full w-full object-cover" />
-                    
-                    <%!-- Dark Overlay for Upload Progress --%>
-                    <div class={"absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity " <> if(entry.progress == 100, do: "opacity-0 group-hover:opacity-10 pointer-events-none", else: "opacity-100")}>
-                      <%= if entry.progress < 100 do %>
-                        <div class="flex flex-col items-center">
-                          <%!-- Circular Spinner --%>
-                          <svg class="animate-spin h-5 w-5 text-white mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span class="text-[10px] font-bold text-white"><%= entry.progress %>%</span>
-                        </div>
-                      <% end %>
-                    </div>
+              <div class="absolute right-2 bottom-2 flex items-center gap-1">
+                <div class="relative">
+                  <div data-emoji-picker class="hidden absolute bottom-full right-0 mb-2 z-50">
+                    <div data-emoji-picker-container></div>
                   </div>
-
-                  <%!-- Remove Button (Top Right) --%>
-                  <button 
-                    phx-click="cancel-upload" 
-                    phx-value-ref={entry.ref} 
-                    class="absolute -top-2 -right-2 bg-gray-900 text-white rounded-full p-1 shadow-md hover:bg-red-500 hover:scale-110 transition-all z-10"
-                    type="button"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <%!-- INPUT AREA --%>
-          <div class="fixed w-full sm:sticky bottom-0 p-4 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
-            <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
-            
-            <form phx-submit="send_message" phx-change="validate" class="flex gap-3 items-end">
-              
-              <label class="mb-1 cursor-pointer text-gray-400 hover:text-blue-500 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <.live_file_input upload={@uploads.media_file} class="hidden" />
-              </label>
-
-              <div id="chat-emoji-picker-wrap" class="mb-1 relative" phx-update="ignore">
-                <button
-                  type="button"
-                  data-emoji-toggle
-                  class="flex h-9 w-9 items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full active:scale-95"
-                  title="Choose an emoji"
-                  aria-label="Choose an emoji"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.5-8a1 1 0 011 1 2.5 2.5 0 005 0 1 1 0 112 0 4.5 4.5 0 01-9 0 1 1 0 011-1zm-.5-2a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0zm6 0a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-
-                <div
-                  data-emoji-picker
-                  class="hidden absolute bottom-full left-0 mb-2 z-20"
-                >
-                  <div data-emoji-picker-container></div>
-                </div>
-              </div>
-
-              <div class="flex-1 relative">
-                <!-- Audio Recording Interface (hook stays mounted) -->
-                <div id="audio-recorder" phx-hook="AudioRecorder" class="relative flex items-end gap-2">
-                  <!-- Recording State (rec2.png style) -->
-                  <div class={"recording-state rounded-2xl p-3 flex items-center gap-3 flex-1 " <> if(@recording, do: "", else: "hidden")}>
-                    <!-- Animated Waveform -->
-                    <div class="recording-waveform flex gap-1 items-center">
-                      <div class="w-1 h-4 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 0ms;"></div>
-                      <div class="w-1 h-6 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 100ms;"></div>
-                      <div class="w-1 h-3 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 200ms;"></div>
-                      <div class="w-1 h-5 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 300ms;"></div>
-                      <div class="w-1 h-4 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 400ms;"></div>
-                      <div class="w-1 h-6 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 500ms;"></div>
-                      <div class="w-1 h-3 recording-waveform-bar rounded-full animate-pulse" style="animation-delay: 600ms;"></div>
-                    </div>
-                    
-                    <!-- Timer -->
-                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      <span id="recording-timer" class="recording-timer">0:00</span>
-                    </div>
-
-                    <!-- Stop Button -->
-                    <button type="button" data-rec-action="stop" class="ml-auto p-2 text-gray-500 hover:text-red-500 transition-colors">
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
-                    </button>
-                  </div>
-
-                  <!-- Normal Text Input State (rec.png style) -->
-                  <div class={if(@recording, do: "hidden", else: "relative flex-1")}>
-                    <textarea
-                      id="chat-input"
-                      phx-hook="ChatInput"
-                      name="message[content]" 
-                      placeholder="Message..." 
-                      autocomplete="off"
-                      rows="1"
-                      class="w-full rounded-2xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-2.5 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow disabled:opacity-50 resize-none overflow-y-auto max-h-36"
-                    ></textarea>
-                  </div>
-
                   <button
                     type="button"
-                    data-rec-action="start"
-                    class={"mb-1 p-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white shadow-md transition-all active:scale-95 " <> if(@recording, do: "hidden", else: "")}
+                    data-emoji-toggle
+                    class="h-8 w-8 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center"
+                    aria-label="Insert emoji"
+                    title="Emoji"
                   >
-                    <.live_file_input upload={@uploads.audio} class="hidden" />
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.5-5.5a1 1 0 011.414 0 3 3 0 004.243 0 1 1 0 111.414 1.414 5 5 0 01-7.071 0 1 1 0 010-1.414zM7 8a1.25 1.25 0 100-2.5A1.25 1.25 0 007 8zm6 0a1.25 1.25 0 100-2.5A1.25 1.25 0 0013 8z" clip-rule="evenodd" />
                     </svg>
                   </button>
                 </div>
-                
-                <!-- Audio Preview State (rec3.png style) -->
-                <%= if @preview_entry && @preview_entry.client_type == "audio" do %>
-                  <div class="audio-preview rounded-2xl p-3 flex items-center gap-3">
-                    <!-- Static Waveform -->
-                    <div class="flex gap-1 items-center">
-                      <div class="w-1 h-4 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-6 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-3 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-5 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-4 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-6 waveform-bar rounded-full"></div>
-                      <div class="w-1 h-3 waveform-bar rounded-full"></div>
-                    </div>
-                    
-                    <!-- Audio Info -->
-                    <div class="flex-1">
-                      <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Voice Message</div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400">0:05</div>
-                    </div>
-                    
-                    <!-- Send Button -->
-                    <button 
-                      type="submit" 
-                      class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
-                    >
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                      </svg>
-                    </button>
-                  </div>
-                <% end %>
+                <div id="chat-audio-recorder" class="relative" phx-hook="AudioRecorder">
+                  <button
+                    type="button"
+                    data-rec-action="start"
+                    class="h-8 w-8 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center"
+                    aria-label="Record voice message"
+                    title="Voice message"
+                  >
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 3a3 3 0 00-3 3v4a3 3 0 106 0V6a3 3 0 00-3-3z" />
+                      <path d="M5 10a1 1 0 012 0 3 3 0 006 0 1 1 0 112 0 5 5 0 01-4 4.9V17h2a1 1 0 110 2H7a1 1 0 110-2h2v-2.1A5 5 0 015 10z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    data-rec-action="stop"
+                    class="hidden h-8 w-8 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center justify-center"
+                    aria-label="Stop recording"
+                    title="Stop recording"
+                  >
+                    <span id="recording-timer" class="text-[10px] font-semibold">0:00</span>
+                  </button>
+                </div>
               </div>
-              
-              <%= if !@recording && !(@preview_entry && @preview_entry.client_type == "audio") do %>
-              <button 
-                type="submit" 
-                disabled={is_uploading}
-                class={"mb-1 p-2.5 rounded-full shadow-md transition-all flex items-center justify-center " <> 
-                  if(is_uploading, 
-                    do: "bg-gray-300 dark:bg-zinc-700 cursor-not-allowed text-gray-500", 
-                    else: "bg-blue-500 hover:bg-blue-600 text-white active:scale-95")
-                }
+            </div>
+
+            <button
+              type="submit"
+              class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-md transition-transform active:scale-95"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
-                <%= if is_uploading do %>
-                  <%!-- Loading Spinner for Button --%>
-                  <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                <% else %>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
-                <% end %>
-              </button>
-            <% end %>
-            
-            </form>
-            
-          </div>
-        </div>
-        </div>
-
-  <%!-- NEW: LIGHTBOX MODAL FOR PREVIEW --%>
-  <%= if @preview_entry do %>
-    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" phx-click="close_preview">
-      
-      <%!-- Close Button --%>
-      <button type="button" phx-click="close_preview" aria-label="Close media preview" class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-
-      <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center" onclick="event.stopPropagation()">
-        <.live_img_preview entry={@preview_entry} class="max-h-[85vh] w-auto rounded-lg shadow-2xl object-contain" />
-        
-        <div class="mt-4 flex items-center gap-4">
-           <div class="text-white text-sm font-mono bg-black/50 px-3 py-1 rounded-full">
-             <%= @preview_entry.client_name %>
-           </div>
-           
-           <%= if @preview_entry.progress < 100 do %>
-             <div class="text-indigo-400 text-sm font-bold flex items-center gap-2">
-               <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-               Uploading... <%= @preview_entry.progress %>%
-             </div>
-           <% else %>
-             <div class="text-green-400 text-sm font-bold flex items-center gap-1">
-               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-               Ready to send
-             </div>
-           <% end %>
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+          </form>
         </div>
       </div>
-    </div>
-  <% end %>
-  
-  <%!-- LIGHTBOX: Zoomed media (image or video) --%>
-  <%= if @zoomed_image do %>
-    <% url = if is_map(@zoomed_image), do: @zoomed_image["url"], else: @zoomed_image %>
-    <% type = if is_map(@zoomed_image), do: @zoomed_image["type"], else: "image" %>
-    <div class="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4" phx-click="close_zoom">
-      <div class="relative max-w-[95vw] max-h-[95vh]" onclick="event.stopPropagation()">
-        <button type="button" phx-click="close_zoom" aria-label="Close media view" class="absolute top-3 right-3 z-[130] p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-
-        <%= if type == "video" do %>
-          <video src={url} controls autoplay class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl"></video>
-        <% else %>
-          <img src={url} class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl object-contain" />
-        <% end %>
-      </div>
-    </div>
-  <% end %>
     <% else %>
       <div class="hidden md:flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 bg-white dark:bg-zinc-900 h-full">
         <div class="text-center">
-          <svg class="w-20 h-20 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <svg
+            class="w-20 h-20 mx-auto mb-4 opacity-20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
           <p class="text-xl font-medium text-gray-500">Your Messages</p>
           <p class="text-sm mt-1">Select a chat to start messaging</p>
         </div>
       </div>
     <% end %>
-
-  </div>
-
-  <!-- Floating Action Button - Only in Sidebar -->
-<div class={"fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[60] " <> if(@conversation, do: "hidden", else: "block")}>
-    <div class="relative" id="chat-menu-dropdown">
-      <button 
-        phx-click="toggle_chat_menu" 
-        class="flex items-center justify-center w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
-        title="New chat or group"
-      >
-        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-        </svg>
-      </button>
-      
-      <!-- Dropdown Menu -->
-      <%= if @show_chat_menu do %>
-        <div class="absolute bottom-full right-0 mb-2 w-52 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 overflow-hidden z-[70]" phx-click-away="toggle_chat_menu">
-          <button 
-            phx-click="toggle_new_chat_modal" 
-            class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-zinc-700"
-          >
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span class="text-gray-700 dark:text-gray-300 font-medium">New Chat</span>
-          </button>
-          <button 
-            phx-click="toggle_group_modal" 
-            class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center gap-3"
-          >
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span class="text-gray-700 dark:text-gray-300 font-medium">Create Group</span>
-          </button>
-        </div>
-      <% end %>
-    </div>
   </div>
 </div>
-
-<!-- New Chat Modal (Simplified for Direct Chats) -->
-<%= if @show_new_chat_modal do %>
-  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" phx-click-away="toggle_new_chat_modal">
-    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" phx-stop-propagation>
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-zinc-700">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Start a New Chat</h2>
-        <button phx-click="toggle_new_chat_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Modal Content -->
-      <div class="flex-1 overflow-y-auto p-6">
-        <!-- Search Bar -->
-        <div class="mb-6">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <input 
-              type="text" 
-              phx-change="search_users_in_modal"
-              phx-debounce="300"
-              placeholder="Search users..."
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        <!-- Tab Navigation -->
-        <div class="flex space-x-1 mb-6 bg-gray-100 dark:bg-zinc-700 rounded-lg p-1">
-          <button 
-            phx-click="select_user_tab" 
-            phx-value-tab="followers"
-            class={"flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors " <>
-              if(@selected_tab == "followers", 
-                do: "bg-white dark:bg-zinc-600 text-blue-600 dark:text-blue-400", 
-                else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
-          >
-            Followers
-          </button>
-          <button 
-            phx-click="select_user_tab" 
-            phx-value-tab="following"
-            class={"flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors " <>
-              if(@selected_tab == "following", 
-                do: "bg-white dark:bg-zinc-600 text-blue-600 dark:text-blue-400", 
-                else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white")}
-          >
-            Following
-          </button>
-        </div>
-
-        <!-- User List -->
-        <div class="space-y-2 max-h-80 overflow-y-auto">
-          <%= for user <- @filtered_users do %>
-            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-700 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
-              <div class="flex items-center gap-3">
-                <%= if user.avatar_url && user.avatar_url != "" do %>
-                  <img src={user.avatar_url} class={"w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
-                <% else %>
-                  <div class={"w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
-                    <%= VibeflowWeb.CoreComponents.initials(user) %>
-                  </div>
-                <% end %>
-                <div>
-                  <p class="font-medium text-gray-900 dark:text-white flex items-center gap-1">
-                    <%= user.username %>
-                    <.verified_badge user={user} class="h-5 w-5" />
-                  </p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    <%= if @selected_tab == "followers", do: "Follows you", else: "You follow" %>
-                  </p>
-                </div>
-              </div>
-              <button 
-                phx-click="start_chat_with_user" 
-                phx-value-user-id={user.id}
-                class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors"
-              >
-                Chat
-              </button>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-  </div>
-<% end %>
-
-<!-- Group Creation Modal -->
-<%= if @show_group_modal do %>
-  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" phx-click-away="toggle_group_modal">
-    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" phx-stop-propagation>
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-zinc-700">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Create New Group</h2>
-        <button phx-click="toggle_group_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Modal Content -->
-      <div class="flex-1 overflow-y-auto p-6">
-        <form phx-submit="create_group" class="space-y-6">
-          <!-- Group Name -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group Name</label>
-            <input 
-              type="text" 
-              name="group_name"
-              value={@group_name}
-              phx-change="update_group_name"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter group name..."
-              required
-            />
-          </div>
-
-          <!-- Member Search -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Members</label>
-            <div class="relative mb-4">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <input 
-                type="text" 
-                phx-change="search_users_in_modal"
-                phx-debounce="300"
-                placeholder="Search users to add..."
-                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            
-            <!-- User Selection List -->
-            <div class="space-y-2 max-h-60 overflow-y-auto border border-gray-300 dark:border-zinc-600 rounded-lg p-3">
-              <%= for user <- @filtered_users do %>
-                <div class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-700 rounded cursor-pointer" phx-click="toggle_user_selection" phx-value-user-id={user.id}>
-                  <input 
-                    type="checkbox" 
-                    class="rounded text-blue-600 focus:ring-blue-500 pointer-events-none"
-                    checked={user.id in @selected_group_members}
-                  />
-                  <%= if user.avatar_url && user.avatar_url != "" do %>
-                    <img src={user.avatar_url} class={"w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)} />
-                  <% else %>
-                    <div class={"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-gray-200 dark:border-zinc-600 " <> VibeflowWeb.CoreComponents.avatar_frame_class(user)}>
-                      <%= VibeflowWeb.CoreComponents.initials(user) %>
-                    </div>
-                  <% end %>
-                  <div class="flex-1">
-                    <p class="font-medium text-gray-900 dark:text-white flex items-center gap-1">
-                      <%= user.username %>
-                      <.verified_badge user={user} class="h-5 w-5" />
-                    </p>
-                                      </div>
-                </div>
-              <% end %>
-            </div>
-
-            <!-- Selected Members Display -->
-            <%= if @selected_group_members != [] do %>
-              <div class="mt-4">
-                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Members (<%= length(@selected_group_members) %>)</p>
-                <div class="flex flex-wrap gap-2">
-                  <%= for member_id <- @selected_group_members do %>
-                    <% member_user = Enum.find(@filtered_users, &(&1.id == member_id)) %>
-                    <%= if member_user do %>
-                      <div class="flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
-                        <%= member_user.username %>
-                        <button 
-                          type="button"
-                          phx-click="toggle_user_selection" 
-                          phx-value-user-id={member_id}
-                          class="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    <% end %>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-3">
-            <button 
-              type="submit" 
-              disabled={@group_name == "" or @selected_group_members == []}
-              class="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-            >
-              Create Group
-            </button>
-            <button 
-              type="button"
-              phx-click="reset_group_form"
-              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
-            >
-              Clear
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-<% end %>

@@ -263,7 +263,7 @@
                 </div>
                     <% end %>
 
-<<<<<<< zchat2.0
+
                     <div class="leading-relaxed break-words">
                       <%= for segment <- message_segments(message.content || "") do %><%= case segment do %><% {:text, text} -> %><%= text %><% {:link, url} -> %><a href={url} target="_blank" rel="noopener noreferrer" class={"font-semibold underline break-all " <> if(is_me, do: "text-white", else: "text-blue-600 dark:text-blue-400")}><%= url %></a><% end %><% end %>
                     </div>
@@ -311,9 +311,9 @@
                         </div>
                       </a>
                     <% end %>
-=======
+
                     <p class="leading-relaxed"><%= message.content %></p>
->>>>>>> ui-ux
+
                     
                     <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
                       <span class="text-[10px]">

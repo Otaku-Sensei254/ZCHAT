@@ -59,7 +59,19 @@ config :logger, :console,
 # CONFIG MIME TYPES FOR UPLOADED FILES
 config :mime, :types, %{
   "audio/flac" => ["flac"],
-  "audio/ogg" => ["ogg"]
+  "audio/ogg" => ["ogg"],
+  "audio/mp4" => ["m4a"],
+  "audio/aac" => ["aac"],
+  "audio/opus" => ["opus"],
+  "audio/webm" => ["webm"],
+  "video/webm" => ["webm"],
+  "video/quicktime" => ["mov"],
+  "video/x-msvideo" => ["avi"],
+  "image/webp" => ["webp"]
+}
+
+config :mime, :extensions, %{
+  "webm" => "video/webm"
 }
 
 # Use Jason for JSON parsing in Phoenix

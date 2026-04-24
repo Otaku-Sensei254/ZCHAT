@@ -192,97 +192,6 @@ Hooks.ChatInput = {
     }
   }
 }
-// In your app.js - replace the entire ChatHook with this:
-
-// Hooks.ChatHook = {
-//   mounted() {
-//     // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
-//     const form = this.el.querySelector("form");
-//     const input = this.el.querySelector("input[name='message[content]']");
-//     const conversationId = this.el.dataset.conversationId;
-
-//     if (!conversationId) return;
-
-//     // 2. CONNECT TO CHANNEL
-//     this.channel = userSocket.channel(`conversation:${conversationId}`, {});
-
-//     // 3. LISTEN FOR EVENTS (Server -> Client)
-    
-//     // Message received
-//     this.channel.on("new_message", (payload) => {
-//       this.pushEvent("display_new_message", payload);
-//     });
-
-//     // Typing indicator received
-//     this.channel.on("typing", (payload) => {
-//       this.pushEvent("update_typing_indicator", {
-//         user_id: payload.user.id,
-//         username: payload.user.username,
-//         is_typing: payload.typing
-//       });
-//     });
-
-//     // Join the channel
-//     this.channel.join()
-//       .receive("ok", resp => console.log("Joined conversation successfully", resp))
-//       .receive("error", resp => console.error("Unable to join conversation", resp));
-
-//     // 4. HANDLE INPUT (Client -> Server)
-    
-//   if (input) {
-//       let typingTimer;
-//       input.addEventListener("input", () => {
-//         clearTimeout(typingTimer);
-//         this.channel.push("typing", { typing: true });
-//         typingTimer = setTimeout(() => {
-//           this.channel.push("typing", { typing: false });
-//         }, 2000);
-//       });
-//     }
-
-//     // 5. HANDLE SUBMIT
-//     if (form && input) {
-//       form.addEventListener("submit", (e) => {
-//         e.preventDefault();
-//         const content = input.value.trim();
-
-//         if (content) {
-//           // Push to channel
-//           this.channel.push("new_message", { content: content })
-          
-//             .receive("ok", () => {
-//               console.log("Message sent");
-//               input.value = ""; // Clear input
-              
-//               // Stop typing indicator immediately upon send
-//               this.channel.push("typing", { typing: false });
-//             })
-//             .receive("error", (err) => console.error("Failed to send", err));
-//         }
-//       });
-//     }
-//   },
-
-//   destroyed() {
-//     if (this.channel) {
-//       this.channel.leave();
-//     }
-//   }
-// };
-
-// Hooks.ChatChannel = {
-//   mounted() {
-//     let conversationId = this.el.dataset.conversationId
-//     this.channel = joinConversation(conversationId, (msg) => {
-//       this.pushEvent("new_message", msg)
-//     })
-//   },
-
-//   destroyed() {
-//     this.channel.leave()
-//   }
-// }
-// 
 
 Hooks.NotificationsHook = {
   mounted() {
@@ -935,7 +844,9 @@ Hooks.CameraCapture = {
   stopTimer() {
     clearInterval(this.timerInterval);
     this.timerStartMs = null;
-    if (this.timerEl) this.timerEl.classList.add("hidden");
+    if (this.timerEl) {
+      this.timerEl.classList.add("hidden");
+    }
   },
 
   getMusicPreviewEl() {
@@ -992,19 +903,45 @@ Hooks.AudioRecorder = {
     this.recorder = null;
     this.chunks = [];
     this.recording = false;
-    this.isMobile = window.matchMedia("(pointer: coarse)").matches;
-    this.holdTimeout = null;
     this.stream = null;
     this.startTime = null;
     this.timerInterval = null;
-    this.startBtn = this.el.querySelector('[data-rec-action="start"]');
-    this.stopBtn = this.el.querySelector('[data-rec-action="stop"]');
-    if (this.stopBtn) this.stopBtn.classList.add("hidden");
+    this.analyser = null;
+    this.audioContext = null;
+    this.animationId = null;
 
     const startRecording = async () => {
       if (this.recording) return;
+      
+      // 1. Immediate UI feedback
+      this.pushEvent("start_recording", {});
+
       try {
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Setup Visualizer
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = this.audioContext.createMediaStreamSource(this.stream);
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 64;
+        source.connect(this.analyser);
+        const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        const animate = () => {
+          if (!this.recording) return;
+          this.analyser.getByteFrequencyData(dataArray);
+          
+          const bars = this.el.querySelectorAll('[data-rec-visualizer] div');
+          bars.forEach((bar, i) => {
+            const val = dataArray[i % dataArray.length] || 0;
+            const height = Math.max(4, (val / 255) * 24);
+            bar.style.height = `${height}px`;
+            const opacity = 0.4 + (val / 255) * 0.6;
+            bar.style.opacity = opacity;
+          });
+          this.animationId = requestAnimationFrame(animate);
+        };
+        
         const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') 
                          ? 'audio/ogg;codecs=opus' 
                          : 'audio/webm;codecs=opus';
@@ -1012,11 +949,10 @@ Hooks.AudioRecorder = {
         this.recorder = new MediaRecorder(this.stream, { mimeType });
         this.chunks = [];
         this.recording = true;
-        if (this.startBtn) this.startBtn.classList.add("hidden");
-        if (this.stopBtn) this.stopBtn.classList.remove("hidden");
-        this.startTime = Date.now();
         
-        // Start timer
+        animate();
+
+        this.startTime = Date.now();
         this.timerInterval = setInterval(() => {
           const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
           const minutes = Math.floor(elapsed / 60);
@@ -1032,80 +968,78 @@ Hooks.AudioRecorder = {
         };
         
         this.recorder.onstop = async () => {
-          // Clear timer
-          if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-          }
+          this.cleanup();
           
           if (this.chunks.length === 0) return;
           
           const blob = new Blob(this.chunks, { type: mimeType });
           const extension = mimeType.includes('webm') ? 'webm' : 'ogg';
-          const filename = `voice_note_${Date.now()}.${extension}`;
-          const file = new File([blob], filename, { type: mimeType });
+          const file = new File([blob], `voice_note_${Date.now()}.${extension}`, { type: mimeType });
           
           this.chunks = [];
-          console.log("Audio captured:", filename, "Size:", file.size);
-
-          // 1. Upload the file
-          this.upload("audio", [file]);
-          
-          // 2. Force a validation event to ensure the server sees the upload entry
+          this.uploadAudioFile(file);
           this.pushEvent("validate", {});
-
-          // 3. Wait for the upload to actually be registered on the server
-          setTimeout(() => {
-            this.pushEvent("stop_recording", {});
-          }, 600);
+          setTimeout(() => { this.pushEvent("stop_recording", {}); }, 600);
         };
 
         this.recorder.start();
-        this.pushEvent("start_recording", {});
       } catch (err) {
         console.error("Mic error:", err);
+        this.pushEvent("cancel_recording", {});
       }
     };
 
     const stopRecording = () => {
       if (!this.recording) return;
-      if (this.recorder && this.recorder.state === "recording") {
-        this.recorder.stop();
-      }
-      if (this.stream) {
-        this.stream.getTracks().forEach(track => track.stop());
-      }
+      if (this.recorder && this.recorder.state === "recording") this.recorder.stop();
+      if (this.stream) this.stream.getTracks().forEach(track => track.stop());
       this.recording = false;
-      if (this.startBtn) this.startBtn.classList.remove("hidden");
-      if (this.stopBtn) this.stopBtn.classList.add("hidden");
-      
-      // Clear timer
-      if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
-      }
     };
 
-    if (this.startBtn) {
-      // Mobile + Desktop: tap to start (stop via stop button)
-      this.startBtn.addEventListener("click", e => {
-        e.preventDefault();
-        if (!this.recording) startRecording();
-      });
-    }
+    this.cleanup = () => {
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+      if (this.audioContext) this.audioContext.close();
+      if (this.stream) this.stream.getTracks().forEach(track => track.stop());
+    };
 
-    if (this.stopBtn) {
-      this.stopBtn.addEventListener("click", e => {
+    // Use event delegation on this.el to handle clicks even after re-renders
+    this.el.addEventListener("click", e => {
+      const startBtn = e.target.closest('[data-rec-action="start"]');
+      const stopBtn = e.target.closest('[data-rec-action="stop"]');
+      
+      if (startBtn) {
         e.preventDefault();
-        if (this.recording) stopRecording();
-      });
-    }
+        startRecording();
+      } else if (stopBtn) {
+        e.preventDefault();
+        stopRecording();
+      }
+    });
   },
   
   destroyed() {
-    if (this._onPointerUp) window.removeEventListener("pointerup", this._onPointerUp);
-    if (this.stream) this.stream.getTracks().forEach(track => track.stop());
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.cleanup) this.cleanup();
+  },
+  uploadAudioFile(file) {
+    // Try the robust LiveView upload helper first
+    try {
+      if (typeof this.upload === "function") {
+        this.upload("audio", [file]);
+        return;
+      }
+    } catch (err) {
+      console.warn("Direct this.upload failed:", err);
+    }
+
+    // Fallback to manual input triggering
+    const audioInput = document.getElementById("chat-audio-upload");
+    if (!audioInput) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    audioInput.files = transfer.files;
+    audioInput.dispatchEvent(new Event("input", { bubbles: true }));
+    audioInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }
 
@@ -1147,96 +1081,139 @@ Hooks.WaveAudio = {
 
 Hooks.WavePlayer = {
   mounted() {
-    console.log("WavePlayer mounted for:", this.el.id);
-    
+    this.initPlayer();
+    this._onFocus = () => this.initPlayer();
+    window.addEventListener("focus", this._onFocus);
+  },
+  updated() {
+    const newUrl = this.el.dataset.url;
+    if (this.currentUrl !== newUrl) {
+      this.initPlayer();
+    }
+  },
+  initPlayer() {
     this.audio = this.el.querySelector("audio");
     this.playBtn = this.el.querySelector(".play-btn");
     this.iconPlay = this.el.querySelector(".play-icon");
     this.iconPause = this.el.querySelector(".pause-icon");
-    this.bar = this.el.querySelector(".progress-bar")?.parentElement;
     this.progress = this.el.querySelector(".progress-bar");
     this.timerEl = this.el.querySelector(".timer");
+    this.currentUrl = this.el.dataset.url;
 
-    if (!this.audio) {
-      console.error("Audio element not found in WavePlayer");
-      return;
-    }
-
-    const src = this.el.dataset.url;
-    if (src) {
-      this.audio.src = src;
-      console.log("Audio src set to:", src);
-    }
+    if (!this.audio || !this.currentUrl) return;
 
     const fmt = (sec) => {
-      if (!Number.isFinite(sec)) return "0:00";
+      if (!Number.isFinite(sec) || sec <= 0) return "0:00";
       const m = Math.floor(sec / 60);
       const s = Math.floor(sec % 60);
       return `${m}:${s.toString().padStart(2, "0")}`;
     };
 
+    const updateDurationText = () => {
+      if (this.audio.duration && Number.isFinite(this.audio.duration) && this.audio.duration !== Infinity) {
+        this.timerEl.textContent = fmt(this.audio.duration);
+      }
+    };
+
     const updateProgress = () => {
-      if (!this.audio.duration) return;
+      if (!this.audio.duration || !Number.isFinite(this.audio.duration)) return;
+      
       const pct = (this.audio.currentTime / this.audio.duration) * 100;
-      this.progress.style.width = `${pct}%`;
-      this.timerEl.textContent = fmt(this.audio.currentTime);
+      if (this.progress) this.progress.style.width = `${pct}%`;
+
+      // ONLY update the text to current time if we are playing or scrubbing
+      if (!this.audio.paused || this.audio.currentTime > 0) {
+        this.timerEl.textContent = fmt(this.audio.currentTime);
+      } else {
+        updateDurationText();
+      }
     };
 
     const setPlaying = (playing) => {
-      console.log("Setting playing state to:", playing);
       if (playing) {
-        this.iconPlay.classList.add("hidden");
-        this.iconPause.classList.remove("hidden");
-        this.playBtn.classList.add("playing");
-        this.el.classList.add("playing");
+        this.iconPlay?.classList.add("hidden");
+        this.iconPause?.classList.remove("hidden");
+        this.playBtn?.classList.add("playing");
       } else {
-        this.iconPause.classList.add("hidden");
-        this.iconPlay.classList.remove("hidden");
-        this.playBtn.classList.remove("playing");
-        this.el.classList.remove("playing");
+        this.iconPause?.classList.add("hidden");
+        this.iconPlay?.classList.remove("hidden");
+        this.playBtn?.classList.remove("playing");
       }
     };
 
-    this.audio.addEventListener("loadedmetadata", () => {
-      console.log("Audio metadata loaded, duration:", this.audio.duration);
-      this.timerEl.textContent = fmt(this.audio.duration);
-    });
+    // Listeners
+    if (this._onMetadata) this.audio.removeEventListener("loadedmetadata", this._onMetadata);
+    if (this._onDuration) this.audio.removeEventListener("durationchange", this._onDuration);
+    if (this._onTime) this.audio.removeEventListener("timeupdate", this._onTime);
+    if (this._onEnded) this.audio.removeEventListener("ended", this._onEnded);
 
-    this.audio.addEventListener("timeupdate", updateProgress);
-    this.audio.addEventListener("ended", () => {
-      console.log("Audio ended");
-      setPlaying(false);
-      this.progress.style.width = "0%";
-      this.timerEl.textContent = fmt(this.audio.duration);
-    });
-
-    this.playBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log("Play button clicked, audio.paused:", this.audio.paused);
-      if (this.audio.paused) {
-        this.audio.play();
-        setPlaying(true);
+    this._onMetadata = () => {
+      // Common hack for WebM/Opus duration: seek to end and back
+      if (this.audio.duration === Infinity) {
+        this.audio.currentTime = 1e101;
+        this.audio.ontimeupdate = () => {
+          this.audio.ontimeupdate = null;
+          this.audio.currentTime = 0;
+          updateDurationText();
+        };
       } else {
-        this.audio.pause();
-        setPlaying(false);
+        updateDurationText();
       }
-    });
+    };
+    this._onDuration = updateDurationText;
+    this._onTime = updateProgress;
+    this._onEnded = () => {
+      setPlaying(false);
+      if (this.progress) this.progress.style.width = "0%";
+      updateDurationText();
+    };
 
-    if (this.bar) {
-      this.bar.addEventListener("click", (e) => {
-        const rect = this.bar.getBoundingClientRect();
-        const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-        if (this.audio.duration) {
-          this.audio.currentTime = this.audio.duration * pct;
-          updateProgress();
-        }
-      });
+    this.audio.addEventListener("loadedmetadata", this._onMetadata);
+    this.audio.addEventListener("durationchange", this._onDuration);
+    this.audio.addEventListener("timeupdate", this._onTime);
+    this.audio.addEventListener("ended", this._onEnded);
+
+    // Initial setup
+    if (this.audio.src !== this.currentUrl) {
+      this.audio.src = this.currentUrl;
+      this.audio.load();
     }
 
-    console.log("WavePlayer fully initialized");
+    // Polling fallback
+    if (this.durationPoller) clearInterval(this.durationPoller);
+    let pollCount = 0;
+    this.durationPoller = setInterval(() => {
+      if (this.audio && this.audio.duration && Number.isFinite(this.audio.duration) && this.audio.duration > 0 && this.audio.duration !== Infinity) {
+        updateDurationText();
+        clearInterval(this.durationPoller);
+      } else if (this.audio && this.audio.duration === Infinity) {
+         // Try the seek-to-end hack during polling too
+         this.audio.currentTime = 1e101;
+      }
+      if (++pollCount > 50) clearInterval(this.durationPoller);
+    }, 200);
+
+    if (this.playBtn && !this.playBtn._listenerAttached) {
+      this.playBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (this.audio.readyState === 0) this.audio.load();
+        if (this.audio.paused) {
+          this.audio.play().then(() => setPlaying(true)).catch(() => {
+            this.audio.load();
+            this.audio.play().then(() => setPlaying(true));
+          });
+        } else {
+          this.audio.pause();
+          setPlaying(false);
+        }
+      });
+      this.playBtn._listenerAttached = true;
+    }
   },
   destroyed() {
     if (this.audio) this.audio.pause();
+    if (this.durationPoller) clearInterval(this.durationPoller);
+    if (this._onFocus) window.removeEventListener("focus", this._onFocus);
   }
 };
 

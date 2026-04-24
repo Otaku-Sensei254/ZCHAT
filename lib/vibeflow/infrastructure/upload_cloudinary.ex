@@ -15,12 +15,14 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
   @video_exts ~w(.mp4 .mov .mkv .webm .avi .m4v)
   @image_exts ~w(.jpg .jpeg .png .gif .webp .bmp .avif)
 
-  def upload_file(file_path, upload_kind \\ :auto) do
+  def upload_file(file_path, upload_kind \\ :auto, opts \\ []) do
     with {:ok, config} <- storage_config(),
          {:ok, bytes} <- File.read(file_path) do
-      key = object_key(file_path, upload_kind)
-      content_type = content_type_for(file_path, upload_kind)
-      resource_type = resource_type_for(file_path, upload_kind)
+      filename = Keyword.get(opts, :filename)
+      content_type_hint = Keyword.get(opts, :content_type)
+      key = object_key(file_path, upload_kind, filename)
+      content_type = content_type_for(file_path, upload_kind, filename, content_type_hint)
+      resource_type = resource_type_for(file_path, upload_kind, filename, content_type_hint)
 
       Logger.info("Uploading media to Cloudflare R2: key=#{key}, type=#{resource_type}")
 
@@ -158,8 +160,8 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
     "#{base}/#{key}"
   end
 
-  defp object_key(file_path, upload_kind) do
-    ext = Path.extname(file_path) |> String.downcase()
+  defp object_key(file_path, upload_kind, filename \\ nil) do
+    ext = effective_extension(file_path, filename)
     ext =
       case ext do
         "" -> default_extension(upload_kind)
@@ -183,10 +185,20 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
   defp default_extension(:image), do: ".jpg"
   defp default_extension(_), do: ".bin"
 
-  defp resource_type_for(file_path, upload_kind) do
-    ext = Path.extname(file_path) |> String.downcase()
+  defp resource_type_for(file_path, upload_kind, filename \\ nil, content_type_hint \\ nil) do
+    ext = effective_extension(file_path, filename)
+    content_type_hint = content_type_hint || ""
 
     cond do
+      String.starts_with?(content_type_hint, "audio/") ->
+        "audio"
+
+      String.starts_with?(content_type_hint, "video/") ->
+        "video"
+
+      String.starts_with?(content_type_hint, "image/") ->
+        "image"
+
       upload_kind in [:audio, :video, :image] ->
         Atom.to_string(upload_kind)
 
@@ -204,42 +216,67 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
     end
   end
 
-  defp content_type_for(file_path, upload_kind) do
-    ext = Path.extname(file_path) |> String.downcase()
+  defp content_type_for(file_path, upload_kind, filename \\ nil, content_type_hint \\ nil) do
+    ext = effective_extension(file_path, filename)
+    content_type_hint = content_type_hint || ""
 
-    case {upload_kind, ext} do
-      {:audio, ".mp3"} -> "audio/mpeg"
-      {:audio, ".m4a"} -> "audio/mp4"
-      {:audio, ".aac"} -> "audio/aac"
-      {:audio, ".wav"} -> "audio/wav"
-      {:audio, ".ogg"} -> "audio/ogg"
-      {:audio, ".opus"} -> "audio/opus"
-      {:audio, ".flac"} -> "audio/flac"
-      {:audio, ".webm"} -> "audio/webm"
-      {:video, ".mp4"} -> "video/mp4"
-      {:video, ".mov"} -> "video/quicktime"
-      {:video, ".webm"} -> "video/webm"
-      {:video, ".mkv"} -> "video/x-matroska"
-      {:video, ".avi"} -> "video/x-msvideo"
-      {:video, ".m4v"} -> "video/x-m4v"
-      {:image, ".png"} -> "image/png"
-      {:image, ".gif"} -> "image/gif"
-      {:image, ".webp"} -> "image/webp"
-      {:image, ".bmp"} -> "image/bmp"
-      {:image, ".avif"} -> "image/avif"
-      {:image, _} -> "image/jpeg"
-      {_, ".jpg"} -> "image/jpeg"
-      {_, ".jpeg"} -> "image/jpeg"
-      {_, ".png"} -> "image/png"
-      {_, ".gif"} -> "image/gif"
-      {_, ".webp"} -> "image/webp"
-      {_, ".mp4"} -> "video/mp4"
-      {_, ".mov"} -> "video/quicktime"
-      {_, ".webm"} -> "video/webm"
-      {_, ".wav"} -> "audio/wav"
-      {_, ".ogg"} -> "audio/ogg"
-      {_, ".flac"} -> "audio/flac"
-      _ -> "application/octet-stream"
+    cond do
+      String.starts_with?(content_type_hint, "audio/") -> content_type_hint
+      String.starts_with?(content_type_hint, "video/") -> content_type_hint
+      String.starts_with?(content_type_hint, "image/") -> content_type_hint
+      true ->
+        case {upload_kind, ext} do
+          {:audio, ".mp3"} -> "audio/mpeg"
+          {:audio, ".m4a"} -> "audio/mp4"
+          {:audio, ".aac"} -> "audio/aac"
+          {:audio, ".wav"} -> "audio/wav"
+          {:audio, ".ogg"} -> "audio/ogg"
+          {:audio, ".opus"} -> "audio/opus"
+          {:audio, ".flac"} -> "audio/flac"
+          {:audio, ".webm"} -> "audio/webm"
+          {:audio, _} -> "audio/webm"
+          {:video, ".mp4"} -> "video/mp4"
+          {:video, ".mov"} -> "video/quicktime"
+          {:video, ".webm"} -> "video/webm"
+          {:video, ".mkv"} -> "video/x-matroska"
+          {:video, ".avi"} -> "video/x-msvideo"
+          {:video, ".m4v"} -> "video/x-m4v"
+          {:image, ".png"} -> "image/png"
+          {:image, ".gif"} -> "image/gif"
+          {:image, ".webp"} -> "image/webp"
+          {:image, ".bmp"} -> "image/bmp"
+          {:image, ".avif"} -> "image/avif"
+          {:image, _} -> "image/jpeg"
+          {_, ".jpg"} -> "image/jpeg"
+          {_, ".jpeg"} -> "image/jpeg"
+          {_, ".png"} -> "image/png"
+          {_, ".gif"} -> "image/gif"
+          {_, ".webp"} -> "image/webp"
+          {_, ".mp4"} -> "video/mp4"
+          {_, ".mov"} -> "video/quicktime"
+          {_, ".webm"} -> "video/webm"
+          {_, ".wav"} -> "audio/wav"
+          {_, ".ogg"} -> "audio/ogg"
+          {_, ".flac"} -> "audio/flac"
+          _ -> "application/octet-stream"
+        end
+    end
+  end
+
+  defp effective_extension(file_path, filename) do
+    filename_ext =
+      filename
+      |> case do
+        nil -> ""
+        name -> Path.extname(String.downcase(name))
+      end
+
+    path_ext = Path.extname(file_path) |> String.downcase()
+
+    cond do
+      filename_ext not in ["", ".bin"] -> filename_ext
+      path_ext not in ["", ".bin"] -> path_ext
+      true -> ""
     end
   end
 

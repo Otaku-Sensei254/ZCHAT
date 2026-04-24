@@ -74,14 +74,14 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:group_name, "")
      |> assign(:chat_filter, "all")
      |> allow_upload(:media_file,
-       accept: ~w(.jpg .jpeg .png .gif .mp4 .mp3 .wav .ogg .flac),
-       max_entries: 3,
+       accept: ~w(.jpg .jpeg .png .gif .webp .mp4 .mov .webm .avi .mp3 .wav .ogg .flac),
+       max_entries: 5,
        chunk_size: 64_000,
-       max_file_size: 50_000_000,
+       max_file_size: 100_000_000,
        auto_upload: true
      )
      |> allow_upload(:audio,
-       accept: ~w(.mp3 .wav .ogg .flac .webm),
+       accept: ~w(.mp3 .wav .ogg .flac .webm .m4a .aac .opus),
        max_entries: 1,
        chunk_size: 64_000,
        max_file_size: 20_000_000,
@@ -305,6 +305,47 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   @impl true
+  def handle_event("preview_entry", %{"ref" => ref}, socket) do
+    entry =
+      socket.assigns.uploads.media_file.entries
+      |> Enum.find(fn e -> e.ref == ref end)
+
+    {:noreply, assign(socket, preview_entry: entry)}
+  end
+
+  @impl true
+  def handle_event("close_preview", _params, socket) do
+    {:noreply, assign(socket, preview_entry: nil)}
+  end
+
+  @impl true
+  def handle_event("zoom_image", %{"url" => url, "type" => type}, socket) do
+    {:noreply, assign(socket, zoomed_image: %{"url" => url, "type" => type})}
+  end
+
+  @impl true
+  def handle_event("zoom_image", %{"url" => url}, socket) do
+    {:noreply, assign(socket, zoomed_image: %{"url" => url, "type" => "image"})}
+  end
+
+  @impl true
+  def handle_event("close_zoom", _params, socket) do
+    {:noreply, assign(socket, zoomed_image: nil)}
+  end
+
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    socket =
+      if socket.assigns.preview_entry && socket.assigns.preview_entry.ref == ref do
+        assign(socket, preview_entry: nil)
+      else
+        socket
+      end
+
+    {:noreply, cancel_upload(socket, :media_file, ref)}
+  end
+
+  @impl true
   def handle_event("send_message", %{"message" => message_params}, socket) do
     conversation = socket.assigns.conversation
     current_user = socket.assigns.current_user
@@ -313,7 +354,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
     # 1. Handle Uploads
     uploaded_files =
       consume_uploaded_entries(socket, :media_file, fn %{path: path}, entry ->
-        case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+        case Vibeflow.Infrastructure.UploadCloudinary.upload_file(
+               path,
+               upload_kind_for(entry),
+               filename: entry.client_name,
+               content_type: entry.client_type
+             ) do
           {:ok, %{url: url, resource_type: type}} ->
             {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
 
@@ -359,10 +405,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
+  @impl true
   def handle_event("start_recording", _params, socket) do
     {:noreply, assign(socket, :recording, true)}
   end
 
+  @impl true
   def handle_event("stop_recording", _params, socket) do
     entries = socket.assigns.uploads.audio.entries
     ready = Enum.filter(entries, &(&1.progress == 100))
@@ -372,103 +420,27 @@ defmodule VibeflowWeb.Chat.ChatLive do
     )
 
     socket =
-      if length(ready) > 0 do
-        send_audio_message(socket)
-      else
-        if length(entries) > 0 do
-          Process.send_after(self(), :retry_audio_upload, 300)
-        end
+      cond do
+        length(ready) > 0 ->
+          send_audio_message(socket)
 
-        socket
+        length(entries) > 0 or socket.assigns.audio_retry_count < 10 ->
+          Process.send_after(self(), :retry_audio_upload, 500)
+          assign(socket, :audio_retry_count, socket.assigns.audio_retry_count + 1)
+
+        true ->
+          socket
       end
 
-    {:noreply, socket |> assign(:recording, false) |> assign(:audio_retry_count, 0)}
-  end
-
-  def handle_event("cancel_recording", _params, socket) do
     {:noreply, assign(socket, :recording, false)}
   end
 
-  defp consume_audio_uploads(socket) do
-    consume_uploaded_entries(socket, :audio, fn %{path: path}, entry ->
-      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
-        {:ok, %{url: url, resource_type: type}} ->
-          {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
-
-        {:error, reason} ->
-          Logger.error(">>> VOICENOTE: Cloudinary failed: #{inspect(reason)}")
-          {:ok, nil}
-      end
-    end)
-    |> Enum.filter(&(&1 != nil))
+  @impl true
+  def handle_event("cancel_recording", _params, socket) do
+    {:noreply, assign(socket, :recording, false) |> assign(:audio_retry_count, 0)}
   end
 
-  defp upload_kind_for(entry) do
-    client_type = entry.client_type || ""
-    client_name = entry.client_name || ""
-    ext = client_name |> String.downcase() |> Path.extname()
-
-    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
-    image_exts = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif"]
-
-    cond do
-      String.starts_with?(client_type, "audio/") -> :raw
-      ext in audio_exts -> :raw
-      String.starts_with?(client_type, "image/") -> :image
-      ext in image_exts -> :image
-      true -> :auto
-    end
-  end
-
-  defp normalize_media_type(resource_type, entry) do
-    client_type = entry.client_type || ""
-    client_name = entry.client_name || ""
-    ext = client_name |> String.downcase() |> Path.extname()
-
-    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
-
-    cond do
-      String.starts_with?(client_type, "audio/") -> "audio"
-      ext in audio_exts -> "audio"
-      true -> resource_type
-    end
-  end
-
-  defp send_audio_message(socket) do
-    conversation = socket.assigns.conversation
-    current_user = socket.assigns.current_user
-    audio_files = consume_audio_uploads(socket)
-
-    if audio_files != [] do
-      Chat.create_message(%{
-        "conversation_id" => conversation.id,
-        "user_id" => current_user.id,
-        "media_files" => audio_files,
-        "content" => ""
-      })
-    end
-
-    socket
-  end
-
-  def handle_info(:retry_audio_upload, socket) do
-    entries = socket.assigns.uploads.audio.entries
-    ready = Enum.filter(entries, &(&1.progress == 100))
-
-    cond do
-      length(ready) > 0 ->
-        socket = send_audio_message(socket)
-        {:noreply, assign(socket, :audio_retry_count, 0)}
-
-      socket.assigns.audio_retry_count < 10 ->
-        Process.send_after(self(), :retry_audio_upload, 300)
-        {:noreply, assign(socket, :audio_retry_count, socket.assigns.audio_retry_count + 1)}
-
-      true ->
-        {:noreply, assign(socket, :audio_retry_count, 0)}
-    end
-  end
-
+  @impl true
   def handle_event("toggle_new_chat_modal", _, socket) do
     current_user = socket.assigns.current_user
 
@@ -607,6 +579,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
+  @impl true
   def handle_event("toggle_user_selection", %{"user-id" => user_id}, socket) do
     current_members = socket.assigns.selected_group_members || []
     user_id = String.to_integer(user_id)
@@ -762,7 +735,29 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # HANDLE INFO - All grouped together
   # ===========================================================================
 
-  # 1. NEW MESSAGE
+  @impl true
+  def handle_info(:retry_audio_upload, socket) do
+    entries = socket.assigns.uploads.audio.entries
+    ready = Enum.filter(entries, &(&1.progress == 100))
+
+    Logger.debug(
+      ">>> VOICENOTE: retry_audio_upload. Total: #{length(entries)}, Ready: #{length(ready)}, Count: #{socket.assigns.audio_retry_count}"
+    )
+
+    cond do
+      length(ready) > 0 ->
+        socket = send_audio_message(socket)
+        {:noreply, assign(socket, :audio_retry_count, 0)}
+
+      socket.assigns.audio_retry_count < 25 ->
+        Process.send_after(self(), :retry_audio_upload, 400)
+        {:noreply, assign(socket, :audio_retry_count, socket.assigns.audio_retry_count + 1)}
+
+      true ->
+        {:noreply, assign(socket, :audio_retry_count, 0)}
+    end
+  end
+
   @impl true
   def handle_info({:new_message, message}, socket) do
     active_conversation = socket.assigns.conversation
@@ -809,8 +804,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
-
-  # 2. TYPING INDICATOR (Received Broadcast)
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "typing", payload: payload}, socket) do
     user_id = payload.user.id
@@ -832,7 +825,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
-  # 3. SIDEBAR UPDATE
   @impl true
   def handle_info({:update_sidebar, _message}, socket) do
     conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
@@ -845,7 +837,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
     {:noreply, assign(socket, :conversations, conversations)}
   end
 
-  # 4. READ RECEIPT
   @impl true
   def handle_info({:message_read, %{last_read_at: last_read_at, user_id: reader_id}}, socket) do
     # Only update if someone ELSE read messages while I am in the chat
@@ -870,7 +861,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> maybe_store_link_preview(url, preview)}
   end
 
-  # 6. MESSAGE DELETED
   @impl true
   def handle_info({:message_deleted, message}, socket) do
     if socket.assigns.conversation &&
@@ -885,20 +875,17 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
-  # 7. PRESENCE
   @impl true
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
     online_users = Presence.list("users:online")
     {:noreply, assign(socket, :online_users, online_users)}
   end
 
-  # 8. SKIN CHANGED
   @impl true
   def handle_info({:skin_changed, new_skin}, socket) do
     {:noreply, assign(socket, :active_message_skin, new_skin)}
   end
 
-  # Handle skin change broadcasts from conversation settings
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "skin_changed", payload: payload}, socket) do
     Logger.info("Received skin change broadcast: user_id=#{payload.user_id}, skin=#{payload.skin}, current_user=#{socket.assigns.current_user.id}")
@@ -1220,5 +1207,78 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   rescue
     _ -> nil
+  end
+
+  defp normalize_media_type(resource_type, entry) do
+    client_type = entry.client_type || ""
+    client_name = entry.client_name || ""
+    ext = client_name |> String.downcase() |> Path.extname()
+
+    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
+    video_exts = [".mp4", ".mov", ".webm", ".avi", ".m4v"]
+
+    cond do
+      String.starts_with?(client_type, "audio/") -> "audio"
+      ext in audio_exts -> "audio"
+      String.starts_with?(client_type, "video/") -> "video"
+      ext in video_exts -> "video"
+      true -> resource_type
+    end
+  end
+
+  defp upload_kind_for(entry) do
+    client_type = entry.client_type || ""
+    client_name = entry.client_name || ""
+    ext = client_name |> String.downcase() |> Path.extname()
+
+    audio_exts = [".mp3", ".wav", ".ogg", ".flac", ".webm", ".m4a", ".aac", ".opus"]
+    image_exts = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif"]
+    video_exts = [".mp4", ".mov", ".webm", ".avi", ".m4v"]
+
+    cond do
+      String.starts_with?(client_type, "audio/") -> :audio
+      ext in audio_exts -> :audio
+      String.starts_with?(client_type, "image/") -> :image
+      ext in image_exts -> :image
+      String.starts_with?(client_type, "video/") -> :video
+      ext in video_exts -> :video
+      true -> :auto
+    end
+  end
+
+  defp send_audio_message(socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_user
+    audio_files = consume_audio_uploads(socket)
+
+    if audio_files != [] do
+      Chat.create_message(%{
+        "conversation_id" => conversation.id,
+        "user_id" => current_user.id,
+        "media_files" => audio_files,
+        "content" => ""
+      })
+    end
+
+    socket
+  end
+
+  defp consume_audio_uploads(socket) do
+    consume_uploaded_entries(socket, :audio, fn %{path: path}, entry ->
+      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(
+             path,
+             upload_kind_for(entry),
+             filename: entry.client_name,
+             content_type: entry.client_type
+           ) do
+        {:ok, %{url: url, resource_type: type}} ->
+          {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
+
+        {:error, reason} ->
+          Logger.error(">>> VOICENOTE: Cloudflare R2 failed: #{inspect(reason)}")
+          {:ok, nil}
+      end
+    end)
+    |> Enum.filter(&(&1 != nil))
   end
 end

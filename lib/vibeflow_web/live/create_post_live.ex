@@ -60,7 +60,12 @@ defmodule VibeflowWeb.CreatePostLive do
     if all_done? do
       uploaded_results =
         consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-          case UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+          case UploadCloudinary.upload_file(
+                 path,
+                 upload_kind_for(entry),
+                 filename: entry.client_name,
+                 content_type: entry.client_type
+               ) do
             {:ok, result} ->
               {:ok,
                %{
@@ -242,7 +247,12 @@ defmodule VibeflowWeb.CreatePostLive do
   defp consume_pending_media(socket) do
     if Enum.any?(socket.assigns.uploads.media.entries, & &1.done?) do
       consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-        case UploadCloudinary.upload_file(path, upload_kind_for(entry)) do
+        case UploadCloudinary.upload_file(
+               path,
+               upload_kind_for(entry),
+               filename: entry.client_name,
+               content_type: entry.client_type
+             ) do
           {:ok, result} ->
             {:ok,
              %{

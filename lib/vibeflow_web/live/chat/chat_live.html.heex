@@ -438,6 +438,82 @@
                           </p>
                         </div>
                       <% end %>
+                      <%= if message.media_files && message.media_files != [] do %>
+                        <div class="mb-2 space-y-2">
+                          <%= for media <- message.media_files do %>
+                            <%= cond do %>
+                              <% media["type"] == "image" -> %>
+                                <img
+                                  src={media["url"]}
+                                  phx-click="zoom_image"
+                                  phx-value-url={media["url"]}
+                                  phx-value-type="image"
+                                  class="max-w-xs rounded-xl border border-black/5 object-cover dark:border-white/10 cursor-zoom-in"
+                                />
+                              <% media["type"] == "video" -> %>
+                                <div class="relative group">
+                                  <video
+                                    src={media["url"]}
+                                    playsinline
+                                    class="max-w-xs rounded-xl border border-black/5 dark:border-white/10"
+                                  >
+                                  </video>
+                                  <button
+                                    phx-click="zoom_image"
+                                    phx-value-url={media["url"]}
+                                    phx-value-type="video"
+                                    class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-xl"
+                                  >
+                                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.5 5.5A1 1 0 018 4.67l7 4.33a1 1 0 010 1.7l-7 4.33A1 1 0 016.5 14.2V5.5z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              <% media["type"] == "audio" -> %>
+                                <div
+                                  id={"chat-audio-#{message.id}-#{:erlang.phash2(media["url"] || "")}"}
+                                  phx-hook="WavePlayer"
+                                  data-url={media["url"]}
+                                  class="w-72 max-w-full rounded-2xl border border-black/5 bg-white/70 px-3 py-3 shadow-sm dark:border-white/10 dark:bg-zinc-900/60"
+                                >
+                                  <audio preload="auto"></audio>                                  <div class="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      class="play-btn flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm"
+                                    >
+                                      <svg class="play-icon h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6.5 5.5A1 1 0 018 4.67l7 4.33a1 1 0 010 1.7l-7 4.33A1 1 0 016.5 14.2V5.5z" />
+                                      </svg>
+                                      <svg class="pause-icon hidden h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm8 0a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1z" />
+                                      </svg>
+                                    </button>
+                                    <div class="min-w-0 flex-1">
+                                      <div class="mb-1 flex items-center justify-between gap-2">
+                                        <span class="truncate text-xs font-medium text-gray-700 dark:text-gray-200">
+                                          Voice message
+                                        </span>
+                                        <span class="timer text-[11px] text-gray-500 dark:text-gray-400">0:00</span>
+                                      </div>
+                                      <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
+                                        <div class="progress-bar h-full w-0 rounded-full bg-blue-500"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              <% true -> %>
+                                <a
+                                  href={media["url"]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="inline-flex items-center rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm text-blue-600 dark:border-white/10 dark:bg-zinc-900/60 dark:text-blue-400"
+                                >
+                                  Open attachment
+                                </a>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      <% end %>
                       <div class="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</div>
                       <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
                         <span class="text-[10px]">
@@ -553,75 +629,182 @@
               </button>
             </div>
           <% end %>
-          <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
-            <div class="relative flex-1">
-              <textarea
-                name="message[content]"
-                id="chat-message-input"
-                phx-hook="ChatInput"
-                value={@composer_content}
-                placeholder="Message..."
-                autocomplete="off"
-                rows="1"
-                class="w-full resize-none rounded-3xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-3 pr-28 focus:ring-blue-500 focus:border-blue-500 shadow-sm leading-6"
-              ></textarea>
+          <%!-- UPLOAD PREVIEW AREA --%>
+          <%= if @uploads.media_file.entries != [] do %>
+            <div class="px-4 py-2 flex flex-row gap-3 overflow-x-auto border-t border-gray-100 dark:border-zinc-800">
+              <%= for entry <- @uploads.media_file.entries do %>
+                <div class="relative flex-shrink-0 group">
+                  <div 
+                    phx-click="preview_entry" 
+                    phx-value-ref={entry.ref}
+                    class="h-16 w-16 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700 relative cursor-zoom-in"
+                  >
+                    <%= if String.starts_with?(entry.client_type, "image/") do %>
+                      <.live_img_preview entry={entry} class="h-full w-full object-cover" />
+                    <% else %>
+                      <div class="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800">
+                        <%= if String.starts_with?(entry.client_type, "video/") do %>
+                          <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                          </svg>
+                        <% else %>
+                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    
+                    <div class={"absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity " <> if(entry.progress == 100, do: "opacity-0 group-hover:opacity-10 pointer-events-none", else: "opacity-100")}>
+                      <%= if entry.progress < 100 do %>
+                        <span class="text-[10px] font-bold text-white"><%= entry.progress %>%</span>
+                      <% end %>
+                    </div>
+                  </div>
 
-              <div class="absolute right-2 bottom-2 flex items-center gap-1">
+                  <button 
+                    phx-click="cancel-upload" 
+                    phx-value-ref={entry.ref} 
+                    class="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full p-0.5 shadow-md hover:bg-red-500 transition-colors"
+                    type="button"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
+            <div id="chat-audio-recorder" class="flex items-center w-full gap-2" phx-hook="AudioRecorder">
+              <.live_file_input upload={@uploads.audio} id="chat-audio-upload" class="hidden" />
+              
+              <div class={["flex items-center gap-0.5 mb-2 shrink-0", @recording && "hidden"]}>
                 <div class="relative">
-                  <div data-emoji-picker class="hidden absolute bottom-full right-0 mb-2 z-50">
+                  <.live_file_input upload={@uploads.media_file} class="hidden" id="media-upload-input" />
+                  <button
+                    type="button"
+                    onclick="document.getElementById('media-upload-input').click()"
+                    class="h-9 w-9 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                    aria-label="Share media"
+                    title="Share media"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="relative">
+                  <div
+                    id="chat-emoji-picker"
+                    data-emoji-picker
+                    phx-update="ignore"
+                    class="hidden absolute bottom-full left-0 mb-2 z-50"
+                  >
                     <div data-emoji-picker-container></div>
                   </div>
                   <button
                     type="button"
                     data-emoji-toggle
-                    class="h-8 w-8 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center"
+                    class="h-9 w-9 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors"
                     aria-label="Insert emoji"
                     title="Emoji"
                   >
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.5-5.5a1 1 0 011.414 0 3 3 0 004.243 0 1 1 0 111.414 1.414 5 5 0 01-7.071 0 1 1 0 010-1.414zM7 8a1.25 1.25 0 100-2.5A1.25 1.25 0 007 8zm6 0a1.25 1.25 0 100-2.5A1.25 1.25 0 0013 8z" clip-rule="evenodd" />
                     </svg>
                   </button>
                 </div>
-                <div id="chat-audio-recorder" class="relative" phx-hook="AudioRecorder">
+              </div>
+
+              <div class="flex-1 relative mb-2">
+                <%!-- Normal Textarea --%>
+                <div class={@recording && "hidden"}>
+                  <textarea
+                    name="message[content]"
+                    id="chat-message-input"
+                    phx-hook="ChatInput"
+                    value={@composer_content}
+                    placeholder="Message..."
+                    autocomplete="off"
+                    rows="1"
+                    class="w-full resize-none rounded-3xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-3 focus:ring-blue-500 focus:border-blue-500 shadow-sm leading-6"
+                  ></textarea>
+                </div>
+
+                <%!-- Recording UI --%>
+                <div class={["absolute inset-0 bg-gray-50 dark:bg-zinc-800 rounded-3xl flex items-center px-4 gap-4", !@recording && "hidden"]} data-rec-show-on-start>
+                  <div class="flex items-center gap-1.5 min-w-[45px]">
+                    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    <span id="recording-timer" class="text-xs font-bold font-mono text-gray-700 dark:text-gray-200">0:00</span>
+                  </div>
+                  
+                  <%!-- Audio Visualizer Bars --%>
+                  <div id="recording-visualizer" class="flex-1 flex items-center justify-center gap-0.5 h-6" data-rec-visualizer phx-update="ignore">
+                    <%= for _ <- 1..24 do %>
+                      <div class="w-1 bg-blue-500 rounded-full transition-all duration-75 h-1"></div>
+                    <% end %>
+                  </div>
+
                   <button
                     type="button"
-                    data-rec-action="start"
-                    class="h-8 w-8 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center"
-                    aria-label="Record voice message"
-                    title="Voice message"
+                    phx-click="cancel_recording"
+                    class="text-xs font-bold text-red-500 hover:text-red-600 px-2 py-1"
                   >
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 3a3 3 0 00-3 3v4a3 3 0 106 0V6a3 3 0 00-3-3z" />
-                      <path d="M5 10a1 1 0 012 0 3 3 0 006 0 1 1 0 112 0 5 5 0 01-4 4.9V17h2a1 1 0 110 2H7a1 1 0 110-2h2v-2.1A5 5 0 015 10z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    data-rec-action="stop"
-                    class="hidden h-8 w-8 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center justify-center"
-                    aria-label="Stop recording"
-                    title="Stop recording"
-                  >
-                    <span id="recording-timer" class="text-[10px] font-semibold">0:00</span>
+                    Cancel
                   </button>
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-md transition-transform active:scale-95"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-              </svg>
-            </button>
+              <div class="flex items-center mb-2 shrink-0">
+                <button
+                  type="button"
+                  data-rec-action="start"
+                  class={["h-10 w-10 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400", @recording && "hidden"]}
+                  aria-label="Record voice message"
+                  title="Voice message"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                  </svg>
+                </button>
+                
+                <button
+                  type="button"
+                  data-rec-action="stop"
+                  class={["h-10 w-10 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 transition-transform active:scale-90", !@recording && "hidden"]}
+                  aria-label="Stop recording"
+                  title="Stop recording"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-6 w-6">
+                    <rect width="12" height="12" x="6" y="6" rx="2" />
+                  </svg>
+                </button>
+
+                <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
+                <button
+                  type="submit"
+                  disabled={is_uploading}
+                  class={["p-3 rounded-full shadow-md transition-all active:scale-95 flex items-center justify-center ml-1", @recording && "hidden", if(is_uploading, do: "bg-gray-400 cursor-not-allowed", else: "bg-blue-500 hover:bg-blue-600 text-white")]}
+                >
+                  <%= if is_uploading do %>
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  <% else %>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  <% end %>
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       </div>
@@ -648,3 +831,61 @@
     <% end %>
   </div>
 </div>
+
+<%!-- LIGHTBOX MODAL FOR PREVIEW --%>
+<%= if @preview_entry do %>
+  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <button phx-click="close_preview" class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+
+    <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+      <%= if String.starts_with?(@preview_entry.client_type, "image/") do %>
+        <.live_img_preview entry={@preview_entry} class="max-h-[85vh] w-auto rounded-lg shadow-2xl object-contain" />
+      <% else %>
+        <div class="max-h-[85vh] w-full aspect-video flex flex-col items-center justify-center bg-zinc-800 rounded-lg text-white p-8">
+           <svg class="w-20 h-20 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+           </svg>
+           <p class="text-lg font-medium"><%= @preview_entry.client_name %></p>
+           <p class="text-sm text-gray-400 mt-1 uppercase"><%= String.split(@preview_entry.client_type, "/") |> List.last() %></p>
+        </div>
+      <% end %>
+      
+      <div class="mt-4 flex items-center gap-4">
+         <div class="text-white text-sm font-mono bg-black/50 px-3 py-1 rounded-full">
+           <%= @preview_entry.client_name %>
+         </div>
+         
+         <%= if @preview_entry.progress < 100 do %>
+           <div class="text-orange-400 text-sm font-bold flex items-center gap-2">
+             <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+             Uploading... <%= @preview_entry.progress %>%
+           </div>
+         <% else %>
+           <div class="text-green-400 text-sm font-bold flex items-center gap-1">
+             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+             Ready to send
+           </div>
+         <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%!-- LIGHTBOX: Zoomed media (image or video) --%>
+<%= if @zoomed_image do %>
+  <div class="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4" phx-click="close_zoom">
+    <div class="relative max-w-[95vw] max-h-[95vh]" onclick="event.stopPropagation()">
+      <button phx-click="close_zoom" class="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      <%= if @zoomed_image["type"] == "video" do %>
+        <video src={@zoomed_image["url"]} controls autoplay class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl"></video>
+      <% else %>
+        <img src={@zoomed_image["url"]} class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl object-contain" />
+      <% end %>
+    </div>
+  </div>
+<% end %>

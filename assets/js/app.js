@@ -228,6 +228,48 @@ Hooks.NotificationsHook = {
       };
     };
 
+    this.showBottleSplash = ({ url }) => {
+      const existing = document.getElementById("bottle-arrival-overlay");
+      if (existing) existing.remove();
+
+      const overlay = document.createElement("button");
+      overlay.id = "bottle-arrival-overlay";
+      overlay.type = "button";
+      overlay.className = "fixed inset-0 z-[120] flex items-center justify-center bg-sky-950/55 backdrop-blur-sm";
+      overlay.innerHTML = `
+        <div class="relative flex h-full w-full items-center justify-center overflow-hidden">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(125,211,252,0.16),_transparent_55%)]"></div>
+          <div class="absolute bottom-[-8rem] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full border border-sky-200/30 bg-sky-300/12 animate-ping"></div>
+          <div class="absolute bottom-[-5rem] left-1/2 h-56 w-[28rem] -translate-x-1/2 rounded-[100%] border-2 border-cyan-200/35"></div>
+          <div class="absolute bottom-[-3rem] left-1/2 h-40 w-[22rem] -translate-x-1/2 rounded-[100%] border border-cyan-100/30"></div>
+          <div class="relative flex flex-col items-center gap-4 px-6 text-center text-white">
+            <div class="flex h-24 w-24 items-center justify-center rounded-full border border-emerald-200/50 bg-emerald-300/15 shadow-[0_0_40px_rgba(110,231,183,0.28)]">
+              <span class="text-5xl">🍾</span>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100/75">Ocean Delivery</p>
+              <p class="text-2xl font-semibold text-white">A message in a bottle found you</p>
+              <p class="text-sm text-cyan-100/80">Tap anywhere to open it.</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const close = () => {
+        overlay.remove();
+      };
+
+      overlay.addEventListener("click", () => {
+        close();
+        if (url) {
+          window.location.href = url;
+        }
+      });
+
+      document.body.appendChild(overlay);
+      window.setTimeout(close, 5000);
+    };
+
     window.addEventListener("click", this.requestPermission, { once: true });
     this.onSettingsChanged = () => {
       if (browserNotificationsEnabled()) {
@@ -260,6 +302,10 @@ Hooks.NotificationsHook = {
       if (modal && !modal.classList.contains("hidden")) {
         this.pushEvent("load_notifications", {});
       }
+    });
+
+    this.handleEvent("bottle_arrived", (payload) => {
+      this.showBottleSplash(payload || {});
     });
   },
 

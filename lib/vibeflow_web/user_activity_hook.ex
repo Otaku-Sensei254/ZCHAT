@@ -86,10 +86,15 @@ defmodule VibeflowWeb.UserActivityHook do
         username = (message_user && message_user.username) || "Someone"
 
         popup_text =
-          if Map.get(message, :shared_post_id) do
-            "#{username} shared a post with you 🚀"
-          else
-            "Message from #{username}: #{truncate(Map.get(message, :content) || "")}"
+          cond do
+            Map.get(message, :is_bottle) ->
+              "A message in a bottle washed up on your shore."
+
+            Map.get(message, :shared_post_id) ->
+              "#{username} shared a post with you 🚀"
+
+            true ->
+              "Message from #{username}: #{truncate(Map.get(message, :content) || "")}"
           end
 
         # If the user is currently viewing the conversation, just update the
@@ -97,21 +102,48 @@ defmodule VibeflowWeb.UserActivityHook do
         # message). Otherwise, show the popup.
         if socket.assigns[:conversation] &&
              socket.assigns.conversation.uuid == message.conversation_uuid do
-          {:cont, assign(socket, :unread_chats_count, new_count)}
-        else
-          browser_notification = %{
-            title: "New message from #{username}",
-            body: truncate(Map.get(message, :content) || "Tap to open chat"),
-            url: chat_url_for_message(message),
-            tag: "chat-#{Map.get(message, :id)}",
-            icon: message_user && message_user.avatar_url
-          }
+          socket = assign(socket, :unread_chats_count, new_count)
 
-          {:cont,
-           socket
-           |> assign(:unread_chats_count, new_count)
-           |> push_event("new_notification", %{notification: browser_notification})
-           |> put_flash(:info, popup_text)}
+          socket =
+            if Map.get(message, :is_bottle) do
+              push_event(socket, "bottle_arrived", %{url: chat_url_for_message(message)})
+            else
+              socket
+            end
+
+          {:cont, socket}
+        else
+          browser_notification =
+            if Map.get(message, :is_bottle) do
+              %{
+                title: "Message in a Bottle",
+                body: "A kind anonymous note found its way to you.",
+                url: chat_url_for_message(message),
+                tag: "bottle-#{Map.get(message, :id)}"
+              }
+            else
+              %{
+                title: "New message from #{username}",
+                body: truncate(Map.get(message, :content) || "Tap to open chat"),
+                url: chat_url_for_message(message),
+                tag: "chat-#{Map.get(message, :id)}",
+                icon: message_user && message_user.avatar_url
+              }
+            end
+
+          socket =
+            socket
+            |> assign(:unread_chats_count, new_count)
+            |> push_event("new_notification", %{notification: browser_notification})
+
+          socket =
+            if Map.get(message, :is_bottle) do
+              push_event(socket, "bottle_arrived", %{url: chat_url_for_message(message)})
+            else
+              socket
+            end
+
+          {:cont, put_flash(socket, :info, popup_text)}
         end
       else
         {:cont, socket}

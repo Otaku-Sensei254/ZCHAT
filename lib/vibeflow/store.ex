@@ -39,6 +39,13 @@ defmodule Vibeflow.Store do
     )
   end
 
+  def has_active_item?(user_id, identifier) when is_binary(identifier) do
+    case get_user_item(user_id, identifier) do
+      nil -> false
+      inventory -> not expired?(inventory)
+    end
+  end
+
   def activate_cosmetic(user_id, cosmetic_type, skin_name) do
     case cosmetic_type do
       "message_skin" ->

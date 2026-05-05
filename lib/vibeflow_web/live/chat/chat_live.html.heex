@@ -1,3 +1,4 @@
+
 <div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
   <div class={
     "border-r border-gray-200 dark:border-zinc-800 flex-col " <>
@@ -17,6 +18,7 @@
 
         <form phx-change="search_new_chat" onsubmit="return false;">
           <input
+            id="chat-user-search"
             type="text"
             name="query"
             value={@user_search_query}
@@ -26,6 +28,41 @@
             autocomplete="off"
           />
         </form>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="all"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "all", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="direct"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "direct", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Direct
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="groups"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "groups", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Groups
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="bottles"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "bottles", do: "bg-emerald-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Bottles
+          </button>
+        </div>
 
         <%= if @user_search_query != "" do %>
           <button
@@ -76,26 +113,42 @@
     <div class="flex-1 overflow-y-auto">
       <%= for conv <- @conversations do %>
         <% is_group = conv.type == "group"
+        is_bottle = conv.type == "bottle"
         other_member = Enum.find(conv.conversation_members, &(&1.user.id != @current_user.id))
 
         display_name =
-          if is_group,
-            do: conv.name || "Unnamed Group",
-            else: (other_member && other_member.user.username) || "Unknown"
+          cond do
+            is_group ->
+              conv.name || "Unnamed Group"
 
-        avatar_url = if !is_group && other_member, do: other_member.user.avatar_url
+            is_bottle ->
+              conv.name || "Message in a Bottle"
+
+            true ->
+              (other_member && other_member.user.username) || "Unknown"
+          end
+
+        avatar_url =
+          if !is_group && !is_bottle && other_member, do: other_member.user.avatar_url
 
         name_for_initial =
-          if !is_group && other_member,
-            do: other_member.user.username || other_member.user.email,
-            else: "?"
+          cond do
+            is_bottle ->
+              "Bottle"
+
+            !is_group && other_member ->
+              other_member.user.username || other_member.user.email
+
+            true ->
+              "?"
+          end
 
         initial = String.first(name_for_initial || "?") |> String.upcase()
 
         is_active = @conversation && conv.id == @conversation.id
 
         is_online =
-          if !is_group && other_member,
+          if !is_group && !is_bottle && other_member,
             do: Map.has_key?(@online_users, to_string(other_member.user.id)),
             else: false %>
 
@@ -123,6 +176,12 @@
                       stroke-width="2"
                       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                     />
+                  </svg>
+                </div>
+              <% is_bottle -> %>
+                <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
                   </svg>
                 </div>
               <% avatar_url -> %>
@@ -154,11 +213,66 @@
               <% end %>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
-              {if is_online, do: "Active now", else: "Offline"}
+              <%= cond do %>
+                <% is_bottle -> %>
+                  Anonymous until found
+                <% is_online -> %>
+                  Active now
+                <% true -> %>
+                  Offline
+              <% end %>
             </p>
           </div>
         </.link>
       <% end %>
+    </div>
+
+    <div class="relative border-t border-gray-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <%= if @show_new_chat_actions do %>
+        <div class="absolute inset-x-3 bottom-[calc(100%+0.75rem)] z-30 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <button
+            type="button"
+            phx-click="open_direct_chat_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H7.414L4 16.414A1 1 0 012.293 15.707L3.586 13H4a2 2 0 01-2-2V5z" /></svg>
+            </span>
+            Direct Chat
+          </button>
+          <button
+            type="button"
+            phx-click="open_group_chat_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zm-8 8a4 4 0 118 0H5zm10-1a3 3 0 013 3h-4a4.98 4.98 0 00-1.03-3H15zm-1-7a2.5 2.5 0 114.999.001A2.5 2.5 0 0114 7z" /></svg>
+            </span>
+            New Group
+          </button>
+          <button
+            type="button"
+            phx-click="open_bottle_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <span class="text-base">🍾</span>
+            </span>
+            Throw Bottle
+          </button>
+        </div>
+      <% end %>
+
+      <button
+        type="button"
+        phx-click="toggle_new_chat_actions"
+        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        New Chat
+      </button>
     </div>
   </div>
 
@@ -193,23 +307,48 @@
           <% header_member =
             Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
 
+          is_bottle_conversation = @conversation.type == "bottle"
+
           header_name =
-            if @conversation.type == "group",
-              do: @conversation.name,
-              else: (header_member && header_member.user.username) || "Unknown"
+            cond do
+              @conversation.type == "group" ->
+                @conversation.name
+
+              is_bottle_conversation ->
+                bottle_sender_name(@messages, @current_user.id)
+
+              true ->
+                (header_member && header_member.user.username) || "Unknown"
+            end
 
           header_avatar =
-            if @conversation.type != "group" && header_member, do: header_member.user.avatar_url
+            cond do
+              is_bottle_conversation ->
+                bottle_sender_avatar(@messages, @current_user.id)
+
+              @conversation.type != "group" && header_member ->
+                header_member.user.avatar_url
+
+              true ->
+                nil
+            end
 
           header_name_source =
-            if @conversation.type != "group" && header_member,
-              do: header_member.user.username || header_member.user.email,
-              else: "?"
+            cond do
+              is_bottle_conversation ->
+                bottle_sender_name(@messages, @current_user.id)
+
+              @conversation.type != "group" && header_member ->
+                header_member.user.username || header_member.user.email
+
+              true ->
+                "?"
+            end
 
           header_initial = String.first(header_name_source || "?") |> String.upcase()
 
           other_user_online =
-            if @conversation.type != "group" && header_member,
+            if @conversation.type != "group" && !is_bottle_conversation && header_member,
               do: Map.has_key?(@online_users, to_string(header_member.user.id)),
               else: false %>
 
@@ -224,6 +363,12 @@
                       stroke-width="2"
                       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                     />
+                  </svg>
+                </div>
+              <% is_bottle_conversation && is_nil(header_avatar) -> %>
+                <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
                   </svg>
                 </div>
               <% header_avatar -> %>
@@ -245,6 +390,10 @@
             </span>
             <%= if other_user_online do %>
               <p class="text-xs text-green-500 font-medium">Active now</p>
+            <% else %>
+              <%= if is_bottle_conversation && not bottle_sender_visible?(@messages, @current_user.id) do %>
+                <p class="text-xs font-medium text-emerald-500">Anonymous until found</p>
+              <% end %>
             <% end %>
           </div>
 
@@ -286,10 +435,13 @@
               <% is_me = message.user_id == @current_user.id %>
               <% show_date = should_show_date_separator?(message, previous_message) %>
               <% bubble_class =
-                message_skin_classes(
-                  get_user_skin_for_conversation(@conversation, message.user_id),
-                  is_me
-                ) %>
+                if message.is_bottle,
+                  do: bottle_skin_classes(),
+                  else:
+                    message_skin_classes(
+                      get_user_skin_for_conversation(@conversation, message.user_id),
+                      is_me
+                    ) %>
 
               <div id={"message-#{message.id}"} class="flex w-full flex-col min-w-0">
                 <%= if show_date do %>
@@ -369,6 +521,33 @@
                     </.link>
                   <% else %>
                     <div class={"relative min-w-0 " <> bubble_class}>
+                      <%!-- Floating bubbles for bottle messages --%>
+                      <%= if message.is_bottle do %>
+                        <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                          <%!-- Small bubbles floating up --%>
+                          <div class="absolute bottom-0 left-[15%] h-2 w-2 animate-bubble-fast rounded-full bg-white opacity-40" style="animation-delay: 0s;"></div>
+                          <div class="absolute bottom-0 left-[35%] h-3 w-3 animate-bubble rounded-full bg-white opacity-20" style="animation-delay: 1s;"></div>
+                          <div class="absolute bottom-0 left-[60%] h-1.5 w-1.5 animate-bubble-slow rounded-full bg-white opacity-50" style="animation-delay: 2s;"></div>
+                          <div class="absolute bottom-0 left-[80%] h-2.5 w-2.5 animate-bubble-fast rounded-full bg-white opacity-30" style="animation-delay: 0.5s;"></div>
+                          <div class="absolute bottom-0 left-[25%] h-2 w-2 animate-bubble rounded-full bg-white opacity-25" style="animation-delay: 3s;"></div>
+                          <div class="absolute bottom-0 left-[70%] h-1.5 w-1.5 animate-bubble-slow rounded-full bg-white opacity-35" style="animation-delay: 4s;"></div>
+                        </div>
+                        <%!-- Rope decoration at top --%>
+                        <div class="absolute left-0 right-0 top-0 h-1 overflow-hidden rounded-t-2xl">
+                          <svg class="h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 4">
+                            <pattern id={"ropePattern-#{message.id}"} x="0" y="0" width="8" height="4" patternUnits="userSpaceOnUse">
+                              <path d="M0,2 Q2,0 4,2 T8,2" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                              <path d="M0,2 Q2,4 4,2 T8,2" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+                            </pattern>
+                            <rect width="100" height="4" fill={"url(#ropePattern-" <> to_string(message.id) <> ")"}/>
+                          </svg>
+                        </div>
+                      <% end %>
+                      <%= if message.is_bottle && !is_me do %>
+                        <p class="relative z-10 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                          <%= display_message_author(message, @current_user.id) %>
+                        </p>
+                      <% end %>
                       <div class={"absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 " <> if(is_me, do: "right-full pr-2", else: "left-full pl-2")}>
                         <button
                           type="button"
@@ -430,7 +609,7 @@
                               <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a5 5 0 015 5v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L15 12.586V12a3 3 0 00-3-3H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                             <p class="text-[10px] font-semibold opacity-80">
-                              <%= message.reply_to.user.username %>
+                              <%= display_message_author(message.reply_to, @current_user.id) %>
                             </p>
                           </div>
                           <p class="text-xs leading-snug break-words whitespace-pre-wrap line-clamp-2 opacity-90">
@@ -514,8 +693,8 @@
                           <% end %>
                         </div>
                       <% end %>
-                      <div class="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</div>
-                      <div class={"flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                      <div class="relative z-10 whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</div>
+                      <div class={"relative z-10 flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
                         <span class="text-[10px]">
                           <%= if message.inserted_at do %>
                             {message.inserted_at
@@ -831,6 +1010,242 @@
     <% end %>
   </div>
 </div>
+
+<%= if @show_direct_chat_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Start a direct chat</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Search a username to begin.</p>
+        </div>
+        <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-200">
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+
+      <form phx-change="search_direct_users">
+        <input
+          type="text"
+          name="query"
+          value={@direct_search_query}
+          placeholder="Search username..."
+          autocomplete="off"
+          phx-debounce="250"
+          class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+        />
+      </form>
+
+      <div class="mt-4 max-h-80 space-y-2 overflow-y-auto">
+        <%= if @direct_search_query != "" && @direct_search_results == [] do %>
+          <p class="rounded-2xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-gray-400">No users found.</p>
+        <% end %>
+
+        <%= for user <- @direct_search_results do %>
+          <button
+            type="button"
+            phx-click="start_chat_with_user"
+            phx-value-user_id={user.id}
+            class="flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <img src={user.avatar_url || "/images/default_avatar.png"} class="h-11 w-11 rounded-full object-cover" />
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+              <p class="truncate text-xs text-gray-500 dark:text-gray-400"><%= user.email %></p>
+            </div>
+          </button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_group_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="w-full max-w-xl rounded-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create group chat</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Name the group and choose who joins.</p>
+        </div>
+        <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-200">
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <form phx-change="update_group_name">
+          <input
+            type="text"
+            name="group_name"
+            value={@group_name || ""}
+            placeholder="Group name"
+            class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+          />
+        </form>
+
+        <form phx-change="search_group_users">
+          <input
+            type="text"
+            name="query"
+            value={@group_search_query}
+            placeholder="Search username..."
+            autocomplete="off"
+            phx-debounce="250"
+            class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+          />
+        </form>
+
+        <%= if @selected_group_members != [] do %>
+          <div class="flex flex-wrap gap-2">
+            <%= for user_id <- @selected_group_members do %>
+              <% user = Enum.find(@group_search_results, &(&1.id == user_id)) %>
+              <%= if user do %>
+                <span class="flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <img src={user.avatar_url || "/images/default_avatar.png"} class="h-4 w-4 rounded-full object-cover" />
+                  <%= user.username %>
+                </span>
+              <% else %>
+                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  User <%= user_id %>
+                </span>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="max-h-72 space-y-2 overflow-y-auto">
+          <%= if @group_search_query != "" && @group_search_results == [] do %>
+            <p class="rounded-2xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-gray-400">No users found.</p>
+          <% end %>
+
+          <%= for user <- @group_search_results do %>
+            <% selected = user.id in @selected_group_members %>
+            <button
+              type="button"
+              phx-click="toggle_user_selection"
+              phx-value-user-id={user.id}
+              class={["flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors", if(selected, do: "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20", else: "border-gray-200 hover:bg-gray-50 dark:border-zinc-700 dark:hover:bg-zinc-800")]}
+            >
+              <img src={user.avatar_url || "/images/default_avatar.png"} class="h-11 w-11 rounded-full object-cover" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400"><%= user.email %></p>
+              </div>
+              <span class={["rounded-full px-2 py-1 text-[11px] font-semibold", if(selected, do: "bg-blue-600 text-white", else: "bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-gray-400")]}>
+                <%= if selected, do: "Selected", else: "Add" %>
+              </span>
+            </button>
+          <% end %>
+        </div>
+
+        <form phx-submit="create_group" class="flex justify-end gap-3 pt-2">
+          <input type="hidden" name="group_name" value={@group_name || ""} />
+          <button type="button" phx-click="close_new_chat_overlays" class="rounded-2xl px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800">Cancel</button>
+          <button type="submit" class="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Create Group</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_bottle_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-b from-blue-600 via-blue-500 to-cyan-400 p-5 shadow-2xl" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <%!-- Floating bubbles background --%>
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <%!-- Bubble 1 --%>
+        <div class="absolute bottom-[-100px] left-[10%] h-16 w-16 animate-bubble rounded-full bg-white opacity-20" style="animation-delay: 0s;"></div>
+        <%!-- Bubble 2 --%>
+        <div class="absolute bottom-[-100px] left-[30%] h-24 w-24 animate-bubble-slow rounded-full bg-white opacity-10" style="animation-delay: 2s;"></div>
+        <%!-- Bubble 3 --%>
+        <div class="absolute bottom-[-100px] left-[55%] h-10 w-10 animate-bubble-fast rounded-full bg-white opacity-30" style="animation-delay: 4s;"></div>
+        <%!-- Bubble 4 --%>
+        <div class="absolute bottom-[-100px] left-[75%] h-20 w-20 animate-bubble rounded-full bg-white opacity-15" style="animation-delay: 1s;"></div>
+        <%!-- Bubble 5 --%>
+        <div class="absolute bottom-[-100px] left-[90%] h-12 w-12 animate-bubble-slow rounded-full bg-white opacity-25" style="animation-delay: 3s;"></div>
+        <%!-- Extra bubbles for density --%>
+        <div class="absolute bottom-[-100px] left-[20%] h-8 w-8 animate-bubble-fast rounded-full bg-white opacity-20" style="animation-delay: 5s;"></div>
+        <div class="absolute bottom-[-100px] left-[65%] h-14 w-14 animate-bubble rounded-full bg-white opacity-10" style="animation-delay: 6s;"></div>
+        <div class="absolute bottom-[-100px] left-[45%] h-6 w-6 animate-bubble-slow rounded-full bg-white opacity-25" style="animation-delay: 7s;"></div>
+      </div>
+
+      <%!-- Rope border decoration at top --%>
+      <div class="absolute left-0 right-0 top-0 h-3 bg-gradient-to-r- from-amber-700 via-amber-600 to-amber-700 opacity-90">
+        <svg class="h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 12">
+          <pattern id="ropePattern" x="0" y="0" width="20" height="12" patternUnits="userSpaceOnUse">
+            <path d="M0,6 Q5,0 10,6 T20,6" fill="none" stroke="#92400e" stroke-width="2"/>
+            <path d="M0,6 Q5,12 10,6 T20,6" fill="none" stroke="#b45309" stroke-width="1.5"/>
+          </pattern>
+          <rect width="100" height="12" fill="url(#ropePattern)"/>
+        </svg>
+      </div>
+
+      <div class="relative z-10">
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <%!-- Bottle icon with wave animation --%>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white drop-shadow-sm">Throw a bottle</h3>
+              <p class="text-sm text-blue-100">Send something kind. One image max, up to 5 MB.</p>
+            </div>
+          </div>
+          <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-white/70 hover:bg-white/20 hover:text-white transition-colors">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          </button>
+        </div>
+
+        <form phx-submit="throw_bottle" phx-change="update_bottle_content" class="space-y-4">
+          <textarea
+            name="bottle[content]"
+            rows="5"
+            value={@bottle_content}
+            placeholder="Write something comforting, encouraging, or kind..."
+            class="w-full resize-none rounded-2xl border-0 bg-white/90 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+          ></textarea>
+
+          <div class="rounded-2xl border border-dashed border-white/40 bg-white/10 p-4 backdrop-blur-sm">
+            <.live_file_input upload={@uploads.bottle_image} class="block w-full text-sm text-white/90 file:mr-4 file:rounded-full file:border-0 file:bg-white/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-white/30" />
+            <p class="mt-2 text-xs text-blue-100">Accepted: JPG, PNG, WEBP, GIF. Max 5 MB.</p>
+          </div>
+
+          <%= if @uploads.bottle_image.entries != [] do %>
+            <div class="space-y-2">
+              <%= for entry <- @uploads.bottle_image.entries do %>
+                <div class="flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-3 py-3 backdrop-blur-sm">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-white"><%= entry.client_name %></p>
+                    <p class="text-xs text-blue-100"><%= entry.progress %>% uploaded</p>
+                  </div>
+                  <button type="button" phx-click="cancel-bottle-upload" phx-value-ref={entry.ref} class="rounded-full p-2 text-white/60 hover:bg-white/20 hover:text-red-300 transition-colors">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" phx-click="close_new_chat_overlays" class="rounded-2xl px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/20 transition-colors">Cancel</button>
+            <button type="submit" class="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-lg shadow-blue-900/20 transition hover:bg-blue-50 hover:shadow-xl hover:scale-105 active:scale-95">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Throw Bottle
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <%!-- LIGHTBOX MODAL FOR PREVIEW --%>
 <%= if @preview_entry do %>

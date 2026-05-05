@@ -119,6 +119,38 @@ store_items = [
     worth: 3,
     duration: "1d",
     category: "power_ups"
+  },
+  %{
+    item_name: "Glassmorphism Pro Skin",
+    item_slug: "skin_glassmorphism_pro",
+    worth: 300,
+    duration: "permanent",
+    category: "message_skins",
+    metadata: %{skin_name: "Glassmorphism Pro"}
+  },
+  %{
+    item_name: "Matrix Rain Skin",
+    item_slug: "skin_matrix_rain",
+    worth: 400,
+    duration: "permanent",
+    category: "message_skins",
+    metadata: %{skin_name: "Matrix Rain"}
+  },
+  %{
+    item_name: "Holographic Foil Skin",
+    item_slug: "skin_holographic_foil",
+    worth: 350,
+    duration: "permanent",
+    category: "message_skins",
+    metadata: %{skin_name: "Holographic Foil"}
+  },
+  %{
+    item_name: "Vantablack Skin",
+    item_slug: "skin_vantablack",
+    worth: 500,
+    duration: "permanent",
+    category: "message_skins",
+    metadata: %{skin_name: "Vantablack"}
   }
 ]
 

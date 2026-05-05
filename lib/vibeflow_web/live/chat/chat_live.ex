@@ -3,6 +3,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
   require Logger
 
   alias Vibeflow.Chat
+  alias Vibeflow.Chat.BottleService
   alias Vibeflow.Store
   alias Vibeflow.Accounts
   alias VibeflowWeb.Presence
@@ -40,7 +41,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
       end
 
     # Load sidebar data synchronously
-    conversations = Chat.list_user_conversations(current_user.id)
+    conversations = visible_conversations(current_user.id, "all")
 
     # Initial Assigns
     {:ok,
@@ -65,13 +66,21 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:audio_retry_count, 0)
      |> assign(:active_message_skin, current_user.active_message_skin || "default")
      |> assign(:messages, [])
+     |> assign(:show_new_chat_actions, false)
      |> assign(:show_new_chat_modal, false)
+     |> assign(:show_direct_chat_modal, false)
      |> assign(:show_chat_menu, false)
      |> assign(:show_group_modal, false)
+     |> assign(:show_bottle_modal, false)
      |> assign(:selected_tab, "followers")
      |> assign(:filtered_users, [])
+     |> assign(:direct_search_query, "")
+     |> assign(:direct_search_results, [])
+     |> assign(:group_search_query, "")
+     |> assign(:group_search_results, [])
      |> assign(:selected_group_members, [])
      |> assign(:group_name, "")
+     |> assign(:bottle_content, "")
      |> assign(:chat_filter, "all")
      |> allow_upload(:media_file,
        accept: ~w(.jpg .jpeg .png .gif .webp .mp4 .mov .webm .avi .mp3 .wav .ogg .flac),
@@ -85,6 +94,13 @@ defmodule VibeflowWeb.Chat.ChatLive do
        max_entries: 1,
        chunk_size: 64_000,
        max_file_size: 20_000_000,
+       auto_upload: true
+     )
+     |> allow_upload(:bottle_image,
+       accept: ~w(.jpg .jpeg .png .webp .gif),
+       max_entries: 1,
+       chunk_size: 64_000,
+       max_file_size: 5_000_000,
        auto_upload: true
      )}
   end
@@ -185,6 +201,15 @@ defmodule VibeflowWeb.Chat.ChatLive do
     end
   end
 
+  defp bottle_skin_classes() do
+    "max-w-[50vw] w-fit min-w-0 break-words " <>
+    "bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-400 " <>
+    "px-5 py-4 text-white rounded-2xl rounded-bl-none rounded-br-none " <>
+    "shadow-xl shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all " <>
+    "relative overflow-hidden border-t-4 border-white/40 " <>
+    "before:absolute before:inset-0 before:bg-gradient-to-t before:from-white/20 before:to-transparent before:opacity-50"
+  end
+
   # ===========================================================================
   # HANDLE PARAMS (Routing) - Grouped
   # ===========================================================================
@@ -205,7 +230,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
     Chat.mark_conversation_as_read(current_user_id, conversation.id)
 
     # RE-FETCH Sidebar List immediately to clear badges
-    conversations = Chat.list_user_conversations(current_user_id)
+    conversations = visible_conversations(current_user_id, socket.assigns[:chat_filter] || "all")
 
     other_member =
       Enum.find(conversation.conversation_members, fn m -> m.user_id != current_user_id end)
@@ -346,6 +371,11 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   @impl true
+  def handle_event("cancel-bottle-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :bottle_image, ref)}
+  end
+
+  @impl true
   def handle_event("send_message", %{"message" => message_params}, socket) do
     conversation = socket.assigns.conversation
     current_user = socket.assigns.current_user
@@ -438,6 +468,142 @@ defmodule VibeflowWeb.Chat.ChatLive do
   @impl true
   def handle_event("cancel_recording", _params, socket) do
     {:noreply, assign(socket, :recording, false) |> assign(:audio_retry_count, 0)}
+  end
+
+  @impl true
+  def handle_event("toggle_new_chat_actions", _, socket) do
+    {:noreply, assign(socket, :show_new_chat_actions, not socket.assigns.show_new_chat_actions)}
+  end
+
+  @impl true
+  def handle_event("close_new_chat_overlays", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_chat_actions, false)
+     |> assign(:show_direct_chat_modal, false)
+     |> assign(:show_group_modal, false)
+     |> assign(:show_bottle_modal, false)}
+  end
+
+  @impl true
+  def handle_event("open_direct_chat_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_chat_actions, false)
+     |> assign(:show_direct_chat_modal, true)
+     |> assign(:show_group_modal, false)
+     |> assign(:show_bottle_modal, false)
+     |> assign(:direct_search_query, "")
+     |> assign(:direct_search_results, [])}
+  end
+
+  @impl true
+  def handle_event("open_group_chat_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_chat_actions, false)
+     |> assign(:show_direct_chat_modal, false)
+     |> assign(:show_group_modal, true)
+     |> assign(:show_bottle_modal, false)
+     |> assign(:group_search_query, "")
+     |> assign(:group_search_results, [])
+     |> assign(:selected_group_members, [])
+     |> assign(:group_name, "")}
+  end
+
+  @impl true
+  def handle_event("open_bottle_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_chat_actions, false)
+     |> assign(:show_direct_chat_modal, false)
+     |> assign(:show_group_modal, false)
+     |> assign(:show_bottle_modal, true)
+     |> assign(:bottle_content, "")}
+  end
+
+  @impl true
+  def handle_event("search_direct_users", %{"query" => query}, socket) do
+    current_user = socket.assigns.current_user
+
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Accounts.search_users(query, current_user.id)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:direct_search_query, query)
+     |> assign(:direct_search_results, results)}
+  end
+
+  @impl true
+  def handle_event("search_group_users", %{"query" => query}, socket) do
+    current_user = socket.assigns.current_user
+
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Accounts.search_users(query, current_user.id)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:group_search_query, query)
+     |> assign(:group_search_results, results)}
+  end
+
+  @impl true
+  def handle_event("update_bottle_content", %{"bottle" => %{"content" => content}}, socket) do
+    {:noreply, assign(socket, :bottle_content, content || "")}
+  end
+
+  @impl true
+  def handle_event("throw_bottle", %{"bottle" => bottle_params}, socket) do
+    current_user = socket.assigns.current_user
+    uploaded_files = consume_bottle_uploads(socket)
+
+    params =
+      bottle_params
+      |> Map.put("media_files", uploaded_files)
+      |> Map.put_new("content", "")
+
+    case BottleService.throw_bottle(params, current_user.id) do
+      {:ok, %{conversation: conversation}} ->
+        {:noreply,
+         socket
+         |> assign(:show_bottle_modal, false)
+         |> assign(:bottle_content, "")
+         |> assign(:conversations, visible_conversations(current_user.id, socket.assigns[:chat_filter] || "all"))
+         |> put_flash(:info, "Your bottle is out at sea.")
+         |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
+
+      {:error, :bottle_access_required} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "You need the Message in a Bottle item from the Wave Store before you can throw one."
+         )}
+
+      {:error, :unsafe_bottle_message} ->
+        {:noreply,
+         put_flash(socket, :error, "Bottle messages cannot contain abusive or vulgar language.")}
+
+      {:error, :bottle_message_must_be_kind} ->
+        {:noreply,
+         put_flash(socket, :error, "Bottle messages must be kind, comforting, or encouraging.")}
+
+      {:error, :empty_bottle_message} ->
+        {:noreply,
+         put_flash(socket, :error, "Add a kind message or an image before throwing the bottle.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Bottle send failed: #{inspect(reason)}")}
+    end
   end
 
   @impl true
@@ -568,6 +734,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
       {:ok, conversation} ->
         {:noreply,
          socket
+         |> assign(:show_direct_chat_modal, false)
          |> assign(:user_search_query, "")
          |> assign(:user_search_results, [])
          |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
@@ -637,6 +804,8 @@ defmodule VibeflowWeb.Chat.ChatLive do
            |> assign(:show_group_modal, false)
            |> assign(:show_chat_menu, false)
            |> assign(:group_name, "")
+           |> assign(:group_search_query, "")
+           |> assign(:group_search_results, [])
            |> assign(:selected_group_members, [])
            |> put_flash(:info, "Group '#{group_name}' created successfully!")
            |> push_patch(to: ~p"/chat/#{conversation.conversation.uuid}")}
@@ -695,20 +864,10 @@ defmodule VibeflowWeb.Chat.ChatLive do
   def handle_event("filter_chats", %{"filter" => filter}, socket) do
     current_user_id = socket.assigns.current_user.id
 
-    filtered_conversations = case filter do
-      "groups" ->
-        Chat.get_my_group_chats(current_user_id, nil)
-      "chats" ->
-        Chat.list_user_conversations(current_user_id)
-        |> Enum.filter(&(&1.type != "group"))
-      _ ->
-        Chat.list_user_conversations(current_user_id)
-    end
-
     {:noreply,
      socket
      |> assign(:chat_filter, filter)
-     |> assign(:conversations, filtered_conversations)}
+     |> assign(:conversations, visible_conversations(current_user_id, filter))}
   end
 
   @impl true
@@ -722,6 +881,9 @@ defmodule VibeflowWeb.Chat.ChatLive do
         {:noreply,
          socket
          |> assign(:show_new_chat_modal, false)
+         |> assign(:show_direct_chat_modal, false)
+         |> assign(:direct_search_query, "")
+         |> assign(:direct_search_results, [])
          |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
 
       {:error, reason} ->
@@ -784,9 +946,17 @@ defmodule VibeflowWeb.Chat.ChatLive do
        |> push_event("scroll-to-bottom", %{})
        |> assign(:typing_users, %{})
        |> assign(:self_typing, false)
-       |> assign(:conversations, Chat.list_user_conversations(current_user_id))}
+       |> assign(
+         :conversations,
+         visible_conversations(current_user_id, socket.assigns[:chat_filter] || "all")
+       )}
     else
-      socket = assign(socket, :conversations, Chat.list_user_conversations(current_user_id))
+      socket =
+        assign(
+          socket,
+          :conversations,
+          visible_conversations(current_user_id, socket.assigns[:chat_filter] || "all")
+        )
 
       if message.user_id != current_user_id do
         message_user =
@@ -827,13 +997,23 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   @impl true
   def handle_info({:update_sidebar, _message}, socket) do
-    conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
+    conversations =
+      visible_conversations(
+        socket.assigns.current_user.id,
+        socket.assigns[:chat_filter] || "all"
+      )
+
     {:noreply, assign(socket, :conversations, conversations)}
   end
 
   @impl true
   def handle_info({:new_sidebar_message, _message}, socket) do
-    conversations = Chat.list_user_conversations(socket.assigns.current_user.id)
+    conversations =
+      visible_conversations(
+        socket.assigns.current_user.id,
+        socket.assigns[:chat_filter] || "all"
+      )
+
     {:noreply, assign(socket, :conversations, conversations)}
   end
 
@@ -1073,6 +1253,71 @@ defmodule VibeflowWeb.Chat.ChatLive do
     update(socket, :link_previews, &Map.put(&1, url, preview))
   end
 
+  def bottle_sender_visible?(messages, current_user_id) do
+    case bottle_message(messages) do
+      %{is_found: true, user_id: sender_id, user: %Vibeflow.Accounts.User{}}
+      when sender_id != current_user_id ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  def bottle_sender_name(messages, current_user_id) do
+    case bottle_message(messages) do
+      %{is_found: true, user_id: sender_id, user: %Vibeflow.Accounts.User{username: username}}
+      when sender_id != current_user_id ->
+        username
+
+      _ ->
+        "Message in a Bottle"
+    end
+  end
+
+  def bottle_sender_avatar(messages, current_user_id) do
+    case bottle_message(messages) do
+      %{is_found: true, user_id: sender_id, user: %Vibeflow.Accounts.User{avatar_url: avatar_url}}
+      when sender_id != current_user_id ->
+        avatar_url
+
+      _ ->
+        nil
+    end
+  end
+
+  def display_message_author(message, current_user_id) do
+    cond do
+      message.is_bottle == true && message.is_found != true && message.user_id != current_user_id ->
+        "Anonymous"
+
+      match?(%Vibeflow.Accounts.User{}, message.user) && message.user.username ->
+        message.user.username
+
+      true ->
+        "Someone"
+    end
+  end
+
+  defp bottle_message(messages) do
+    Enum.find(messages, & &1.is_bottle)
+  end
+
+  defp visible_conversations(user_id, filter) do
+    user_id
+    |> Chat.list_user_conversations()
+    |> apply_chat_filter(filter)
+  end
+
+  defp apply_chat_filter(conversations, filter) do
+    case filter do
+      "direct" -> Enum.filter(conversations, &(&1.type == "direct"))
+      "groups" -> Enum.filter(conversations, &(&1.type == "group"))
+      "bottles" -> Enum.filter(conversations, &(&1.type == "bottle"))
+      _ -> conversations
+    end
+  end
+
   defp subscribe_to_conversation(socket, conversation_uuid) when is_binary(conversation_uuid) do
     current_uuid = socket.assigns[:subscribed_conversation_uuid]
 
@@ -1276,6 +1521,24 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
         {:error, reason} ->
           Logger.error(">>> VOICENOTE: Cloudflare R2 failed: #{inspect(reason)}")
+          {:ok, nil}
+      end
+    end)
+    |> Enum.filter(&(&1 != nil))
+  end
+
+  defp consume_bottle_uploads(socket) do
+    consume_uploaded_entries(socket, :bottle_image, fn %{path: path}, entry ->
+      case Vibeflow.Infrastructure.UploadCloudinary.upload_file(
+             path,
+             upload_kind_for(entry),
+             filename: entry.client_name,
+             content_type: entry.client_type
+           ) do
+        {:ok, %{url: url, resource_type: type}} ->
+          {:ok, %{"url" => url, "type" => normalize_media_type(type, entry)}}
+
+        {:error, _reason} ->
           {:ok, nil}
       end
     end)

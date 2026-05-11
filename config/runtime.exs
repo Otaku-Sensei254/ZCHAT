@@ -48,6 +48,10 @@ config :vibeflow, VibeflowWeb.Endpoint,
   config :vibeflow, Vibeflow.Mailer,
     adapter: Swoosh.Adapters.Sendinblue,
     api_key: System.get_env("BREVO_API_KEY")
+
+  # Enable swoosh API client for production
+  config :swoosh, :api_client, Swoosh.ApiClient.Finch
+  config :swoosh, :finch_name, Vibeflow.Finch
 end
 
 # If we are in Dev mode but have a Cloud URL, use the Cloud!

@@ -897,9 +897,10 @@ defmodule VibeflowWeb.CoreComponents do
 
   def username_glow_class(user) do
     cosmetics = Store.get_active_cosmetics(user.id)
+    style = user.username_style || "neon-green"
 
-    if cosmetics.glow do
-      style = user.username_style || "neon-green"
+    # Show glow if user owns the glow item OR has a custom username_style set
+    if cosmetics.glow or user.username_style do
       "username-glow-base username-style-#{style}"
     else
       ""

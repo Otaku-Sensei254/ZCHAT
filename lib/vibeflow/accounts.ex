@@ -23,6 +23,37 @@ defmodule Vibeflow.Accounts do
 
   def list_users, do: Repo.all(User)
 
+  def award_points_to_user(user_id, points) when is_integer(user_id) and is_integer(points) do
+    user = Repo.get!(User, user_id)
+    new_points = (user.points || 0) + points
+
+    user
+    |> Ecto.Changeset.change(%{points: new_points})
+    |> Repo.update()
+  end
+
+  def award_points_to_all_users(points) when is_integer(points) do
+    User
+    |> Repo.all()
+    |> Enum.each(fn user ->
+      new_points = (user.points || 0) + points
+      user
+      |> Ecto.Changeset.change(%{points: new_points})
+      |> Repo.update()
+    end)
+  end
+
+  def award_points_to_user_range(start_id, end_id, points) when is_integer(start_id) and is_integer(end_id) and is_integer(points) do
+    from(u in User, where: u.id >= ^start_id and u.id <= ^end_id)
+    |> Repo.all()
+    |> Enum.each(fn user ->
+      new_points = (user.points || 0) + points
+      user
+      |> Ecto.Changeset.change(%{points: new_points})
+      |> Repo.update()
+    end)
+  end
+
   def get_user_by_username(username) when is_binary(username) do
     Repo.get_by(User, username: username)
   end

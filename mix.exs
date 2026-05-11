@@ -58,7 +58,8 @@ defmodule Vibeflow.MixProject do
       {:scrivener_ecto, "~> 2.0"},
       {:canada, "~> 2.0"},
       {:httpoison, "~> 1.6"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.5.0"},
+      {:oban, "~> 2.17"}
     ]
   end
 

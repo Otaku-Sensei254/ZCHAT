@@ -23,6 +23,8 @@ defmodule Vibeflow.Application do
       VibeflowWeb.Presence,
       # Start Finch
       {Finch, name: Vibeflow.Finch},
+      # Start Oban
+      {Oban, Application.fetch_env!(:vibeflow, Oban)},
       # Start the Endpoint (http/https)
       VibeflowWeb.Endpoint
 

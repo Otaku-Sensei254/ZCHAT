@@ -77,6 +77,17 @@ config :mime, :extensions, %{
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Oban configuration
+config :vibeflow, Oban,
+  repo: Vibeflow.Repo,
+  plugins: [
+    {Oban.Plugins.Cron, crontab: [
+      {"0 * * * *", Vibeflow.Workers.BottleCleanupWorker}
+    ]},
+    Oban.Plugins.Pruner
+  ],
+  queues: [default: 10]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

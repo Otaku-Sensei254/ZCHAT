@@ -236,6 +236,19 @@ defmodule VibeflowWeb.Chat.ChatLive do
       Enum.find(conversation.conversation_members, fn m -> m.user_id != current_user_id end)
 
     other_last_read_at = if other_member, do: other_member.last_read_at, else: nil
+
+    # If this is a bottle conversation and current user is not the sender, reveal sender identity
+    if conversation.type == "bottle" do
+      # Check if there's an unfound bottle message in this conversation
+      case BottleService.find_unfound_bottle_in_conversation(conversation.id, current_user_id) do
+        {:ok, message} when message.user_id != current_user_id ->
+          # Receiver opened the bottle - reveal sender
+          BottleService.reveal_bottle_sender(message.id)
+        _ ->
+          :ok
+      end
+    end
+
     messages = Chat.list_messages(conversation)
 
     {:noreply,
@@ -601,6 +614,14 @@ defmodule VibeflowWeb.Chat.ChatLive do
         {:noreply,
          put_flash(socket, :error, "Add a kind message or an image before throwing the bottle.")}
 
+      {:error, {:bottle_cooldown, hours}} ->
+        {:noreply,
+         put_flash(socket, :error, "You've already thrown a bottle today. Try again in #{hours} hours.")}
+
+      {:error, :bottle_access_required} ->
+        {:noreply,
+         put_flash(socket, :error, "You need a Message Bottle to do that. Visit the store!")}
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Bottle send failed: #{inspect(reason)}")}
     end
@@ -748,6 +769,9 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   @impl true
   def handle_event("toggle_user_selection", %{"user-id" => user_id}, socket) do
+    require Logger
+    Logger.info("toggle_user_selection called with user_id=#{user_id}")
+
     current_members = socket.assigns.selected_group_members || []
     user_id = String.to_integer(user_id)
 
@@ -756,6 +780,8 @@ defmodule VibeflowWeb.Chat.ChatLive do
     else
       [user_id | current_members]
     end
+
+    Logger.info("Selected members updated: #{inspect(new_members)}")
 
     {:noreply, assign(socket, :selected_group_members, new_members)}
   end
@@ -790,7 +816,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
                 "user:#{member_id}",
                 "group_invitation",
                 %{
-                  conversation_id: conversation.conversation.id,
+                  conversation_id: conversation.id,
                   conversation_name: group_name,
                   invited_by: current_user.username,
                   invited_by_id: current_user.id
@@ -808,7 +834,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
            |> assign(:group_search_results, [])
            |> assign(:selected_group_members, [])
            |> put_flash(:info, "Group '#{group_name}' created successfully!")
-           |> push_patch(to: ~p"/chat/#{conversation.conversation.uuid}")}
+           |> push_patch(to: ~p"/chat/#{conversation.uuid}")}
 
         {:error, reason} ->
           {:noreply,
@@ -928,6 +954,8 @@ defmodule VibeflowWeb.Chat.ChatLive do
     # Check if we are currently looking at this conversation
     is_current_chat = active_conversation && active_conversation.uuid == message.conversation_uuid
 
+    # Note: We don't reveal bottle sender here - only when receiver opens the chat
+
     if is_current_chat do
       message =
         message
@@ -1008,9 +1036,12 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   @impl true
   def handle_info({:new_sidebar_message, _message}, socket) do
+    current_user_id = socket.assigns.current_user.id
+
+    # Note: We don't reveal bottle sender here - only when receiver opens the chat
     conversations =
       visible_conversations(
-        socket.assigns.current_user.id,
+        current_user_id,
         socket.assigns[:chat_filter] || "all"
       )
 
@@ -1080,6 +1111,20 @@ defmodule VibeflowWeb.Chat.ChatLive do
      socket
      |> assign(:conversation, updated_conversation)
      |> assign(:messages, messages)}
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "bottle_found", payload: payload}, socket) do
+    require Logger
+    Logger.info("Received bottle_found broadcast for message #{payload.message_id}")
+    # Reload messages to show updated is_found status
+    if socket.assigns.conversation do
+      messages = Chat.list_messages(socket.assigns.conversation)
+      Logger.info("Reloaded #{length(messages)} messages after bottle found")
+      {:noreply, assign(socket, :messages, messages)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

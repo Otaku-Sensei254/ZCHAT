@@ -6,8 +6,10 @@ defmodule Vibeflow.Chat.BottleService do
   alias Vibeflow.Chat.{Conversation, ConversationMember, Message}
   alias Vibeflow.Repo
   alias Vibeflow.Store
+  alias VibeflowWeb.Presence
 
   @bottle_item_slug "message-bottle"
+  @bottle_cooldown_seconds 86_400  # 24 hours
   @encouraging_terms ~w(
     hope
     healing
@@ -73,14 +75,35 @@ defmodule Vibeflow.Chat.BottleService do
     slut
   )
 
+  def can_throw_bottle?(user_id) do
+    case Store.has_active_item?(user_id, @bottle_item_slug) do
+      false -> {:error, :bottle_access_required}
+      true ->
+        # Check if user has thrown a bottle in the last 24 hours
+        last_bottle = get_last_bottle_sent_by(user_id)
+
+        case last_bottle do
+          nil -> :ok
+          %Message{inserted_at: timestamp} ->
+            seconds_since = DateTime.diff(DateTime.utc_now(), DateTime.from_naive!(timestamp, "Etc/UTC"))
+            if seconds_since >= @bottle_cooldown_seconds do
+              :ok
+            else
+              hours_remaining = ceil((@bottle_cooldown_seconds - seconds_since) / 3600)
+              {:error, {:bottle_cooldown, hours_remaining}}
+            end
+        end
+    end
+  end
+
   def throw_bottle(message_params, %User{} = user) do
     throw_bottle(message_params, user.id)
   end
 
   def throw_bottle(message_params, user_id) when is_integer(user_id) do
-    with :ok <- ensure_bottle_access(user_id),
+    with :ok <- can_throw_bottle?(user_id),
          :ok <- validate_bottle_content(message_params),
-         recipient when not is_nil(recipient) <- random_recipient_for(user_id) do
+         recipient when not is_nil(recipient) <- random_online_recipient_for(user_id) do
       Repo.transaction(fn ->
         {:ok, conversation} =
           %Conversation{}
@@ -122,6 +145,9 @@ defmodule Vibeflow.Chat.BottleService do
   end
 
   def wash_up_bottle_to_randomo(receiver_id) when is_integer(receiver_id) do
+    require Logger
+    Logger.info("wash_up_bottle_to_randomo called for receiver_id=#{receiver_id}")
+
     query =
       from m in Message,
         join: cm in ConversationMember,
@@ -134,19 +160,36 @@ defmodule Vibeflow.Chat.BottleService do
 
     case Repo.one(query) do
       nil ->
+        Logger.warning("No bottle found for receiver_id=#{receiver_id}")
         {:error, :no_bottles_found_in_ocean}
 
       message ->
-        message
-        |> Ecto.Changeset.change(is_found: true)
-        |> Repo.update()
+        Logger.info("Found bottle message id=#{message.id} for receiver_id=#{receiver_id}, updating is_found to true")
+        # Load the conversation to get its UUID for the broadcast topic
+        conversation = Repo.get!(Conversation, message.conversation_id)
+
+        result =
+          message
+          |> Ecto.Changeset.change(is_found: true)
+          |> Repo.update()
+
+        Logger.info("Repo.update result: #{inspect(result)}")
+
+        # Broadcast to conversation that bottle was found (using UUID)
+        VibeflowWeb.Endpoint.broadcast(
+          "conversation:#{conversation.uuid}",
+          "bottle_found",
+          %{message_id: message.id}
+        )
+
+        result
     end
   end
 
   def get_bottle_messages do
     query =
       from m in Message,
-        where: m.is_bottle == true and m.is_found == true,
+        where: m.is_bottle == true and m.is_found == false,
         order_by: [desc: m.inserted_at]
 
     Repo.all(query)
@@ -161,13 +204,69 @@ defmodule Vibeflow.Chat.BottleService do
     Repo.all(query)
   end
 
-  defp random_recipient_for(sender_id) do
-    from(u in User,
-      where: u.id != ^sender_id,
-      order_by: fragment("RANDOM()"),
+  def find_unfound_bottle_in_conversation(conversation_id, receiver_id) do
+    query =
+      from m in Message,
+        where:
+          m.is_bottle == true and m.is_found == false and
+            m.conversation_id == ^conversation_id and
+            m.bottle_origin_id != ^receiver_id,
+        order_by: [asc: m.inserted_at],
+        limit: 1
+
+    case Repo.one(query) do
+      nil -> {:error, :no_unfound_bottle}
+      message -> {:ok, message}
+    end
+  end
+
+  def reveal_bottle_sender(message_id) do
+    message = Repo.get!(Message, message_id)
+
+    result =
+      message
+      |> Ecto.Changeset.change(is_found: true)
+      |> Repo.update()
+
+    # Broadcast to conversation that bottle was found
+    conversation = Repo.get!(Conversation, message.conversation_id)
+
+    VibeflowWeb.Endpoint.broadcast(
+      "conversation:#{conversation.uuid}",
+      "bottle_found",
+      %{message_id: message.id}
+    )
+
+    result
+  end
+
+  defp get_last_bottle_sent_by(user_id) do
+    from(m in Message,
+      where: m.is_bottle == true and m.bottle_origin_id == ^user_id,
+      order_by: [desc: m.inserted_at],
       limit: 1
     )
     |> Repo.one()
+  end
+
+  defp random_online_recipient_for(sender_id) do
+    # Get list of currently online users from Presence
+    online_users = Presence.list("users:online")
+
+    # Extract user IDs from presence data, excluding the sender
+    online_user_ids =
+      online_users
+      |> Map.keys()
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.reject(&(&1 == sender_id))
+
+    case online_user_ids do
+      [] -> nil
+      ids ->
+        # Pick a random user from online users
+        random_id = Enum.random(ids)
+        Repo.get(User, random_id)
+    end
   end
 
   defp insert_member!(conversation_id, user_id) do
@@ -225,5 +324,45 @@ defmodule Vibeflow.Chat.BottleService do
     |> String.downcase()
     |> String.replace(~r/[^a-z0-9\s]/u, " ")
     |> String.replace(~r/\s+/, " ")
+  end
+
+  # ===========================================================================
+  # 24HR AUTO-DELETE FOR BOTTLE CONVERSATIONS
+  # ===========================================================================
+
+  def delete_expired_bottle_conversations do
+    require Logger
+
+    # Find bottle conversations older than 24 hours
+    cutoff_time = DateTime.add(DateTime.utc_now(), -86400, :second)
+
+    expired_conversations =
+      from(c in Conversation,
+        where: c.type == "bottle" and c.inserted_at < ^cutoff_time,
+        select: c.id
+      )
+      |> Repo.all()
+
+    count = length(expired_conversations)
+
+    if count > 0 do
+      Logger.info("Deleting #{count} expired bottle conversations (older than 24h)")
+
+      # Delete messages first (due to foreign key constraints)
+      from(m in Message, where: m.conversation_id in ^expired_conversations)
+      |> Repo.delete_all()
+
+      # Delete conversation members
+      from(cm in ConversationMember, where: cm.conversation_id in ^expired_conversations)
+      |> Repo.delete_all()
+
+      # Delete conversations
+      from(c in Conversation, where: c.id in ^expired_conversations)
+      |> Repo.delete_all()
+
+      {:ok, count}
+    else
+      {:ok, 0}
+    end
   end
 end

@@ -414,13 +414,24 @@ end
 
   # Add user to conversation
   def add_user_to_conversation(conversation_id, user_id) do
-    %ConversationMember{}
-    |> ConversationMember.changeset(%{
-        conversation_id: conversation_id,
-        user_id: user_id,
-        role: "member"
-      })
-    |> Repo.insert()
+    # Check if user is already a member
+    existing =
+      from(cm in ConversationMember,
+        where: cm.conversation_id == ^conversation_id and cm.user_id == ^user_id
+      )
+      |> Repo.one()
+
+    if existing do
+      {:ok, existing}
+    else
+      %ConversationMember{}
+      |> ConversationMember.changeset(%{
+          conversation_id: conversation_id,
+          user_id: user_id,
+          role: "member"
+        })
+      |> Repo.insert()
+    end
   end
 
   # Find or create direct conversation

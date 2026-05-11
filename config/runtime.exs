@@ -21,14 +21,14 @@ if config_env() == :prod do
     socket_options: maybe_ipv6
 
   # --- Endpoint ---
-  host = System.get_env("PHX_HOST") || "example.com"
+  host = System.get_env("PHX_HOST") || "vibeflow.gigalixirapp.com"
   port = String.to_integer(System.get_env("PORT") || "8080")
   secret_key_base = System.get_env("SECRET_KEY_BASE") || raise "SECRET_KEY_BASE missing"
 
-  config :vibeflow, VibeflowWeb.Endpoint,
+config :vibeflow, VibeflowWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    check_origin: ["https://#{host}", "https://vibeflow.gigalixirapp.com"],
     http: [
-      # 2. FORCE IPv4 (4 zeros)
       ip: {0, 0, 0, 0},
       port: port
     ],

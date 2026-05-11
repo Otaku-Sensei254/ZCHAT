@@ -84,8 +84,15 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
+# Enable Brevo email for development testing
+# Set BREVO_API_KEY in your environment or .env file
+config :vibeflow, Vibeflow.Mailer,
+  adapter: Swoosh.Adapters.Sendinblue,
+  api_key: System.get_env("BREVO_API_KEY", "")
+
+# Enable swoosh API client for Brevo
+config :swoosh, :api_client, Swoosh.ApiClient.Finch
+config :swoosh, :finch_name, Vibeflow.Finch
 
 if File.exists?("config/dev.local.exs") do
   import_config "dev.local.exs"

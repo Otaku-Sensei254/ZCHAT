@@ -43,6 +43,11 @@ config :vibeflow, VibeflowWeb.Endpoint,
     account_id: System.fetch_env!("CLOUDFLARE_R2_ACCOUNT_ID"),
     bucket: System.fetch_env!("CLOUDFLARE_R2_BUCKET"),
     public_base_url: System.fetch_env!("CLOUDFLARE_R2_PUBLIC_BASE_URL")
+
+  # --- Brevo Email (formerly Sendinblue) ---
+  config :vibeflow, Vibeflow.Mailer,
+    adapter: Swoosh.Adapters.Sendinblue,
+    api_key: System.get_env("BREVO_API_KEY")
 end
 
 # If we are in Dev mode but have a Cloud URL, use the Cloud!

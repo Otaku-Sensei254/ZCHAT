@@ -7,11 +7,18 @@ defmodule Vibeflow.Application do
 
   @impl true
   def start(_type, _args) do
-    # --- DEBUG: Print Repo Config ---
-    IO.puts("========================================")
-    IO.puts("DATABASE CONFIGURATION")
-    IO.inspect(Application.get_env(:vibeflow, Vibeflow.Repo, []), label: "Repo Config")
-    IO.puts("========================================")
+    require Logger
+
+    mailer_cfg = Application.get_env(:vibeflow, Vibeflow.Mailer, [])
+    adapter = Keyword.get(mailer_cfg, :adapter)
+    api_key_present? =
+      case Keyword.get(mailer_cfg, :api_key) do
+        nil -> false
+        "" -> false
+        _ -> true
+      end
+
+    Logger.info("Mailer adapter=#{inspect(adapter)} brevo_api_key_present?=#{api_key_present?}")
 
     children = [
       # Start the Telemetry supervisor

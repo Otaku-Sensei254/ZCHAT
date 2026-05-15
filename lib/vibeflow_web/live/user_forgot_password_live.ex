@@ -2,6 +2,7 @@ defmodule VibeflowWeb.UserForgotPasswordLive do
   use VibeflowWeb, :live_view
 
   alias Vibeflow.Accounts
+  require Logger
 
   def render(assigns) do
     ~H"""
@@ -32,11 +33,27 @@ defmodule VibeflowWeb.UserForgotPasswordLive do
   end
 
   def handle_event("send_email", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
-      Accounts.deliver_user_reset_password_instructions(
-        user,
-        &url(~p"/users/reset_password/#{&1}")
-      )
+    normalized_email = email |> String.trim() |> String.downcase()
+
+    case Accounts.get_user_by_email(normalized_email) do
+      nil ->
+        Logger.info("Password reset requested for missing email=#{normalized_email}")
+
+      user ->
+        Logger.info("Password reset requested for user_id=#{user.id} email=#{normalized_email}")
+
+        case Accounts.deliver_user_reset_password_instructions(
+               user,
+               &url(~p"/users/reset_password/#{&1}")
+             ) do
+          {:ok, _email} ->
+            Logger.info("Password reset email delivered to email=#{normalized_email}")
+
+          {:error, reason} ->
+            Logger.error(
+              "Password reset email failed for email=#{normalized_email} reason=#{inspect(reason)}"
+            )
+        end
     end
 
     info =

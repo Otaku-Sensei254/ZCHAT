@@ -21,3 +21,8 @@ config :logger, level: :info
 
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
+
+# NOTE: This app is deployed with `mix phx.server` (see `Procfile`), which does
+# not automatically load `config/runtime.exs` (unlike Elixir releases). Import
+# it here so production picks up runtime env-based configuration (e.g. Brevo).
+import_config "runtime.exs"

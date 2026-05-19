@@ -64,6 +64,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:link_preview_loading, MapSet.new())
      |> assign(:recording, false)
      |> assign(:audio_retry_count, 0)
+     |> assign(:active_call, nil) # {status: :calling | :ringing | :ongoing, from_user: user, conversation: convo}
      |> assign(:active_message_skin, current_user.active_message_skin || "default")
      |> assign(:messages, [])
      |> assign(:show_new_chat_actions, false)
@@ -286,6 +287,100 @@ defmodule VibeflowWeb.Chat.ChatLive do
   # ===========================================================================
   # HANDLE EVENTS - All grouped together
   # ===========================================================================
+
+  @impl true
+  def handle_event("start_call", _params, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_user
+
+    if conversation.type == "direct" do
+      # Find the target user (the other member)
+      target_member = Enum.find(conversation.conversation_members, &(&1.user_id != current_user.id))
+      target_user = target_member.user
+
+      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "incoming_call", %{
+        from_user_id: current_user.id,
+        from_username: current_user.username,
+        conversation_uuid: conversation.uuid
+      })
+
+      # For the initiator, the "display user" is the target_user
+      active_call = %{
+        status: :calling,
+        display_user: target_user,
+        conversation: conversation,
+        start_time: nil
+      }
+
+      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "incoming_call", %{
+        from_user_id: current_user.id,
+        from_username: current_user.username,
+        conversation_uuid: conversation.uuid
+      })
+
+      {:noreply, assign(socket, :active_call, active_call)}
+    else
+      {:noreply, put_flash(socket, :error, "Voice calls only supported in direct chats for now.")}
+    end
+  end
+
+  @impl true
+  def handle_event("accept_call", _params, socket) do
+    case socket.assigns.active_call do
+      %{conversation: conversation} = call ->
+        VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "call_accepted", %{})
+        
+        new_call = call
+                   |> Map.put(:status, :ongoing)
+                   |> Map.put(:start_time, System.system_time(:second))
+
+        {:noreply, 
+          socket 
+          |> assign(:active_call, new_call)
+          # The one who accepts is NOT the initiator of the offer
+          |> push_event("init_peer_connection", %{is_initiator: false})}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("decline_call", _params, socket) do
+    call = socket.assigns.active_call
+    if call do
+      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{call.conversation.uuid}", "call_ended", %{})
+      {:noreply, 
+       socket 
+       |> assign(:active_call, nil)
+       |> push_event("call_ended", %{})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("signal", payload, socket) do
+    conversation = socket.assigns.conversation
+    if conversation do
+      # Add logs to debug signaling
+      # IO.inspect(payload, label: ">>> WebRTC Signal")
+      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "webrtc_signal", %{
+        from_user_id: socket.assigns.current_user.id,
+        signal: payload
+      })
+    end
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("call_error", %{"reason" => reason}, socket) do
+    {:noreply, 
+     socket 
+     |> put_flash(:error, "Call error: #{reason}")
+     |> assign(:active_call, nil)
+     |> push_event("call_ended", %{})}
+  end
 
   @impl true
   def handle_event("validate", %{"message" => %{"content" => content}}, socket) do
@@ -1003,6 +1098,62 @@ defmodule VibeflowWeb.Chat.ChatLive do
   end
 
   @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "incoming_call", payload: payload}, socket) do
+    # Only react if we are the recipient
+    if payload.from_user_id != socket.assigns.current_user.id do
+      # If we are in the chat, show ringing UI
+      if socket.assigns.conversation && socket.assigns.conversation.uuid == payload.conversation_uuid do
+        from_user = Vibeflow.Accounts.get_user!(payload.from_user_id)
+        # For the receiver, the "display user" is the initiator (from_user)
+        active_call = %{
+          status: :ringing,
+          display_user: from_user,
+          conversation: socket.assigns.conversation,
+          start_time: nil
+        }
+        {:noreply, assign(socket, :active_call, active_call)}
+      else
+        # Optional: handle global call notification
+        {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "call_accepted", payload: _payload}, socket) do
+    case socket.assigns.active_call do
+      %{status: :calling} = call ->
+        new_call = call
+                   |> Map.put(:status, :ongoing)
+                   |> Map.put(:start_time, System.system_time(:second))
+
+        {:noreply, 
+         socket 
+         |> assign(:active_call, new_call)
+         # The one who was calling is the INITIATOR of the offer
+         |> push_event("init_peer_connection", %{is_initiator: true})}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "call_ended", payload: _payload}, socket) do
+    {:noreply, 
+     socket 
+     |> assign(:active_call, nil)
+     |> push_event("call_ended", %{})}
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "webrtc_signal", payload: payload}, socket) do
+    {:noreply, push_event(socket, "webrtc_signal", payload)}
+  end
+
+  @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "typing", payload: payload}, socket) do
     user_id = payload.user.id
     username = payload.user.username
@@ -1088,7 +1239,22 @@ defmodule VibeflowWeb.Chat.ChatLive do
 
   @impl true
   def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
-    online_users = Presence.list("users:online")
+    online_users = VibeflowWeb.Presence.list("users:online")
+    
+    # Auto-hangup if other user leaves during a call
+    socket = if socket.assigns.active_call do
+      other_user_id = to_string(socket.assigns.active_call.display_user.id)
+      if !Map.has_key?(online_users, other_user_id) do
+        # Trigger local cleanup
+        Process.send(self(), %Phoenix.Socket.Broadcast{event: "call_ended", payload: %{}}, [])
+        put_flash(socket, :info, "Call ended: User disconnected.")
+      else
+        socket
+      end
+    else
+      socket
+    end
+
     {:noreply, assign(socket, :online_users, online_users)}
   end
 

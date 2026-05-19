@@ -12,8 +12,12 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 
 import userSocket from "./user_socket";
 
+import VoiceCall from "./hooks/voice_call";
+
 // Define Hooks object
-let Hooks = {};
+let Hooks = {
+  VoiceCall: VoiceCall
+};
 
 const BROWSER_NOTIFICATIONS_KEY = "vibeflow_browser_notifications_enabled";
 

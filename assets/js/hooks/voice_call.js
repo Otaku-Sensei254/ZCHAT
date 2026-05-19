@@ -7,6 +7,7 @@ const VoiceCall = {
     this.durationInterval = null;
     this.startTime = null;
     this.pendingSignals = [];
+    this.wakeLock = null;
 
     // Ringtone elements
     this.outgoingRingtone = document.getElementById("outgoing-ringtone");
@@ -20,14 +21,49 @@ const VoiceCall = {
       this.stopRingtones();
       this.startPeerConnection(is_initiator);
       this.startTimer();
+      this.acquireWakeLock();
+    });
+    this.handleEvent("call_accepted", () => {
+        // This is a backup for the initiator who doesn't get init_peer_connection via event but via handle_info
+        // Actually our current LiveView sends init_peer_connection to both, so this might be redundant but safe.
     });
     this.handleEvent("call_ended", () => {
       console.log("Call Ended Event Received");
       this.endCall();
     });
 
+    // Re-acquire wake lock if page becomes visible again
+    this._onVisibilityChange = () => {
+      if (this.wakeLock !== null && document.visibilityState === 'visible') {
+        this.acquireWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', this._onVisibilityChange);
+
     // Check initial state for ringtones
     this.checkRingtones();
+  },
+
+  async acquireWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        this.wakeLock = await navigator.wakeLock.request('screen');
+        console.log("Screen Wake Lock acquired!");
+        this.wakeLock.addEventListener('release', () => {
+          console.log('Screen Wake Lock released');
+        });
+      } catch (err) {
+        console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
+      }
+    }
+  },
+
+  releaseWakeLock() {
+    if (this.wakeLock) {
+      this.wakeLock.release().then(() => {
+        this.wakeLock = null;
+      });
+    }
   },
 
   updated() {
@@ -36,6 +72,7 @@ const VoiceCall = {
 
   destroyed() {
     console.log("VoiceCall Hook Destroyed");
+    document.removeEventListener('visibilitychange', this._onVisibilityChange);
     this.endCall();
   },
 
@@ -189,6 +226,7 @@ const VoiceCall = {
 
   endCall() {
     console.log("Ending call and purging resources.");
+    this.releaseWakeLock();
     this.stopRingtones();
     if (this.durationInterval) clearInterval(this.durationInterval);
     this.durationInterval = null;

@@ -6,6 +6,7 @@ defmodule VibeflowWeb.UserActivityHook do
   alias Vibeflow.Chat
   alias Vibeflow.Notifications
   alias Vibeflow.Repo
+  alias Vibeflow.Accounts
   alias Vibeflow.Accounts.User
 
   def on_mount(:default, _params, _session, socket) do
@@ -48,6 +49,11 @@ defmodule VibeflowWeb.UserActivityHook do
         end
       end
 
+      # 4. Subscribe to Calls
+      if !socket.assigns[:calls_subscribed] do
+        Phoenix.PubSub.subscribe(Vibeflow.PubSub, "user_calls:#{user.id}")
+      end
+
       unread_chats_count = Chat.count_unread_conversations(user.id)
 
       socket =
@@ -55,9 +61,12 @@ defmodule VibeflowWeb.UserActivityHook do
         |> assign(:presenced_tracked, true)
         |> assign(:sidebar_subscribed, true)
         |> assign(:notifications_subscribed, true)
+        |> assign_new(:calls_subscribed, fn -> true end)
         |> assign(:unread_chats_count, unread_chats_count)
-        # Attach the universal handler
-        |> attach_hook(:global_popups, :handle_info, &handle_global_event/2)
+        |> assign_new(:active_call, fn -> nil end)
+        # Attach the universal handlers
+        |> attach_hook(:global_popups, :handle_info, &handle_global_info/2)
+        |> attach_hook(:global_call_events, :handle_event, &handle_global_event/3)
 
       {:cont, socket}
     else
@@ -65,8 +74,63 @@ defmodule VibeflowWeb.UserActivityHook do
     end
   end
 
-  # --- HANDLER 1: NEW CHAT MESSAGE ---
-  defp handle_global_event({:new_sidebar_message, message}, socket) do
+  # --- GLOBAL EVENT HANDLER (FOR UI CLICKS) ---
+  def handle_global_event("accept_call", _params, socket) do
+    case socket.assigns[:active_call] do
+      %{conversation_uuid: uuid} = call ->
+        VibeflowWeb.Endpoint.broadcast("conversation:#{uuid}", "call_accepted", %{
+          from_user_id: socket.assigns.current_user.id
+        })
+        
+        new_call = call
+                   |> Map.put(:status, :ongoing)
+                   |> Map.put(:start_time, System.system_time(:second))
+
+        {:halt, 
+          socket 
+          |> assign(:active_call, new_call)
+          |> push_event("init_peer_connection", %{is_initiator: false})}
+
+      _ ->
+        {:cont, socket}
+    end
+  end
+
+  def handle_global_event("decline_call", _params, socket) do
+    case socket.assigns[:active_call] do
+      %{conversation_uuid: uuid} ->
+        VibeflowWeb.Endpoint.broadcast("conversation:#{uuid}", "call_ended", %{})
+        {:halt, assign(socket, :active_call, nil)}
+      _ ->
+        {:cont, socket}
+    end
+  end
+
+  def handle_global_event("signal", payload, socket) do
+    case socket.assigns[:active_call] do
+      %{conversation_uuid: uuid} ->
+        VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{uuid}", "webrtc_signal", %{
+          from_user_id: socket.assigns.current_user.id,
+          signal: payload
+        })
+        {:halt, socket}
+      _ ->
+        {:cont, socket}
+    end
+  end
+
+  def handle_global_event("call_error", %{"reason" => reason}, socket) do
+    {:halt, 
+     socket 
+     |> put_flash(:error, "Call error: #{reason}")
+     |> assign(:active_call, nil)
+     |> push_event("call_ended", %{})}
+  end
+
+  def handle_global_event(_event, _params, socket), do: {:cont, socket}
+
+  # --- GLOBAL INFO HANDLER ---
+  def handle_global_info({:new_sidebar_message, message}, socket) do
     try do
       current_user_id = socket.assigns.current_user.id
 
@@ -151,7 +215,7 @@ defmodule VibeflowWeb.UserActivityHook do
     rescue
       e ->
         Logger.error(
-          "UserActivityHook handle_global_event new_sidebar_message error: #{inspect(e)}"
+          "UserActivityHook handle_global_info new_sidebar_message error: #{inspect(e)}"
         )
 
         {:cont, socket}
@@ -159,7 +223,7 @@ defmodule VibeflowWeb.UserActivityHook do
   end
 
   # --- HANDLER 2: NEW NOTIFICATION (Likes, Follows, etc) ---
-  defp handle_global_event({:new_notification, notif}, socket) do
+  def handle_global_info({:new_notification, notif}, socket) do
     try do
       # Format the text like "Batman liked your post" (defensive)
       text = format_notification_text(notif)
@@ -174,25 +238,25 @@ defmodule VibeflowWeb.UserActivityHook do
        |> put_flash(:info, text)}
     rescue
       e ->
-        Logger.error("UserActivityHook handle_global_event new_notification error: #{inspect(e)}")
+        Logger.error("UserActivityHook handle_global_info new_notification error: #{inspect(e)}")
         {:cont, socket}
     end
   end
 
   # --- HANDLER 3: Sidebar Read Update (Just clear badge, no popup) ---
-  defp handle_global_event(:update_sidebar, socket) do
+  def handle_global_info(:update_sidebar, socket) do
     try do
       new_count = Chat.count_unread_conversations(socket.assigns.current_user.id)
       {:cont, assign(socket, :unread_chats_count, new_count)}
     rescue
       e ->
-        Logger.error("UserActivityHook handle_global_event update_sidebar error: #{inspect(e)}")
+        Logger.error("UserActivityHook handle_global_info update_sidebar error: #{inspect(e)}")
         {:cont, socket}
     end
   end
 
   # --- HANDLER 4: POINTS AWARDED ---
-  defp handle_global_event({:points_awarded, %{amount: amount}}, socket) do
+  def handle_global_info({:points_awarded, %{amount: amount}}, socket) do
     # Update the user points in the current socket if needed
     user = socket.assigns.current_user
     new_points = (user.points || 0) + amount
@@ -204,8 +268,72 @@ defmodule VibeflowWeb.UserActivityHook do
      |> put_flash(:info, "You earned +#{amount} points! ✨")}
   end
 
+  # --- HANDLER 5: CALL EVENTS ---
+  def handle_global_info(%Phoenix.Socket.Broadcast{event: "incoming_call", payload: payload}, socket) do
+    if payload.from_user_id != socket.assigns.current_user.id do
+      # Subscribe to the conversation topic for signaling
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{payload.conversation_uuid}")
+      
+      from_user = Vibeflow.Accounts.get_user!(payload.from_user_id)
+      active_call = %{
+        status: :ringing,
+        display_user: from_user,
+        conversation_uuid: payload.conversation_uuid,
+        start_time: nil
+      }
+      {:halt, assign(socket, :active_call, active_call)}
+    else
+      {:halt, socket}
+    end
+  end
+
+  def handle_global_info(%Phoenix.Socket.Broadcast{event: "call_accepted", payload: _payload}, socket) do
+    case socket.assigns[:active_call] do
+      %{status: :calling} = call ->
+        new_call = call
+                   |> Map.put(:status, :ongoing)
+                   |> Map.put(:start_time, System.system_time(:second))
+        {:halt, 
+         socket 
+         |> assign(:active_call, new_call)
+         |> push_event("init_peer_connection", %{is_initiator: true})}
+      _ -> {:cont, socket}
+    end
+  end
+
+  def handle_global_info(%Phoenix.Socket.Broadcast{event: "call_ended", payload: _payload}, socket) do
+    {:halt, 
+     socket 
+     |> assign(:active_call, nil)
+     |> push_event("call_ended", %{})}
+  end
+
+  def handle_global_info(%Phoenix.Socket.Broadcast{event: "webrtc_signal", payload: payload}, socket) do
+    {:halt, push_event(socket, "webrtc_signal", payload)}
+  end
+
+  def handle_global_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    online_users = VibeflowWeb.Presence.list("users:online")
+    
+    # Auto-hangup if other user leaves during a call
+    socket = if socket.assigns[:active_call] do
+      other_user_id = to_string(socket.assigns.active_call.display_user.id)
+      if !Map.has_key?(online_users, other_user_id) do
+        # Trigger local cleanup
+        Process.send(self(), %Phoenix.Socket.Broadcast{event: "call_ended", payload: %{}}, [])
+        put_flash(socket, :info, "Call ended: User disconnected.")
+      else
+        socket
+      end
+    else
+      socket
+    end
+
+    {:cont, assign(socket, :online_users, online_users)}
+  end
+
   # Catch-all
-  defp handle_global_event(_event, socket), do: {:cont, socket}
+  def handle_global_info(_event, socket), do: {:cont, socket}
 
   # --- HELPERS ---
 

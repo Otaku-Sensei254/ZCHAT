@@ -298,88 +298,28 @@ defmodule VibeflowWeb.Chat.ChatLive do
       target_member = Enum.find(conversation.conversation_members, &(&1.user_id != current_user.id))
       target_user = target_member.user
 
-      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "incoming_call", %{
+      # Broadcast to the RECIPIENT'S global topic
+      VibeflowWeb.Endpoint.broadcast("user_calls:#{target_user.id}", "incoming_call", %{
         from_user_id: current_user.id,
         from_username: current_user.username,
         conversation_uuid: conversation.uuid
       })
+
+      # Subscribe globally for signaling (in case we navigate)
+      Phoenix.PubSub.subscribe(Vibeflow.PubSub, "conversation:#{conversation.uuid}")
 
       # For the initiator, the "display user" is the target_user
       active_call = %{
         status: :calling,
         display_user: target_user,
-        conversation: conversation,
+        conversation_uuid: conversation.uuid,
         start_time: nil
       }
-
-      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "incoming_call", %{
-        from_user_id: current_user.id,
-        from_username: current_user.username,
-        conversation_uuid: conversation.uuid
-      })
 
       {:noreply, assign(socket, :active_call, active_call)}
     else
       {:noreply, put_flash(socket, :error, "Voice calls only supported in direct chats for now.")}
     end
-  end
-
-  @impl true
-  def handle_event("accept_call", _params, socket) do
-    case socket.assigns.active_call do
-      %{conversation: conversation} = call ->
-        VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "call_accepted", %{})
-        
-        new_call = call
-                   |> Map.put(:status, :ongoing)
-                   |> Map.put(:start_time, System.system_time(:second))
-
-        {:noreply, 
-          socket 
-          |> assign(:active_call, new_call)
-          # The one who accepts is NOT the initiator of the offer
-          |> push_event("init_peer_connection", %{is_initiator: false})}
-
-      _ ->
-        {:noreply, socket}
-    end
-  end
-
-  @impl true
-  def handle_event("decline_call", _params, socket) do
-    call = socket.assigns.active_call
-    if call do
-      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{call.conversation.uuid}", "call_ended", %{})
-      {:noreply, 
-       socket 
-       |> assign(:active_call, nil)
-       |> push_event("call_ended", %{})}
-    else
-      {:noreply, socket}
-    end
-  end
-
-  @impl true
-  def handle_event("signal", payload, socket) do
-    conversation = socket.assigns.conversation
-    if conversation do
-      # Add logs to debug signaling
-      # IO.inspect(payload, label: ">>> WebRTC Signal")
-      VibeflowWeb.Endpoint.broadcast_from(self(), "conversation:#{conversation.uuid}", "webrtc_signal", %{
-        from_user_id: socket.assigns.current_user.id,
-        signal: payload
-      })
-    end
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("call_error", %{"reason" => reason}, socket) do
-    {:noreply, 
-     socket 
-     |> put_flash(:error, "Call error: #{reason}")
-     |> assign(:active_call, nil)
-     |> push_event("call_ended", %{})}
   end
 
   @impl true
@@ -1095,62 +1035,6 @@ defmodule VibeflowWeb.Chat.ChatLive do
         {:noreply, socket}
       end
     end
-  end
-
-  @impl true
-  def handle_info(%Phoenix.Socket.Broadcast{event: "incoming_call", payload: payload}, socket) do
-    # Only react if we are the recipient
-    if payload.from_user_id != socket.assigns.current_user.id do
-      # If we are in the chat, show ringing UI
-      if socket.assigns.conversation && socket.assigns.conversation.uuid == payload.conversation_uuid do
-        from_user = Vibeflow.Accounts.get_user!(payload.from_user_id)
-        # For the receiver, the "display user" is the initiator (from_user)
-        active_call = %{
-          status: :ringing,
-          display_user: from_user,
-          conversation: socket.assigns.conversation,
-          start_time: nil
-        }
-        {:noreply, assign(socket, :active_call, active_call)}
-      else
-        # Optional: handle global call notification
-        {:noreply, socket}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  @impl true
-  def handle_info(%Phoenix.Socket.Broadcast{event: "call_accepted", payload: _payload}, socket) do
-    case socket.assigns.active_call do
-      %{status: :calling} = call ->
-        new_call = call
-                   |> Map.put(:status, :ongoing)
-                   |> Map.put(:start_time, System.system_time(:second))
-
-        {:noreply, 
-         socket 
-         |> assign(:active_call, new_call)
-         # The one who was calling is the INITIATOR of the offer
-         |> push_event("init_peer_connection", %{is_initiator: true})}
-
-      _ ->
-        {:noreply, socket}
-    end
-  end
-
-  @impl true
-  def handle_info(%Phoenix.Socket.Broadcast{event: "call_ended", payload: _payload}, socket) do
-    {:noreply, 
-     socket 
-     |> assign(:active_call, nil)
-     |> push_event("call_ended", %{})}
-  end
-
-  @impl true
-  def handle_info(%Phoenix.Socket.Broadcast{event: "webrtc_signal", payload: payload}, socket) do
-    {:noreply, push_event(socket, "webrtc_signal", payload)}
   end
 
   @impl true

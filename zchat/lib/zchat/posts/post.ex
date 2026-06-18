@@ -97,7 +97,7 @@ defmodule Zchat.Posts.Post do
       :reposts_count,
       :comments_count
     ])
-    |> validate_required([:title, :content, :user_id, :media_files])
+    |> validate_required([:title, :content, :user_id, :media_files, :category])
     |> validate_length(:title, min: 3, max: 200)
     |> validate_length(:content, min: 1, max: 10000)
     |> validate_inclusion(:category, @categories, message: "is not a valid category")

@@ -39,39 +39,34 @@ defmodule VibeflowWeb.UI.PostComponent do
         nil
       end
 
-    # Check if current user has reposted this post
-    current_repost =
-      if current_user do
-        Posts.get_repost_by_user_and_target(current_user.id, "Post", post.id)
-      else
-        nil
-      end
-
-    # Check if current user has saved this post
-    current_save =
-      if current_user do
-        Posts.get_saved_post_by_user_and_post(current_user.id, post.id)
-      else
-        nil
-      end
-
-    is_following =
-      if current_user && post.user do
-        Socials.following?(current_user.id, post.user.id)
-      else
-        false
-      end
-
     {:ok,
      socket
      |> assign(:current_like, current_like)
-     |> assign(:current_repost, current_repost)
-     |> assign(:current_save, current_save)
-     |> assign(:is_following, is_following)
      |> assign(:like_count, post.likes_count || 0)
      |> assign(:repost_count, post.reposts_count || 0)
      |> assign(:comment_count, post.comments_count || 0)
-     |> assign_new(:current_media_index, fn -> 0 end)}
+     |> assign_new(:current_media_index, fn -> 0 end)
+     |> assign_new(:current_repost, fn ->
+       if current_user do
+         Posts.get_repost_by_user_and_target(current_user.id, "Post", post.id)
+       else
+         nil
+       end
+     end)
+     |> assign_new(:current_save, fn ->
+       if current_user do
+         Posts.get_saved_post_by_user_and_post(current_user.id, post.id)
+       else
+         nil
+       end
+     end)
+     |> assign_new(:is_following, fn ->
+       if current_user && post.user do
+         Socials.following?(current_user.id, post.user.id)
+       else
+         false
+       end
+     end)}
   end
 
   @impl true

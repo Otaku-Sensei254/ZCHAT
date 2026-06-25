@@ -303,49 +303,6 @@ defmodule VibeflowWeb.UI.FeedLive do
     {:noreply, push_patch(socket, to: feed_path(socket))}
   end
 
-  @impl true
-  def handle_info({:post_created, post}, socket) do
-    post = Vibeflow.Repo.preload(post, [:user, :likes, comments: :user])
-    # If the current user created the post, insert it at the top immediately
-    if socket.assigns[:current_user] && post.user_id == socket.assigns.current_user.id do
-      {:noreply, stream_insert(socket, :posts, post, at: 0)}
-    else
-      {:noreply, assign(socket, :pending_posts, [post | socket.assigns.pending_posts])}
-    end
-  end
-
-  @impl true
-  def handle_info({:post_deleted, post}, socket) do
-    {:noreply, stream_delete(socket, :posts, post)}
-  end
-
-  @impl true
-  def handle_info({:post_liked, like}, socket) do
-    if like.likeable_id do
-      post = Posts.get_post!(like.likeable_id, preload: [:user, :likes, comments: :user])
-      {:noreply, stream_insert(socket, :posts, post)}
-    else
-      {:noreply, socket}
-    end
-  end
-
-  @impl true
-  def handle_info({:post_unliked, %{post_id: post_id}}, socket) do
-    post = Posts.get_post!(post_id, preload: [:user, :likes, comments: :user])
-    {:noreply, stream_insert(socket, :posts, post)}
-  end
-
-  @impl true
-  def handle_info({:repost_added, repost}, socket) do
-    post = Posts.get_post!(repost.post_id, preload: [:user, :likes, comments: :user])
-    {:noreply, stream_insert(socket, :posts, post)}
-  end
-
-  @impl true
-  def handle_info({:unreposted, post_struct}, socket) do
-    post = Posts.get_post!(post_struct.id, preload: [:user, :likes, comments: :user])
-    {:noreply, stream_insert(socket, :posts, post)}
-  end
 
   @impl true
   def handle_info({:new_notification, _notif}, socket) do

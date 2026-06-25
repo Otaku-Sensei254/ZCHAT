@@ -206,7 +206,7 @@ defmodule VibeflowWeb.Waves.ViewWavesLive do
         class="flex-1 flex items-center justify-center relative bg-black"
         phx-hook="MediaControl"
       >
-        <%= if current_wave.media_type == "video" do %>
+        <%= if current_wave.media_type == "video" || String.ends_with?(current_wave.media_url || "", [".mp4", ".webm", ".mov"]) do %>
           <video
             id={"video-#{current_wave.id}"}
             src={current_wave.media_url}

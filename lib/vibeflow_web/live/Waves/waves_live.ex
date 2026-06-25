@@ -330,9 +330,9 @@ defmodule VibeflowWeb.Waves.WavesLive do
         # Now we are safe to consume
         try do
           results =
-            consume_uploaded_entries(socket, :media, fn %{path: path}, _entry ->
+            consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
               Logger.info(">>> UPLOADING TO CLOUDINARY: #{path} <<<")
-              UploadCloudinary.upload_file(path)
+              UploadCloudinary.upload_file(path, :auto, filename: entry.client_name, content_type: entry.client_type)
             end)
 
           case results do

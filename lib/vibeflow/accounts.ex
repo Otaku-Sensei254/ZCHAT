@@ -75,6 +75,17 @@ defmodule Vibeflow.Accounts do
     end)
   end
 
+  def award_points_to_recent_users(points, days_ago \\ 7) when is_integer(points) do
+    from(u in User, where: u.inserted_at >= ago(^days_ago, "day"))
+    |> Repo.all()
+    |> Enum.each(fn user ->
+      new_points = (user.points || 0) + points
+      user
+      |> Ecto.Changeset.change(%{points: new_points})
+      |> Repo.update()
+    end)
+  end
+
   def get_user_by_username(username) when is_binary(username) do
     Repo.get_by(User, username: username)
   end

@@ -80,6 +80,21 @@ defmodule Vibeflow.Store do
   end
 
   def get_active_cosmetics(user_id) do
+    cache_key = {:cosmetics, user_id}
+    now = System.monotonic_time(:second)
+
+    case Process.get(cache_key) do
+      {cosmetics, timestamp} when now - timestamp < 10 ->
+        cosmetics
+
+      _ ->
+        cosmetics = do_get_active_cosmetics(user_id)
+        Process.put(cache_key, {cosmetics, now})
+        cosmetics
+    end
+  end
+
+  defp do_get_active_cosmetics(user_id) do
     slugs = list_store_items() |> Enum.map(& &1.item_slug)
 
     items =

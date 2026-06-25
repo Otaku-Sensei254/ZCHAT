@@ -10,17 +10,23 @@ defmodule VibeflowWeb.Admin.ManagementLive do
     if !Vibeflow.Accounts.user_has_role?(socket.assigns.current_user, "admin") do
       {:ok, socket |> put_flash(:error, "Unauthorized") |> redirect(to: "/")}
     else
-      # Important preload
-      users = Accounts.list_users() |> Vibeflow.Repo.preload(:roles)
-      all_roles = Accounts.get_roles()
+      socket =
+        socket
+        |> assign(:page_title, "User Management")
+        |> assign(:all_roles, Accounts.get_roles())
+        |> assign(:search_query, "")
+        |> assign(:sort_by, "joined_desc")
 
-      {:ok,
-       socket
-       |> assign(:page_title, "User Management")
-       |> assign(:users, users)
-       |> assign(:all_roles, all_roles)
-       |> assign(:search_query, "")}
+      {:ok, assign(socket, :users, fetch_users(socket))}
     end
+  end
+
+  defp fetch_users(socket) do
+    opts = []
+    opts = if socket.assigns.search_query != "", do: Keyword.put(opts, :search, socket.assigns.search_query), else: opts
+    opts = Keyword.put(opts, :sort_by, socket.assigns.sort_by)
+
+    Accounts.list_users(opts) |> Vibeflow.Repo.preload(:roles)
   end
 
   # removing a role from user
@@ -37,11 +43,9 @@ defmodule VibeflowWeb.Admin.ManagementLive do
           type: "role_change"
         })
 
-        users = Accounts.list_users() |> Vibeflow.Repo.preload(:roles)
-
         {:noreply,
          socket
-         |> assign(:users, users)
+         |> assign(:users, fetch_users(socket))
          |> put_flash(:info, "You have removed role successfully")}
     end
   end
@@ -77,29 +81,26 @@ defmodule VibeflowWeb.Admin.ManagementLive do
           type: "role_change"
         })
 
-        # Refresh Data for the UI
-        users = Accounts.list_users() |> Vibeflow.Repo.preload(:roles)
-
         # Determine message based on action
         msg = if action == :added, do: "Role granted.", else: "Role removed."
 
-        {:noreply, socket |> assign(:users, users) |> put_flash(:info, msg)}
+        {:noreply, socket |> assign(:users, fetch_users(socket)) |> put_flash(:info, msg)}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Operation failed.")}
     end
   end
 
-  # search users
   @impl true
-  def handle_event("search", %{"query" => query}, socket) do
-    users =
-      if query == "" do
-        Vibeflow.Accounts.list_users()
-      else
-        Vibeflow.Accounts.search_users(query)
-      end
+  def handle_event("search", params, socket) do
+    query = params["query"] || socket.assigns.search_query
+    sort_by = params["sort_by"] || socket.assigns.sort_by
 
-    {:noreply, assign(socket, users: users, search_query: query)}
+    socket =
+      socket
+      |> assign(:search_query, query)
+      |> assign(:sort_by, sort_by)
+
+    {:noreply, assign(socket, :users, fetch_users(socket))}
   end
 end

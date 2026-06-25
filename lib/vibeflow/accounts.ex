@@ -23,6 +23,27 @@ defmodule Vibeflow.Accounts do
 
   def list_users, do: Repo.all(User)
 
+  def list_users(opts) do
+    query = User
+
+    query =
+      if search = Keyword.get(opts, :search) do
+        search_term = "%#{search}%"
+        from(u in query, where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term))
+      else
+        query
+      end
+
+    query =
+      case Keyword.get(opts, :sort_by) do
+        "joined_desc" -> from(u in query, order_by: [desc: u.inserted_at])
+        "joined_asc" -> from(u in query, order_by: [asc: u.inserted_at])
+        _ -> query
+      end
+
+    Repo.all(query)
+  end
+
   def award_points_to_user(user_id, points) when is_integer(user_id) and is_integer(points) do
     user = Repo.get!(User, user_id)
     new_points = (user.points || 0) + points

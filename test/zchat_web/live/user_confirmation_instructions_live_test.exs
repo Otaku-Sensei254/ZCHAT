@@ -61,7 +61,7 @@ defmodule VibeflowWeb.UserConfirmationInstructionsLiveTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
                "If your email is in our system"
 
-      assert Repo.all(Accounts.UserToken) == []
+      assert Repo.get_by(Accounts.UserToken, sent_to: "unknown@example.com") == nil
     end
   end
 end

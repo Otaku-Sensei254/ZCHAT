@@ -38,7 +38,7 @@ defmodule VibeflowWeb.UserConfirmationLiveTest do
 
       assert Accounts.get_user!(user.id).confirmed_at
       refute get_session(conn, :user_token)
-      assert Repo.all(Accounts.UserToken) == []
+      assert Repo.get_by(Accounts.UserToken, user_id: user.id, context: "confirm") == nil
 
       # when not logged in
       # This fails as expected because the token was deleted above

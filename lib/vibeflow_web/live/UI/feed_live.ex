@@ -312,6 +312,28 @@ defmodule VibeflowWeb.UI.FeedLive do
   end
 
   @impl true
+  def handle_info({:upload_complete, %{status: :ok, uuid: uuid}}, socket) do
+    post = Posts.get_post_by_uuid(uuid)
+
+    socket =
+      if post do
+        socket
+        |> put_flash(:info, "Your post is live!")
+        |> stream_insert(:posts, post, at: 0)
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:upload_complete, %{status: :error}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Your post upload failed. Please try again.")}
+  end
+
+  @impl true
   def handle_info(:notifications_read, socket) do
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-desktop")
     send_update(VibeflowWeb.Components.NotificationsModal, id: "notifications-modal-mobile")

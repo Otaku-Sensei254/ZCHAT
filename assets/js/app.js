@@ -165,8 +165,8 @@ Hooks.ChatInput = {
     this.el.value = nextValue;
     const cursor = start + emoji.length;
     this.el.setSelectionRange(cursor, cursor);
-    this.el.dispatchEvent(new Event("input", { bubbles: true }));
     this.el.focus();
+    this.el.dispatchEvent(new Event("input", { bubbles: true }));
     this.hideEmojiPicker();
     this.pushTyping();
   },

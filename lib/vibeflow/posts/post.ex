@@ -57,7 +57,8 @@ defmodule Vibeflow.Posts.Post do
           reposts: [any()],
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil,
-          media_files: [map()]
+          media_files: [map()],
+          status: String.t() | nil
         }
 
   schema "posts" do
@@ -73,6 +74,8 @@ defmodule Vibeflow.Posts.Post do
     field :is_featured, :boolean, virtual: true, default: false
     # JSON array of media files
     field :media_files, {:array, :map}, default: []
+    # Processing status: published, processing, failed
+    field :status, :string, default: "published"
     # Keep old fields for backward compatibility
     field :media_url, :string, virtual: true
     field :media_type, :string, virtual: true
@@ -121,7 +124,8 @@ defmodule Vibeflow.Posts.Post do
       :user_id,
       :likes_count,
       :reposts_count,
-      :comments_count
+      :comments_count,
+      :status
     ])
     |> validate_required([:title, :content, :user_id, :media_files])
     |> validate_length(:title, min: 3, max: 200)
@@ -129,6 +133,30 @@ defmodule Vibeflow.Posts.Post do
     |> validate_inclusion(:category, @categories, message: "is not a valid category")
     |> validate_tags()
     |> validate_media_files()
+  end
+
+  @doc """
+  A changeset for creating a draft post (no media files required yet).
+  Sets status to "processing" and media_files to an empty list.
+  """
+  @spec draft_changeset(t() | Ecto.Changeset.t(), map()) :: Ecto.Changeset.t()
+  def draft_changeset(post, attrs) do
+    post
+    |> cast(attrs, [
+      :title,
+      :content,
+      :tags,
+      :category,
+      :user_id,
+      :status
+    ])
+    |> validate_required([:title, :content, :user_id])
+    |> validate_length(:title, min: 3, max: 200)
+    |> validate_length(:content, min: 1, max: 10000)
+    |> validate_inclusion(:category, @categories, message: "is not a valid category")
+    |> validate_tags()
+    |> put_change(:media_files, [])
+    |> put_change(:status, "processing")
   end
 
   # Validates the tags field.

@@ -353,6 +353,7 @@ defmodule VibeflowWeb.UserActivityHook do
       "comment" -> "#{actor} commented on your post 💬"
       "follow" -> "#{actor} started following you 👤"
       "shared_post" -> "#{actor} shared a post with you 🚀"
+      "post_ready" -> "Your post is live! 🎉"
       _ -> "You have a new notification 🔔"
     end
   end

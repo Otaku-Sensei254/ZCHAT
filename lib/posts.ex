@@ -26,7 +26,7 @@ defmodule Vibeflow.Posts do
 
     posts_query =
       from(p in Post,
-        where: p.inserted_at >= ^seven_days_ago,
+        where: p.inserted_at >= ^seven_days_ago and p.status == "published",
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
         join: u in assoc(p, :user),
@@ -85,6 +85,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
@@ -174,6 +175,7 @@ defmodule Vibeflow.Posts do
   defp get_personalized_posts(user_id, page, per_page, search_term, category) do
     base_query =
       from(p in Post,
+        where: p.status == "published",
         left_join: ps in PostSeed,
         on: ps.post_id == p.id and ps.user_id == ^user_id,
         join: u in assoc(p, :user),
@@ -205,6 +207,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         left_join: ps in PostSeed,
         on: ps.post_id == p.id and ps.user_id == ^user_id,
         join: u in assoc(p, :user),
@@ -286,7 +289,7 @@ defmodule Vibeflow.Posts do
 
     from(p in Post,
       join: u in assoc(p, :user),
-      where: ilike(p.title, ^pattern) or ilike(p.content, ^pattern),
+      where: p.status == "published" and (ilike(p.title, ^pattern) or ilike(p.content, ^pattern)),
       preload: [:user],
       order_by: [desc: p.inserted_at],
       limit: 5
@@ -375,7 +378,7 @@ defmodule Vibeflow.Posts do
     cutoff_date = DateTime.add(DateTime.utc_now(), -days_ago, :day)
 
     from(p in Post,
-      where: p.inserted_at >= ^cutoff_date,
+      where: p.inserted_at >= ^cutoff_date and p.status == "published",
       order_by: fragment("RANDOM()"),
       limit: ^limit,
       preload: [:user, :likes]
@@ -464,6 +467,7 @@ defmodule Vibeflow.Posts do
   def create_post(user, attrs) do
     # 1. Process uploads
     attrs = handle_media_files(attrs)
+    attrs = Map.put(attrs, "status", "published")
 
     user
     |> Ecto.build_assoc(:posts)
@@ -490,6 +494,90 @@ defmodule Vibeflow.Posts do
         end
 
         _ = maybe_award_daily_post_points(post.user_id)
+        {:ok, post}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Creates a draft post with status "processing".
+  No media files required — these are added later by the Oban worker.
+  """
+  def create_draft_post(user, attrs) do
+    attrs = Map.put(attrs, "user_id", user.id)
+
+    user
+    |> Ecto.build_assoc(:posts)
+    |> Post.draft_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Publishes a processing post: updates media_files, sets status to "published",
+  and triggers all post-creation side effects (notifications, PubSub, seeding, points).
+  """
+  def publish_post(%Post{} = post, media_files) do
+    post
+    |> Post.changeset(%{media_files: media_files, status: "published"})
+    |> Repo.update()
+    |> case do
+      {:ok, post} ->
+        post = Repo.preload(post, :user)
+        Notifications.notify_followers_of_new_post(post)
+
+        Task.start(fn ->
+          post.content
+          |> Vibeflow.Utils.Mentions.extract()
+          |> notify_mentioned_users_in_post(post)
+        end)
+
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:new_post, post})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "admin:stats", {:post_created, post})
+
+        case Seeder.assign_initial_seeds(post.id, post.user_id) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.error("Post seeding failed: #{inspect(reason)}")
+        end
+
+        _ = maybe_award_daily_post_points(post.user_id)
+
+        Notifications.create_notification(%{
+          type: "post_ready",
+          user_id: post.user_id,
+          actor_id: post.user_id,
+          post_id: post.id
+        })
+
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "notifications:#{post.user_id}",
+          {:upload_complete, %{post_id: post.id, uuid: post.uuid, status: :ok}}
+        )
+
+        {:ok, post}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Marks a post as failed (when background upload could not complete).
+  """
+  def fail_post(%Post{} = post, _reason) do
+    post
+    |> Post.changeset(%{status: "failed"})
+    |> Repo.update()
+    |> case do
+      {:ok, post} ->
+        Phoenix.PubSub.broadcast(
+          Vibeflow.PubSub,
+          "notifications:#{post.user_id}",
+          {:upload_complete, %{post_id: post.id, uuid: post.uuid, status: :error}}
+        )
+
         {:ok, post}
 
       error ->
@@ -1026,7 +1114,7 @@ defmodule Vibeflow.Posts do
 
   def count_posts_by_category do
     from(p in Post,
-      where: not is_nil(p.category),
+      where: p.status == "published" and not is_nil(p.category),
       group_by: p.category,
       select: {p.category, count(p.id)},
       order_by: [desc: count(p.id)]
@@ -1036,6 +1124,7 @@ defmodule Vibeflow.Posts do
 
   def count_top_tags(limit \\ 10) do
     from(p in Post,
+      where: p.status == "published",
       select: {fragment("unnest(?)", p.tags), count(p.id)},
       group_by: fragment("unnest(?)", p.tags),
       order_by: [desc: count(p.id)],
@@ -1054,6 +1143,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
@@ -1086,6 +1176,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
@@ -1336,6 +1427,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),
@@ -1364,6 +1456,7 @@ defmodule Vibeflow.Posts do
 
     base_query =
       from(p in Post,
+        where: p.status == "published",
         join: u in assoc(p, :user),
         left_join: l in assoc(p, :likes),
         left_join: c in assoc(p, :comments),

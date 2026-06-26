@@ -356,13 +356,13 @@
       <.button
         type="submit"
         phx-disable-with="Publishing..."
-        disabled={Enum.count(@uploads.media.entries) > 0}
+        disabled={Enum.any?(@uploads.media.entries, & !&1.done?)}
         class="px-6 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 font-bold shadow-md transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <%= if Enum.count(@uploads.media.entries) > 0 do %>
+        <%= if Enum.any?(@uploads.media.entries, & !&1.done?) do %>
           Uploading...
         <% else %>
-          Create Post
+          Publish
         <% end %>
       </.button>
     </div>

@@ -32,6 +32,8 @@ defmodule Vibeflow.Application do
       {Finch, name: Vibeflow.Finch},
       # Start Oban
       {Oban, Application.fetch_env!(:vibeflow, Oban)},
+      # Track in-progress uploads for background upload flow
+      Vibeflow.UploadTracker,
       # Start the Endpoint (http/https)
       VibeflowWeb.Endpoint
 

@@ -104,6 +104,14 @@ defmodule Vibeflow.Accounts do
     %User{}
     |> User.registration_changeset(attrs)
     |> Repo.insert()
+    |> case do
+      {:ok, user} ->
+        grant_points(user.id, 500)
+        {:ok, user}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   def change_user_registration(%User{} = user, attrs \\ %{}) do

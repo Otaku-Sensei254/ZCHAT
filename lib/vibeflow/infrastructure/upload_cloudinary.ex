@@ -67,7 +67,8 @@ defmodule Vibeflow.Infrastructure.UploadCloudinary do
     case Req.put(url,
            body: bytes,
            headers: headers,
-           receive_timeout: 30_000,
+           receive_timeout: 60_000,
+           finch: Vibeflow.Finch,
            retry: false
          ) do
       {:ok, %{status: status} = response} when status in 200..299 ->

@@ -183,12 +183,25 @@ defmodule VibeflowWeb.UserAuth do
     if conn.assigns[:current_user] do
       conn
     else
-      conn
-      |> put_flash(:error, "You must log in to access this page.")
-      |> maybe_store_return_to()
-      |> redirect(to: ~p"/users/log_in")
-      |> halt()
+      if json_request?(conn) do
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "You must log in to access this page."})
+        |> halt()
+      else
+        conn
+        |> put_flash(:error, "You must log in to access this page.")
+        |> maybe_store_return_to()
+        |> redirect(to: ~p"/users/log_in")
+        |> halt()
+      end
     end
+  end
+
+  defp json_request?(conn) do
+    conn
+    |> get_req_header("accept")
+    |> Enum.any?(&String.contains?(&1, "json"))
   end
 
   ## -----------------------------

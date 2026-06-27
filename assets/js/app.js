@@ -1378,6 +1378,241 @@ Hooks.MentionHook = {
 };
 
 
+// Global store that survives hook mount/unmount cycles
+const __uploadStore = window.__vibeflow_uploadStore || (window.__vibeflow_uploadStore = {
+  ids: [],
+  files: {}, // uploadId -> { name, type, size, state: 'uploading'|'done'|'failed' }
+  counter: 0
+});
+
+Hooks.CreatePostUpload = {
+  mounted() {
+    this._alive = true;
+    this.uploads = new Map();
+    this._bindDropZone();
+    this._bindFileInput();
+    this._bindSubmitCapture();
+    this._renderAllFiles();
+  },
+
+  updated() {
+    this._bindDropZone();
+    this._renderAllFiles();
+  },
+
+  destroyed() {
+    this._alive = false;
+    this._unbindDropZone();
+    this._unbindSubmitCapture();
+  },
+
+  _bindFileInput() {
+    if (this._changeHandler) return;
+    this._changeHandler = (e) => {
+      const input = e.target;
+      if (input && input.id === 'media-upload-input' && input.files && input.files.length > 0) {
+        this.handleFiles(input.files);
+        input.value = '';
+      }
+    };
+    this.el.addEventListener('change', this._changeHandler);
+  },
+
+  _bindDropZone() {
+    this._unbindDropZone();
+    this._dropZone = document.getElementById('upload-drop-zone');
+    if (!this._dropZone) return;
+    this._dragOverHandler = (e) => { e.preventDefault(); e.stopPropagation(); this._dropZone.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'); };
+    this._dragLeaveHandler = (e) => { e.preventDefault(); e.stopPropagation(); this._dropZone.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'); };
+    this._dropHandler = (e) => { e.preventDefault(); e.stopPropagation(); this._dropZone.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'); this.handleFiles(e.dataTransfer.files); };
+    this._dropZone.addEventListener('dragover', this._dragOverHandler);
+    this._dropZone.addEventListener('dragleave', this._dragLeaveHandler);
+    this._dropZone.addEventListener('drop', this._dropHandler);
+  },
+
+  _unbindDropZone() {
+    if (!this._dropZone) return;
+    this._dropZone.removeEventListener('dragover', this._dragOverHandler);
+    this._dropZone.removeEventListener('dragleave', this._dragLeaveHandler);
+    this._dropZone.removeEventListener('drop', this._dropHandler);
+    this._dropZone = null;
+  },
+
+  _bindSubmitCapture() {
+    if (this._submitHandler) return;
+    this._submitHandler = (e) => {
+      const form = e.target;
+      if (!form || !form.matches || !form.matches('form[phx-submit]')) return;
+      for (const id of __uploadStore.ids) {
+        if (!form.querySelector(`input[data-upload-id="${id}"]`)) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'post[upload_ids][]';
+          input.value = id;
+          input.dataset.uploadId = id;
+          form.appendChild(input);
+        }
+      }
+    };
+    document.addEventListener('submit', this._submitHandler, { capture: true });
+  },
+
+  _unbindSubmitCapture() {
+    if (!this._submitHandler) return;
+    document.removeEventListener('submit', this._submitHandler, { capture: true });
+    this._submitHandler = null;
+  },
+
+  handleFiles(files) {
+    for (const file of files) {
+      if (file.size > 100_000_000) continue;
+      this.startUpload(file);
+    }
+  },
+
+  async startUpload(file) {
+    __uploadStore.counter++;
+    const tempId = `upload_${Date.now()}_${__uploadStore.counter}`;
+
+    try {
+      const r = await fetch('/api/uploads/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upload_id: tempId, name: file.name, type: file.type || 'application/octet-stream', size: file.size })
+      });
+      if (!r.ok) return;
+      const { upload_id } = await r.json();
+      __uploadStore.ids.push(upload_id);
+      __uploadStore.files[upload_id] = { name: file.name, type: file.type, size: file.size, state: 'uploading' };
+      this._renderFileItem(upload_id);
+      this.uploadFileData(file, upload_id);
+    } catch (err) {
+      console.error('Upload init failed:', err);
+    }
+  },
+
+  uploadFileData(file, uploadId) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', `/api/uploads/${uploadId}/data`, true);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) this._updateProgress(uploadId, Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      __uploadStore.files[uploadId].state = xhr.status === 200 ? 'done' : 'failed';
+      this._updateFileItem(uploadId);
+    };
+    xhr.onerror = () => { __uploadStore.files[uploadId].state = 'failed'; this._updateFileItem(uploadId); };
+    xhr.send(file);
+    this.uploads.set(uploadId, { file, xhr, state: 'uploading' });
+  },
+
+  _renderAllFiles() {
+    const itemsContainer = document.getElementById('upload-file-items');
+    const fileListContainer = document.getElementById('upload-file-list');
+    if (!itemsContainer || !fileListContainer) return;
+    itemsContainer.innerHTML = '';
+    if (__uploadStore.ids.length === 0) { fileListContainer.classList.add('hidden'); return; }
+    fileListContainer.classList.remove('hidden');
+    for (const id of __uploadStore.ids) {
+      this._renderFileItem(id);
+    }
+  },
+
+  _renderFileItem(uploadId) {
+    const itemsContainer = document.getElementById('upload-file-items');
+    const fileListContainer = document.getElementById('upload-file-list');
+    if (!itemsContainer || !fileListContainer) return;
+    fileListContainer.classList.remove('hidden');
+    const existing = document.getElementById(`upload-item-${uploadId}`);
+    if (existing) existing.remove();
+    const meta = __uploadStore.files[uploadId];
+    if (!meta) return;
+    const isVideo = meta.type && meta.type.startsWith('video/');
+    const sizeKB = Math.round(meta.size / 1024);
+    const isUploaded = meta.state === 'done';
+    const isFailed = meta.state === 'failed';
+    const pct = meta._lastPct || 0;
+    const item = document.createElement('div');
+    item.className = 'flex items-center justify-between p-3 gap-3';
+    item.id = `upload-item-${uploadId}`;
+    item.innerHTML = `
+      <div class="flex items-center gap-3.5 flex-1 min-w-0">
+        <div class="shrink-0">
+          <div id="icon-${uploadId}" class="w-12 h-12 rounded-lg ${isUploaded ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800 text-green-500' : isFailed ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800 text-red-500' : 'bg-indigo-50 dark:bg-zinc-900 border-indigo-100 dark:border-zinc-700 text-indigo-500'} flex items-center justify-center border">
+            ${isUploaded
+              ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+              : isVideo
+                ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'
+            }
+          </div>
+        </div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <figcaption class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-full">${meta.name}</figcaption>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">${sizeKB} KB</span>
+            ${isUploaded
+              ? '<span class="text-xs text-green-500 font-medium">Uploaded</span>'
+              : isFailed
+                ? '<span class="text-xs text-red-500 font-medium">Failed</span>'
+                : `<div id="progress-track-${uploadId}" class="h-1.5 w-full max-w-[100px] bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden"><div id="progress-bar-${uploadId}" class="h-full bg-indigo-500 transition-all duration-300 rounded-full" style="width: ${pct}%"></div></div><span id="progress-text-${uploadId}" class="text-xs text-indigo-500 font-medium">${pct}%</span>`
+            }
+          </div>
+        </div>
+      </div>
+      <button type="button" data-remove-upload="${uploadId}" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      </button>`;
+    itemsContainer.appendChild(item);
+    const removeBtn = item.querySelector('[data-remove-upload]');
+    removeBtn.addEventListener('click', () => this.removeFile(uploadId));
+  },
+
+  _updateFileItem(uploadId) {
+    const item = document.getElementById(`upload-item-${uploadId}`);
+    if (!item) this._renderFileItem(uploadId);
+    else {
+      const meta = __uploadStore.files[uploadId];
+      if (!meta) return;
+      if (meta.state === 'done') {
+        const icon = document.getElementById(`icon-${uploadId}`);
+        if (icon) { icon.className = 'w-12 h-12 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 flex items-center justify-center text-green-500'; icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'; }
+        const pt = document.getElementById(`progress-track-${uploadId}`);
+        if (pt) pt.remove();
+        const pt2 = document.getElementById(`progress-text-${uploadId}`);
+        if (pt2) pt2.outerHTML = '<span class="text-xs text-green-500 font-medium">Uploaded</span>';
+      } else if (meta.state === 'failed') {
+        const pt2 = document.getElementById(`progress-text-${uploadId}`);
+        if (pt2) pt2.outerHTML = '<span class="text-xs text-red-500 font-medium">Failed</span>';
+      }
+    }
+  },
+
+  _updateProgress(uploadId, pct) {
+    if (!this._alive) return;
+    const meta = __uploadStore.files[uploadId];
+    if (meta) meta._lastPct = pct;
+    const bar = document.getElementById(`progress-bar-${uploadId}`);
+    const text = document.getElementById(`progress-text-${uploadId}`);
+    if (bar) bar.style.width = `${pct}%`;
+    if (text) text.textContent = `${pct}%`;
+  },
+
+  removeFile(uploadId) {
+    const xhr = this.uploads.get(uploadId);
+    if (xhr && xhr.state === 'uploading') xhr.abort();
+    this.uploads.delete(uploadId);
+    __uploadStore.ids = __uploadStore.ids.filter(id => id !== uploadId);
+    delete __uploadStore.files[uploadId];
+    const item = document.getElementById(`upload-item-${uploadId}`);
+    if (item) item.remove();
+    const remainingItems = document.querySelectorAll('[id^="upload-item-"]');
+    const fileListContainer = document.getElementById('upload-file-list');
+    if (remainingItems.length === 0 && fileListContainer) fileListContainer.classList.add('hidden');
+  }
+};
+
 // Create the LiveSocket ONCE, passing the Hooks
 
 let liveSocket = new LiveSocket("/live", Socket, {

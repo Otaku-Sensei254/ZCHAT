@@ -23,6 +23,21 @@ defmodule VibeflowWeb.Router do
     get "/unread_chats_count", Api.UnreadController, :show
   end
 
+  # Authenticated upload API - requires login via session
+  pipeline :upload_api do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :fetch_current_user
+  end
+
+  scope "/api", VibeflowWeb do
+    pipe_through [:upload_api, :require_authenticated_user]
+
+    post "/uploads/init", Api.UploadController, :init
+    put "/uploads/:upload_id/data", Api.UploadController, :upload
+  end
+
   scope "/", VibeflowWeb do
     pipe_through :browser
 

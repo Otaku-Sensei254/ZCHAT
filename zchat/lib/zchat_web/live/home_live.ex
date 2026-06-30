@@ -2,7 +2,7 @@ defmodule ZchatWeb.HomeLive do
   use ZchatWeb, :live_view
 
   def mount(socket) do
-    {:ok, socket}
+    {:ok, socket |> assign(:hide_bottom_nav, false)}
   end
 
   def handle_event("toggle_theme", _params, socket) do

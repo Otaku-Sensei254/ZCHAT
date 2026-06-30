@@ -1,0 +1,47 @@
+<div class="max-w-2xl mx-auto bg-white dark:bg-zinc-900 p-6 rounded-lg shadow">
+  <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Create New Role</h2>
+
+  <.form for={@form} phx-submit="save">
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Role Name
+      </label>
+      <.input field={@form[:name]} type="text" placeholder="e.g. Content Editor" />
+    </div>
+
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Assign Permissions
+      </label>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border border-gray-200 dark:border-zinc-700 rounded-lg p-4 max-h-64 overflow-y-auto">
+        <%= for permission <- @all_permissions do %>
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              name="role[permission_ids][]"
+              value={permission.id}
+              id={"perm_#{permission.id}"}
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700"
+            />
+            <label for={"perm_#{permission.id}"} class="ml-3 text-sm">
+              <span class="block font-medium text-gray-900 dark:text-gray-200">
+                {permission.slug}
+              </span>
+              <span class="block text-gray-500 dark:text-gray-400 text-xs">
+                {permission.description}
+              </span>
+            </label>
+          </div>
+        <% end %>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">Select the capabilities this role should have.</p>
+    </div>
+
+    <div class="flex justify-end">
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+        Create Role
+      </button>
+    </div>
+  </.form>
+</div>

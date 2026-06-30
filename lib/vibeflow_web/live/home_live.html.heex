@@ -1,0 +1,75 @@
+<div class="min-h-screen bg-gradient-to-br from-white to-indigo-50 dark:from-zinc-900 dark:to-zinc-800">
+  <button>
+    <.link
+      navigate={~p"/feed"}
+      class="fixed top-24 right-10 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:shadow-indigo-200 transition duration-300"
+    >
+      View Posts
+    </.link>
+  </button>
+  <div class="container mx-auto px-6 py-20 md:py-32">
+    <div class="text-center">
+      <!-- Animated Text -->
+      <div class="mb-12">
+        <h1 class="text-4xl md:text-6xl font-bold mb-6 text-gray-800 dark:text-gray-200">
+          <span class="block">Welcome to</span>
+          <span class="text-indigo-500 dark:text-indigo-400">Vibeflow</span>
+        </h1>
+
+        <div class="h-24 md:h-16 overflow-hidden">
+          <div class="animate-bounce text-xl md:text-2xl font-light text-gray-600 dark:text-gray-400">
+            <div class="animate-fade-in-up">New world,</div>
+            <div class="animate-fade-in-up animation-delay-300">new friends,</div>
+            <div class="animate-fade-in-up animation-delay-600">and awesome new experiences</div>
+            <div class="animate-fade-in-up animation-delay-900">all in one place.</div>
+          </div>
+        </div>
+      </div>
+      
+<!-- Call to Action Buttons -->
+      <div class="flex flex-col sm:flex-row justify-center gap-6 mt-16">
+        <a
+          href="/users/register"
+          class="px-8 py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-indigo-200"
+        >
+          Create Account
+        </a>
+        <a
+          href="/users/log_in"
+          class="px-8 py-4 border-2 border-indigo-500 text-indigo-500 dark:text-indigo-400 dark:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-zinc-800 font-bold rounded-full transition duration-300 transform hover:scale-105"
+        >
+          Sign In
+        </a>
+      </div>
+      
+<!-- Features Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24">
+        <div class="p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg hover:shadow-xl dark:hover:shadow-indigo-500/10 transition-shadow duration-300">
+          <div class="text-indigo-500 dark:text-indigo-400 text-4xl mb-4">🌐</div>
+          <h3 class="text-xl font-bold mb-3 text-gray-800 dark:text-gray-200">
+            Connect Globally
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Chat with friends and meet new people from around the world.
+          </p>
+        </div>
+        <div class="p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg hover:shadow-xl dark:hover:shadow-indigo-500/10 transition-shadow duration-300">
+          <div class="text-indigo-500 dark:text-indigo-400 text-4xl mb-4">⚡</div>
+          <h3 class="text-xl font-bold mb-3 text-gray-800 dark:text-gray-200">Lightning Fast</h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Experience real-time messaging with no delays.
+          </p>
+        </div>
+        <div class="p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg hover:shadow-xl dark:hover:shadow-indigo-500/10 transition-shadow duration-300">
+          <div class="text-indigo-500 dark:text-indigo-400 text-4xl mb-4">🔒</div>
+          <h3 class="text-xl font-bold mb-3 text-gray-800 dark:text-gray-200">
+            Secure & Private
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Your conversations are always encrypted and private.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

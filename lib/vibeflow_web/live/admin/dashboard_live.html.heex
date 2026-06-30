@@ -1,0 +1,130 @@
+<div class="min-h-screen text-gray-900 dark:text-gray-100">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="rounded-3xl border border-slate-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur p-6 lg:p-8 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+            System Overview
+          </h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Admin control center and live content pulse.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <%= if @current_user do %>
+            <div class="inline-flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full px-4 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+              Welcome {@current_user.username}
+              <.verified_badge user={@current_user} class="h-5 w-5" />
+            </div>
+          <% end %>
+          <.link
+            navigate={~p"/feed"}
+            class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            &larr; Back to Feed
+          </.link>
+        </div>
+      </div>
+      <div class="mt-5 flex flex-col md:flex-row gap-3">
+        <.link
+          navigate={~p"/admin/users"}
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-xs font-bold uppercase tracking-wide rounded-full shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:shadow-blue-700/40 transition-all"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+          </svg>
+          Manage Roles
+        </.link>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 mb-8">
+      <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-zinc-800">
+        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Total Users
+        </div>
+        <div class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+          {@stats.total_users}
+        </div>
+      </div>
+      <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-zinc-800">
+        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Total Posts
+        </div>
+        <div class="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+          {@stats.total_posts}
+        </div>
+      </div>
+      <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-zinc-800">
+        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Total Comments
+        </div>
+        <div class="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+          {@stats.total_comments}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-zinc-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 border-b border-slate-200/70 dark:border-zinc-800 pb-2">
+          Categories Performance
+        </h3>
+        <div class="space-y-4">
+          <%= if @categories == [] do %>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">No stats available yet.</p>
+          <% else %>
+            <%= for {category, count} <- @categories do %>
+              <div class="flex items-center justify-between group">
+                <span class="font-medium text-gray-700 dark:text-gray-300">{category}</span>
+                <div class="flex items-center gap-3">
+                  <div class="h-2 w-24 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      class="h-full bg-blue-500 rounded-full"
+                      style={"width: #{min(count * 10, 100)}%"}
+                    >
+                    </div>
+                  </div>
+                  <span class="text-sm text-gray-500 dark:text-gray-400 w-12 text-right">
+                    {count} posts
+                  </span>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200/70 dark:border-zinc-800">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 border-b border-slate-200/70 dark:border-zinc-800 pb-2">
+          Trending Tags
+        </h3>
+        <div class="flex flex-wrap gap-3">
+          <%= if @tags == [] do %>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">No tags used yet.</p>
+          <% else %>
+            <%= for {tag, count} <- @tags do %>
+              <div class="flex items-center bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full px-3 py-1.5">
+                <span class="text-gray-700 dark:text-gray-200 font-medium text-sm">#{tag}</span>
+                <span class="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-xs font-bold px-2 py-0.5 rounded-full">
+                  {count}
+                </span>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

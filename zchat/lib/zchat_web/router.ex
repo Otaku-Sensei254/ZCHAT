@@ -152,13 +152,14 @@ end
 
   ## Authentication routes
 
-  scope "/", ZchatWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+ scope "/", ZchatWeb do
+    pipe_through [:browser]
 
+    # 1. Keep Register and Reset Password here (Standard behavior)
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{ZchatWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/users/register", UserRegistrationLive, :new
       live "/users/log_in", UserLoginLive, :new
+      live "/users/register", UserRegistrationLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
     end
@@ -175,6 +176,8 @@ end
     live_session :require_authenticated_user,
       on_mount: [{ZchatWeb.UserAuth, :ensure_authenticated}, ZchatWeb.UserActivityHook] do
       live "/users/settings", UserSettingsLive, :edit
+      live "/waves", Waves.WavesLive, :index
+      live "/waves/view/:user_id", Waves.ViewWavesLive, :show
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/users/:username", Profiles.UserProfileLive, :show
       live "/notifications", UI.NotificationsLive

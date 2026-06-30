@@ -18,18 +18,27 @@ defmodule Zchat.Chat.Message do
   @doc false
   def changeset(message, attrs) do
     message
-   |> cast(attrs, [:content, :conversation_id, :user_id, :read_at, :shared_post_id, :media_files, :reply_to_id])
-    |> validate_required([:content, :conversation_id, :user_id])
-    |> validate_length(:content, min: 1, max: 5000)
-    |> validate_content_or_post()
-    |> validate_content_or_media()
+    |> cast(attrs, [:content, :conversation_id, :user_id, :read_at, :shared_post_id, :media_files, :reply_to_id], empty_values: [])
+    |> update_change(:content, &String.trim/1)
+    |> validate_required([:conversation_id, :user_id])
+    |> validate_length(:content, max: 5000)
+    |> validate_message_payload()
 
   end
-  defp validate_content_or_post(changeset) do
-    if get_field(changeset, :content) || get_field(changeset, :shared_post_id) do
+
+  defp validate_message_payload(changeset) do
+    content = get_field(changeset, :content)
+    media = get_field(changeset, :media_files) || []
+    shared_post_id = get_field(changeset, :shared_post_id)
+
+    has_content = is_binary(content) and content != ""
+    has_media = is_list(media) and media != []
+    has_shared_post = not is_nil(shared_post_id)
+
+    if has_content or has_media or has_shared_post do
       changeset
     else
-      add_error(changeset, :content, "can't be blank unless sharing a post")
+      add_error(changeset, :content, "Message cannot be empty")
     end
   end
     defp validate_content_or_media(changeset) do

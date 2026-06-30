@@ -1,0 +1,488 @@
+<div class="max-w-7xl mx-auto py-6">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="hidden lg:block lg:col-span-1">
+      <div class="sticky top-24">
+        <div class="bg-white dark:bg-zinc-900 rounded-lg shadow p-4 mb-6 border border-gray-100 dark:border-zinc-800">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Categories</h3>
+          <ul class="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar pr-2">
+            <li>
+              <.link
+                patch={~p"/feed"}
+                class={[
+                  "block px-3 py-2 rounded transition-colors",
+                  is_nil(@category) &&
+                    "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium",
+                  !is_nil(@category) &&
+                    "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                ]}
+              >
+                All Categories
+              </.link>
+            </li>
+            <%= for category <-["Tech", "Drama", "Action", "Fiction","Music", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty","Gossip","Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"]do %>
+              <li>
+                <.link
+                  patch={~p"/feed?category=#{category}"}
+                  class={[
+                    "block px-3 py-2 rounded transition-colors",
+                    @category == category &&
+                      "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium",
+                    @category != category &&
+                      "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                  ]}
+                >
+                  {category}
+                </.link>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2 relative">
+      <div class="bg-white dark:bg-zinc-900 rounded-lg shadow border border-gray-100 dark:border-zinc-800 p-3 mb-4">
+        <div class="flex gap-3 overflow-x-auto scrollbar-hide">
+          <%= if @current_user do %>
+            <.link
+              navigate={~p"/waves"}
+              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+            >
+              <div class="relative w-14 h-14 rounded-full border-2 border-dashed border-blue-400 p-0.5 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800 transition group">
+                <%= if @current_user.avatar_url do %>
+                  <img
+                    src={@current_user.avatar_url}
+                    class={"w-full h-full rounded-full object-cover opacity-60 group-hover:opacity-100 transition " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}
+                  />
+                <% else %>
+                  <div class={"w-full h-full rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 flex items-center justify-center font-bold text-sm opacity-60 group-hover:opacity-100 transition " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}>
+                    {VibeflowWeb.CoreComponents.initials(@current_user)}
+                  </div>
+                <% end %>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
+                    <.icon name="hero-plus" class="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center">
+                You
+              </span>
+            </.link>
+
+            <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
+          <% else %>
+            <.link
+              navigate={~p"/users/log_in"}
+              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+            >
+              <div class="w-14 h-14 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center bg-gray-100 dark:bg-zinc-800">
+                <.icon name="hero-arrow-right-end-on-rectangle" class="w-6 h-6 text-gray-500" />
+              </div>
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400">Log In</span>
+            </.link>
+            <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
+          <% end %>
+
+          <%= for wave_group <- @waves do %>
+            <% frame_class = VibeflowWeb.CoreComponents.avatar_frame_class(wave_group.user) %>
+            <% has_frame = frame_class != "" %>
+            <% seen_dim = if has_frame && !wave_group.has_unseen, do: "opacity-60", else: "" %>
+            <.link
+              navigate={~p"/waves/view/#{wave_group.user.username}"}
+              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+            >
+              <div class={[
+                "relative w-14 h-14 rounded-full p-0.5 flex items-center justify-center transition group",
+                !has_frame && wave_group.has_unseen &&
+                  "bg-gradient-to-tr from-yellow-400 to-pink-600",
+                !has_frame && !wave_group.has_unseen &&
+                  "border-2 border-gray-200 dark:border-zinc-700",
+                has_frame && "#{frame_class} #{seen_dim}"
+              ]}>
+                <div class="bg-white dark:bg-zinc-900 rounded-full p-0.5 w-full h-full">
+                  <div class={"w-full h-full rounded-full overflow-hidden " <> VibeflowWeb.CoreComponents.avatar_frame_class(wave_group.user)}>
+                    <img src={wave_group.user.avatar_url} class="w-full h-full object-cover" />
+                  </div>
+                </div>
+              </div>
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 w-14 text-center flex items-center justify-center gap-0.5">
+                <span class={"truncate " <> VibeflowWeb.CoreComponents.username_glow_class(wave_group.user)}>
+                  {wave_group.user.username}
+                </span>
+                <.verified_badge user={wave_group.user} class="h-5 w-5 shrink-0" />
+              </span>
+            </.link>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="sticky top-[62px] z-30 pb-2 bg-gray-50/95 dark:bg-zinc-900/95 backdrop-blur-sm transition-colors border-b border-gray-100 dark:border-zinc-800">
+        <div class="bg-white dark:bg-zinc-900 rounded-lg shadow-sm mb-2 p-2 relative z-20 border border-gray-100 dark:border-zinc-800 mt-2">
+          <div class="relative" phx-click-away="close_search">
+            <form phx-submit="search" onsubmit="return false;">
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    class="h-5 w-5 text-gray-400 dark:text-zinc-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  name="search"
+                  value={@search_term}
+                  phx-change="live_search"
+                  phx-debounce="300"
+                  placeholder="Search posts..."
+                  autocomplete="off"
+                  class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-md leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out"
+                />
+
+                <%= if @show_search and @search_results != [] do %>
+                  <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden z-50">
+                    <div class="grid grid-cols-3 gap-2 p-2">
+                      <%= for result <- @search_results do %>
+                        <.link
+                          navigate={
+                            if result.type == :user,
+                              do: ~p"/users/#{result.title}",
+                              else: ~p"/posts/#{result.uuid}"
+                          }
+                          class="flex flex-col gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border border-gray-100 dark:border-zinc-700 w-full"
+                          phx-click="close_search"
+                        >
+                          <div class="shrink-0">
+                            <%= if result.type == :user do %>
+                              <%= if result.image do %>
+                                <img
+                                  src={result.image}
+                                  class="w-10 h-10 rounded-full object-cover"
+                                />
+                              <% else %>
+                                <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-700 flex items-center justify-center">
+                                  <.icon name="hero-user" class="w-5 h-5 text-gray-500" />
+                                </div>
+                              <% end %>
+                            <% else %>
+                              <%= if result.image do %>
+                                <%= if result.media_type == "video" do %>
+                                  <video
+                                    src={result.image}
+                                    class="w-full h-20 rounded object-cover"
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    preload="metadata"
+                                  />
+                                <% else %>
+                                  <img
+                                    src={result.image}
+                                    class="w-full h-20 rounded object-cover"
+                                  />
+                                <% end %>
+                              <% else %>
+                                <%= if result.media_type == "video" do %>
+                                  <div class="w-full h-20 rounded bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                    <.icon
+                                      name="hero-video-camera"
+                                      class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                                    />
+                                  </div>
+                                <% else %>
+                                  <div class="w-full h-20 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <.icon
+                                      name="hero-document-text"
+                                      class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                                    />
+                                  </div>
+                                <% end %>
+                              <% end %>
+                            <% end %>
+                          </div>
+                          <div class="flex flex-col min-w-0">
+                            <%= if result.type == :user do %>
+                              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1 truncate">
+                                {result.title}
+                                <.verified_badge
+                                  user={%{is_verified: Map.get(result, :is_verified, false)}}
+                                  class="h-5 w-5"
+                                />
+                              </span>
+                              <span class="text-xs text-gray-500 dark:text-gray-400">
+                                <%= if result.sub && result.sub != "" do %>
+                                  {String.slice(result.sub, 0, 50)}{if String.length(result.sub) >
+                                                                         50,
+                                                                       do: "…",
+                                                                       else: ""}
+                                <% else %>
+                                  No bio
+                                <% end %>
+                              </span>
+                            <% else %>
+                              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                {result.title}
+                              </span>
+                              <span class="text-xs text-gray-500 dark:text-gray-400">
+                                <%= case result.type do %>
+                                  <% :post -> %>
+                                    Post by {result.sub}
+                                  <% :post_by_user -> %>
+                                    by {result.sub}
+                                <% end %>
+                                <%= if result.media_type do %>
+                                  • {String.capitalize(result.media_type)}
+                                <% end %>
+                              </span>
+                            <% end %>
+                          </div>
+                        </.link>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="lg:hidden mb-2 px-4">
+          <div class="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+            <.link
+              patch={~p"/feed"}
+              class={[
+                "shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                is_nil(@category) &&
+                  "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500",
+                !is_nil(@category) &&
+                  "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
+              ]}
+            >
+              All
+            </.link>
+
+            <%= for category <- ["Tech", "Drama", "Action", "Fiction", "Music", "Fitness", "Sports", "Thrills", "Science", "Fashion", "Beauty", "Gossip", "Food", "Politics", "Business", "Comedy", "Nature", "Couples", "Kids"] do %>
+              <.link
+                patch={~p"/feed?category=#{category}"}
+                class={[
+                  "shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                  @category == category &&
+                    "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500",
+                  @category != category &&
+                    "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700 dark:hover:bg-zinc-700"
+                ]}
+              >
+                {category}
+              </.link>
+            <% end %>
+          </div>
+        </div>
+
+        <%= if assigns[:pending_posts] && length(@pending_posts) > 0 do %>
+          <div class="flex justify-center mt-2 animate-bounce">
+            <button
+              phx-click="load_new_posts"
+              class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1.5 px-4 rounded-full shadow"
+            >
+              <span>Show New Posts</span>
+            </button>
+          </div>
+        <% end %>
+
+        <div class="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-transparent to-gray-50/10 dark:to-zinc-900/10 pointer-events-none">
+        </div>
+      </div>
+
+      <div id="posts" phx-update="stream" class="space-y-4 pt-2">
+        <%= for {id, post} <- @streams.posts do %>
+          <.live_component
+            module={VibeflowWeb.UI.PostComponent}
+            id={id}
+            post={post}
+            current_user={@current_user}
+          />
+        <% end %>
+      </div>
+
+      <div
+        id="infinite-scroll-trigger"
+        phx-hook="InfiniteScroll"
+        class="h-20 w-full flex justify-center items-center mt-4"
+      >
+        <%= if @loading do %>
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="hidden lg:block lg:col-span-1">
+      <div class="sticky top-24">
+        <div class="bg-white dark:bg-zinc-900 rounded-lg shadow p-4 border border-gray-100 dark:border-zinc-800">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Trending</h3>
+          <div class="space-y-4">
+            <%= for {_id, post} <- @streams.trending do %>
+              <div class="text-sm">
+                <.link
+                  navigate={~p"/posts/#{post.uuid}"}
+                  class="block hover:bg-gray-50 dark:hover:bg-zinc-800 p-2 rounded transition-colors"
+                >
+                  <p class="font-medium text-gray-900 dark:text-gray-200 line-clamp-2">
+                    {post.title || "Untitled"}
+                  </p>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                    {length(post.likes)} likes • {Timex.from_now(post.inserted_at)}
+                  </p>
+                </.link>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%= if @show_share_modal do %>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        phx-click="close_share_modal"
+      >
+      </div>
+
+      <div class="relative bg-zinc-900 w-full max-w-[26rem] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-zinc-800">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50">
+          <button
+            phx-click="close_share_modal"
+            class="text-zinc-400 hover:text-white transition-colors p-1"
+          >
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M6 18L18 6M6 6l12 12"
+              >
+              </path>
+            </svg>
+          </button>
+          <h3 class="text-base font-bold text-white tracking-wide">Share</h3>
+          <div class="w-9"></div>
+        </div>
+
+        <div class="px-4 py-3">
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                class="w-5 h-5 text-zinc-500 group-focus-within:text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                >
+                </path>
+              </svg>
+            </div>
+            <form phx-change="filter_friends" onsubmit="return false;">
+              <input
+                type="text"
+                name="friend_search"
+                value={@friends_filter || ""}
+                placeholder="Search"
+                class="w-full pl-10 pr-4 py-2 bg-zinc-800/80 hover:bg-zinc-800 border-none rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-700 text-sm transition-all"
+              />
+            </form>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 pb-4">
+          <form phx-change="update_selected_friends" phx-submit="confirm_share" id="share-form">
+            <div class="grid grid-cols-4 gap-y-6 gap-x-2 pt-2">
+              <%= for friend <- (@friends_list_filtered || @friends_list || []) do %>
+                <% # 🟢 CRITICAL FIX: LOGIC BLOCK
+                # Ensure we match Strings to Strings to fix the "Checkmark doesn't appear" bug
+                friend_id_str = to_string(friend.id)
+                current_selection_strs = Enum.map(@selected_friends || [], &to_string/1)
+                is_selected = friend_id_str in current_selection_strs %>
+
+                <label class="flex flex-col items-center gap-1.5 cursor-pointer group relative">
+                  <input
+                    type="checkbox"
+                    name="recipient_ids[]"
+                    value={friend_id_str}
+                    class="hidden peer"
+                    checked={is_selected}
+                  />
+
+                  <div class="relative">
+                    <div class={"w-14 h-14 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center text-lg font-semibold text-zinc-400 transition-all duration-200 z-0 " <> 
+                      if(is_selected, 
+                        do: "ring-[3px] ring-blue-500 ring-offset-[3px] ring-offset-zinc-900", 
+                        else: "group-hover:ring-2 group-hover:ring-zinc-700 group-hover:ring-offset-2 group-hover:ring-offset-zinc-900")}>
+                      <%= if friend.avatar_url && friend.avatar_url != "" do %>
+                        <img
+                          src={friend.avatar_url}
+                          class={"w-full h-full object-cover " <> VibeflowWeb.CoreComponents.avatar_frame_class(friend)}
+                        />
+                      <% else %>
+                        <span class={"uppercase " <> VibeflowWeb.CoreComponents.avatar_frame_class(friend)}>
+                          {VibeflowWeb.CoreComponents.initials(friend)}
+                        </span>
+                      <% end %>
+                    </div>
+
+                    <div class={"absolute -bottom-0.5 -right-0.5 bg-blue-500 rounded-full border-[3px] border-zinc-900 flex items-center justify-center w-6 h-6 z-10 transition-transform duration-200 ease-out " <> 
+                      if(is_selected, do: "scale-100", else: "scale-0")}>
+                      <svg
+                        class="w-3.5 h-3.5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="3"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7">
+                        </path>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <span class={"text-xs text-center w-full px-1 transition-colors duration-200 flex items-center justify-center gap-0.5 " <> if(is_selected, do: "text-white font-medium", else: "text-zinc-400 group-hover:text-zinc-300")}>
+                    <span class={"truncate " <> VibeflowWeb.CoreComponents.username_glow_class(friend)}>
+                      {friend.username || friend.name}
+                    </span>
+                    <.verified_badge user={friend} class="h-5 w-5 shrink-0" />
+                  </span>
+                </label>
+              <% end %>
+            </div>
+          </form>
+        </div>
+
+        <div class="p-4 border-t border-zinc-800 bg-zinc-900 z-10">
+          <button
+            type="submit"
+            form="share-form"
+            disabled={match?([], @selected_friends || [])}
+            class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-900/20 disabled:shadow-none"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

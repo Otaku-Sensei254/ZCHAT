@@ -1,0 +1,1317 @@
+
+<div class="flex h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+  <div class={
+    "border-r border-gray-200 dark:border-zinc-800 flex-col " <>
+    if(@conversation, do: "hidden md:flex md:w-80", else: "flex w-full md:w-80")
+  }>
+    <div class="p-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-20 sticky top-0">
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div>
+
+        <form phx-change="search_new_chat" onsubmit="return false;">
+          <input
+            id="chat-user-search"
+            type="text"
+            name="query"
+            value={@user_search_query}
+            placeholder="Search users..."
+            class="block w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition duration-150 ease-in-out"
+            phx-debounce="300"
+            autocomplete="off"
+          />
+        </form>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="all"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "all", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="direct"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "direct", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Direct
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="groups"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "groups", do: "bg-blue-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Groups
+          </button>
+          <button
+            type="button"
+            phx-click="filter_chats"
+            phx-value-filter="bottles"
+            class={["rounded-full px-3 py-1.5 text-xs font-semibold transition-colors", if(@chat_filter == "bottles", do: "bg-emerald-600 text-white shadow-sm", else: "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700")]}
+          >
+            Bottles
+          </button>
+        </div>
+
+        <%= if @user_search_query != "" do %>
+          <button
+            phx-click="clear_user_search"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        <% end %>
+      </div>
+
+      <%= if @user_search_results != [] do %>
+        <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 overflow-hidden z-50 max-h-64 overflow-y-auto">
+          <%= for user <- @user_search_results do %>
+            <button
+              phx-click="start_new_chat"
+              phx-value-user_id={user.id}
+              class="w-full text-left flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors border-b border-gray-100 dark:border-zinc-700 last:border-0"
+            >
+              <img
+                src={user.avatar_url || "/images/default_avatar.png"}
+                class="h-8 w-8 rounded-full object-cover mr-3 border border-gray-200 dark:border-zinc-600"
+              />
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {user.username}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Click to chat</p>
+              </div>
+            </button>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%= if @user_search_query != "" && String.length(@user_search_query) >= 2 && @user_search_results == [] do %>
+        <div class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-700 p-4 text-center z-50">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No users found.</p>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <%= for conv <- @conversations do %>
+        <% is_group = conv.type == "group"
+        is_bottle = conv.type == "bottle"
+        other_member = Enum.find(conv.conversation_members, &(&1.user.id != @current_user.id))
+
+        display_name =
+          cond do
+            is_group ->
+              conv.name || "Unnamed Group"
+
+            is_bottle ->
+              conv.name || "Message in a Bottle"
+
+            true ->
+              (other_member && other_member.user.username) || "Unknown"
+          end
+
+        avatar_url =
+          if !is_group && !is_bottle && other_member, do: other_member.user.avatar_url
+
+        name_for_initial =
+          cond do
+            is_bottle ->
+              "Bottle"
+
+            !is_group && other_member ->
+              other_member.user.username || other_member.user.email
+
+            true ->
+              "?"
+          end
+
+        initial = String.first(name_for_initial || "?") |> String.upcase()
+
+        is_active = @conversation && conv.id == @conversation.id
+
+        is_online =
+          if !is_group && !is_bottle && other_member,
+            do: Map.has_key?(@online_users, to_string(other_member.user.id)),
+            else: false %>
+
+        <.link
+          navigate={~p"/chat/#{conv.uuid}"}
+          class={[
+            "flex items-center gap-3 p-4 border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition relative",
+            is_active && "bg-blue-50 dark:bg-blue-900/20 md:border-l-4 md:border-l-blue-500"
+          ]}
+        >
+          <div class="relative shrink-0">
+            <%= cond do %>
+              <% is_group -> %>
+                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </div>
+              <% is_bottle -> %>
+                <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
+                  </svg>
+                </div>
+              <% avatar_url -> %>
+                <img
+                  src={avatar_url}
+                  class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-zinc-700"
+                />
+              <% true -> %>
+                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-200 dark:border-indigo-800">
+                  {initial}
+                </div>
+            <% end %>
+
+            <%= if is_online do %>
+              <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-zinc-900 border-2 border-white dark:border-zinc-900">
+              </span>
+            <% end %>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-1">
+              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
+                {display_name}
+              </p>
+              <%= if conv.unread_count > 0 do %>
+                <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  {conv.unread_count}
+                </span>
+              <% end %>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
+              <%= cond do %>
+                <% is_bottle -> %>
+                  Anonymous until found
+                <% is_online -> %>
+                  Active now
+                <% true -> %>
+                  Offline
+              <% end %>
+            </p>
+          </div>
+        </.link>
+      <% end %>
+    </div>
+
+    <div class="relative border-t border-gray-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <%= if @show_new_chat_actions do %>
+        <div class="absolute inset-x-3 bottom-[calc(100%+0.75rem)] z-30 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <button
+            type="button"
+            phx-click="open_direct_chat_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H7.414L4 16.414A1 1 0 012.293 15.707L3.586 13H4a2 2 0 01-2-2V5z" /></svg>
+            </span>
+            Direct Chat
+          </button>
+          <button
+            type="button"
+            phx-click="open_group_chat_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zm-8 8a4 4 0 118 0H5zm10-1a3 3 0 013 3h-4a4.98 4.98 0 00-1.03-3H15zm-1-7a2.5 2.5 0 114.999.001A2.5 2.5 0 0114 7z" /></svg>
+            </span>
+            New Group
+          </button>
+          <button
+            type="button"
+            phx-click="open_bottle_modal"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-zinc-800"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <span class="text-base">🍾</span>
+            </span>
+            Throw Bottle
+          </button>
+        </div>
+      <% end %>
+
+      <button
+        type="button"
+        phx-click="toggle_new_chat_actions"
+        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        New Chat
+      </button>
+    </div>
+  </div>
+
+  <div class={
+    "flex-col relative min-w-0 bg-white dark:bg-zinc-900 " <>
+    if(@conversation, do: "flex w-full md:flex-1", else: "hidden md:flex md:flex-1")
+  }>
+    <%= if @conversation do %>
+      <div
+        id={"chat-container-#{@conversation.id}"}
+        class="flex-1 flex flex-col h-full overflow-hidden"
+        data-conversation-id={@conversation.id}
+        data-user-token={@user_token}
+      >
+        <div class="p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 z-10 shadow-sm shrink-0">
+          <div class="md:hidden">
+            <.link
+              navigate={~p"/chat"}
+              class="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </.link>
+          </div>
+
+          <% header_member =
+            Enum.find(@conversation.conversation_members, &(&1.user.id != @current_user.id))
+
+          is_bottle_conversation = @conversation.type == "bottle"
+
+          header_name =
+            cond do
+              @conversation.type == "group" ->
+                @conversation.name
+
+              is_bottle_conversation ->
+                bottle_sender_name(@messages, @current_user.id)
+
+              true ->
+                (header_member && header_member.user.username) || "Unknown"
+            end
+
+          header_avatar =
+            cond do
+              is_bottle_conversation ->
+                bottle_sender_avatar(@messages, @current_user.id)
+
+              @conversation.type != "group" && header_member ->
+                header_member.user.avatar_url
+
+              true ->
+                nil
+            end
+
+          header_name_source =
+            cond do
+              is_bottle_conversation ->
+                bottle_sender_name(@messages, @current_user.id)
+
+              @conversation.type != "group" && header_member ->
+                header_member.user.username || header_member.user.email
+
+              true ->
+                "?"
+            end
+
+          header_initial = String.first(header_name_source || "?") |> String.upcase()
+
+          other_user_online =
+            if @conversation.type != "group" && !is_bottle_conversation && header_member,
+              do: Map.has_key?(@online_users, to_string(header_member.user.id)),
+              else: false %>
+
+          <div class="relative">
+            <%= cond do %>
+              <% @conversation.type == "group" -> %>
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </div>
+              <% is_bottle_conversation && is_nil(header_avatar) -> %>
+                <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600 dark:text-emerald-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
+                  </svg>
+                </div>
+              <% header_avatar -> %>
+                <img src={header_avatar} class="w-10 h-10 rounded-full object-cover" />
+              <% true -> %>
+                <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                  {header_initial}
+                </div>
+            <% end %>
+            <%= if other_user_online do %>
+              <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900">
+              </div>
+            <% end %>
+          </div>
+
+          <div class="flex-1">
+            <span class="font-bold text-gray-900 dark:text-gray-100 text-base leading-tight">
+              {header_name}
+            </span>
+            <%= if other_user_online do %>
+              <p class="text-xs text-green-500 font-medium">Active now</p>
+            <% else %>
+              <%= if is_bottle_conversation && not bottle_sender_visible?(@messages, @current_user.id) do %>
+                <p class="text-xs font-medium text-emerald-500">Anonymous until found</p>
+              <% end %>
+            <% end %>
+          </div>
+
+          <!-- Chat Settings Icon -->
+          <div class="flex items-center gap-1">
+            <%= if @conversation.type == "direct" do %>
+              <button
+                phx-click="start_call"
+                class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                title="Start voice call"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+              </button>
+            <% end %>
+
+            <.link navigate={~p"/chat/#{@conversation.uuid}/settings"}>
+              <button
+                phx-click="toggle_chat_menu"
+                class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </button>
+            </.link>
+          </div>
+        </div>
+
+        <div
+          id="chat-scroll-container"
+          phx-hook="ScrollToBottom"
+          class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-white dark:bg-zinc-900"
+        >
+          <div id="messages" class="flex flex-col space-y-2 min-h-0">
+            <%= for {message, index} <- Enum.with_index(@messages) do %>
+              <% previous_message = if index > 0, do: Enum.at(@messages, index - 1), else: nil %>
+              <% is_me = message.user_id == @current_user.id %>
+              <% show_date = should_show_date_separator?(message, previous_message) %>
+              <% bubble_class =
+                if message.is_bottle,
+                  do: bottle_skin_classes(),
+                  else:
+                    message_skin_classes(
+                      get_user_skin_for_conversation(@conversation, message.user_id),
+                      is_me
+                    ) %>
+
+              <div id={"message-#{message.id}"} class="flex w-full flex-col min-w-0">
+                <%= if show_date do %>
+                  <div class="flex justify-center my-4">
+                    <div class="px-4 py-1.5 rounded-full border border-gray-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 shadow-sm">
+                      <span class="text-[11px] uppercase tracking-widest text-gray-600 dark:text-gray-300 font-semibold">
+                        {format_date_separator(message.inserted_at)}
+                        
+                      </span>
+                    </div>
+                  </div>
+                <% end %>
+
+                <%= if get_skin_change_notification(message, previous_message, @conversation) do %>
+                  <div class="flex justify-center my-2">
+                    <div class="px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium shadow-sm">
+                      <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 4a1 1 0 110 2h-2v6h2a1 1 0 001-1v-2a1 1 0 00-1-1h-2z" clip-rule="evenodd" />
+                        </svg>
+                        {get_skin_change_notification(message, previous_message, @conversation)}
+                      </span>
+                    </div>
+                  </div>
+                <% end %>
+
+                <div class={"flex w-full group " <> if(is_me, do: "justify-end", else: "justify-start")}>
+                  <%= if message.shared_post do %>
+                    <% post = message.shared_post %>
+                    <% media = List.first(post.media_files || []) %>
+                    <.link
+                      navigate={~p"/posts/#{post.id}"}
+                      class={"relative w-64 aspect-[9/16] rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-gray-200 dark:border-zinc-800 " <> if(is_me, do: "bg-black", else: "bg-white dark:bg-zinc-800")}
+                    >
+                      <%= if media do %>
+                        <%= if media["type"] == "video" do %>
+                          <video
+                            src={media["url"]}
+                            class="absolute inset-0 w-full h-full object-cover"
+                            muted
+                            loop
+                            autoplay
+                            playsinline
+                          >
+                          </video>
+                        <% else %>
+                          <img
+                            src={media["url"]}
+                            class="absolute inset-0 w-full h-full object-cover"
+                          />
+                        <% end %>
+                      <% else %>
+                        <div class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 p-4">
+                          <p class="text-xs text-gray-500 line-clamp-3 text-center italic">
+                            {post.content}
+                          </p>
+                        </div>
+                      <% end %>
+                      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none">
+                      </div>
+                      <div class="absolute top-3 left-3 flex items-center gap-2 z-10">
+                        <img
+                          src={post.user.avatar_url || "/images/default_avatar.png"}
+                          class="w-6 h-6 rounded-full border border-white/50 object-cover"
+                        />
+                        <span class="text-xs font-bold text-white shadow-sm">
+                          {post.user.username}
+                        </span>
+                      </div>
+                      <%= if post.content do %>
+                        <div class="absolute bottom-3 left-3 right-3 z-10">
+                          <p class="text-xs text-white/90 font-medium drop-shadow-md break-words">
+                            {content_cut(post.content, 80)}
+                          </p>
+                        </div>
+                      <% end %>
+                    </.link>
+                  <% else %>
+                    <div class={"relative min-w-0 " <> bubble_class}>
+                      <%!-- Floating bubbles for bottle messages --%>
+                      <%= if message.is_bottle do %>
+                        <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                          <%!-- Small bubbles floating up --%>
+                          <div class="absolute bottom-0 left-[15%] h-2 w-2 animate-bubble-fast rounded-full bg-white opacity-40" style="animation-delay: 0s;"></div>
+                          <div class="absolute bottom-0 left-[35%] h-3 w-3 animate-bubble rounded-full bg-white opacity-20" style="animation-delay: 1s;"></div>
+                          <div class="absolute bottom-0 left-[60%] h-1.5 w-1.5 animate-bubble-slow rounded-full bg-white opacity-50" style="animation-delay: 2s;"></div>
+                          <div class="absolute bottom-0 left-[80%] h-2.5 w-2.5 animate-bubble-fast rounded-full bg-white opacity-30" style="animation-delay: 0.5s;"></div>
+                          <div class="absolute bottom-0 left-[25%] h-2 w-2 animate-bubble rounded-full bg-white opacity-25" style="animation-delay: 3s;"></div>
+                          <div class="absolute bottom-0 left-[70%] h-1.5 w-1.5 animate-bubble-slow rounded-full bg-white opacity-35" style="animation-delay: 4s;"></div>
+                        </div>
+                        <%!-- Rope decoration at top --%>
+                        <div class="absolute left-0 right-0 top-0 h-1 overflow-hidden rounded-t-2xl">
+                          <svg class="h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 4">
+                            <pattern id={"ropePattern-#{message.id}"} x="0" y="0" width="8" height="4" patternUnits="userSpaceOnUse">
+                              <path d="M0,2 Q2,0 4,2 T8,2" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                              <path d="M0,2 Q2,4 4,2 T8,2" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+                            </pattern>
+                            <rect width="100" height="4" fill={"url(#ropePattern-" <> to_string(message.id) <> ")"}/>
+                          </svg>
+                        </div>
+                      <% end %>
+                      <%= if message.is_bottle && !is_me do %>
+                        <p class="relative z-10 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                          <%= display_message_author(message, @current_user.id) %>
+                        </p>
+                      <% end %>
+                      <div class={"absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 " <> if(is_me, do: "right-full pr-2", else: "left-full pl-2")}>
+                        <button
+                          type="button"
+                          phx-click="prepare_reply"
+                          phx-value-id={message.id}
+                          class="rounded-full bg-black/70 text-white p-1.5 shadow-md hover:bg-black/80"
+                          aria-label="Reply to message"
+                          title="Reply"
+                        >
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M7 7V4l-5 5 5 5v-3c4.5 0 7.6 1.2 10 5-1-5-4-10-10-10z" />
+                          </svg>
+                        </button>
+                        <%= if is_me do %>
+                          <button
+                            type="button"
+                            phx-click="delete_message"
+                            phx-value-id={message.id}
+                            class="rounded-lg bg-red-600/20 p-1.5 hover:bg-red-600/40"
+                            aria-label="Delete message"
+                            title="Delete"
+                          >
+                           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M10 12V17" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M14 12V17" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M4 7H20" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M6 10V18C6 19.6569 7.34315 21 9 21H15C16.6569 21 18 19.6569 18 18V10" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5V7H9V5Z" stroke="#e61919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                          </button>
+                        <% end %>
+                      </div>
+                      <%= if message.shared_wave do %>
+                        <% wave = message.shared_wave %>
+                        <.link navigate={~p"/waves/view/#{wave.user.username}"} class="block relative w-56 aspect-[9/16] rounded-xl overflow-hidden shadow-md transition-transform hover:scale-[1.02] border border-white/20 mb-2">
+                          <%= if wave.media_type == "video" do %>
+                            <video src={wave.media_url} class="absolute inset-0 w-full h-full object-cover" muted loop autoplay playsinline></video>
+                          <% else %>
+                            <img src={wave.media_url} class="absolute inset-0 w-full h-full object-cover" />
+                          <% end %>
+                          <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none"></div>
+                          <div class="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+                            <%= if wave.user.avatar_url && wave.user.avatar_url != "" do %>
+                              <img src={wave.user.avatar_url} class="w-5 h-5 rounded-full border border-white/50 object-cover">
+                            <% else %>
+                              <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px] border border-white/50">
+                                <%= VibeflowWeb.CoreComponents.initials(wave.user) %>
+                              </div>
+                            <% end %>
+                            <span class="text-[10px] font-bold text-white shadow-sm"><%= wave.user.username %></span>
+                          </div>
+                          <div class="absolute top-2 right-2 z-10">
+                            <span class="px-1.5 py-0.5 rounded-full bg-pink-500 text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">Wave</span>
+                          </div>
+                          <%= if wave.caption do %>
+                            <div class="absolute bottom-2 left-2 right-2 z-10"><p class="text-[10px] text-white/90 font-medium drop-shadow-md break-words line-clamp-2"><%= wave.caption %></p></div>
+                          <% end %>
+                        </.link>
+                      <% end %>
+                      <%= if message.reply_to do %>
+                        <% reply_skin = reply_skin_classes(get_user_skin_for_conversation(@conversation, message.user_id), is_me) %>
+                        <div class={"mb-2 rounded-lg " <> reply_skin}>
+                          <div class="flex items-center gap-1.5 mb-1">
+                            <svg class="w-3 h-3 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a5 5 0 015 5v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L15 12.586V12a3 3 0 00-3-3H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <p class="text-[10px] font-semibold opacity-80">
+                              <%= display_message_author(message.reply_to, @current_user.id) %>
+                            </p>
+                          </div>
+                          <p class="text-xs leading-snug break-words whitespace-pre-wrap line-clamp-2 opacity-90">
+                            <%= content_cut(message.reply_to.content, 110) %>
+                          </p>
+                        </div>
+                      <% end %>
+                      <%= if message.media_files && message.media_files != [] do %>
+                        <div class="mb-2 space-y-2">
+                          <%= for media <- message.media_files do %>
+                            <%= cond do %>
+                              <% media["type"] == "image" -> %>
+                                <img
+                                  src={media["url"]}
+                                  phx-click="zoom_image"
+                                  phx-value-url={media["url"]}
+                                  phx-value-type="image"
+                                  class="max-w-xs rounded-xl border border-black/5 object-cover dark:border-white/10 cursor-zoom-in"
+                                />
+                              <% media["type"] == "video" -> %>
+                                <div class="relative group">
+                                  <video
+                                    src={media["url"]}
+                                    playsinline
+                                    class="max-w-xs rounded-xl border border-black/5 dark:border-white/10"
+                                  >
+                                  </video>
+                                  <button
+                                    phx-click="zoom_image"
+                                    phx-value-url={media["url"]}
+                                    phx-value-type="video"
+                                    class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-xl"
+                                  >
+                                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.5 5.5A1 1 0 018 4.67l7 4.33a1 1 0 010 1.7l-7 4.33A1 1 0 016.5 14.2V5.5z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              <% media["type"] == "audio" -> %>
+                                <div
+                                  id={"chat-audio-#{message.id}-#{:erlang.phash2(media["url"] || "")}"}
+                                  phx-hook="WavePlayer"
+                                  data-url={media["url"]}
+                                  class="w-72 max-w-full rounded-2xl border border-black/5 bg-white/70 px-3 py-3 shadow-sm dark:border-white/10 dark:bg-zinc-900/60"
+                                >
+                                  <audio preload="auto"></audio>                                  <div class="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      class="play-btn flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm"
+                                    >
+                                      <svg class="play-icon h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6.5 5.5A1 1 0 018 4.67l7 4.33a1 1 0 010 1.7l-7 4.33A1 1 0 016.5 14.2V5.5z" />
+                                      </svg>
+                                      <svg class="pause-icon hidden h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm8 0a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1z" />
+                                      </svg>
+                                    </button>
+                                    <div class="min-w-0 flex-1">
+                                      <div class="mb-1 flex items-center justify-between gap-2">
+                                        <span class="truncate text-xs font-medium text-gray-700 dark:text-gray-200">
+                                          Voice message
+                                        </span>
+                                        <span class="timer text-[11px] text-gray-500 dark:text-gray-400">0:00</span>
+                                      </div>
+                                      <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
+                                        <div class="progress-bar h-full w-0 rounded-full bg-blue-500"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              <% true -> %>
+                                <a
+                                  href={media["url"]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="inline-flex items-center rounded-xl border border-black/5 bg-white/70 px-3 py-2 text-sm text-blue-600 dark:border-white/10 dark:bg-zinc-900/60 dark:text-blue-400"
+                                >
+                                  Open attachment
+                                </a>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      <% end %>
+                      <div class="relative z-10 whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</div>
+                      <div class={"relative z-10 flex items-center gap-1 justify-end mt-1 " <> if(is_me, do: "text-blue-100", else: "text-gray-500 dark:text-gray-400")}>
+                        <span class="text-[10px]">
+                          <%= if message.inserted_at do %>
+                            {message.inserted_at
+                            |> DateTime.from_naive!("Etc/UTC")
+                            |> Timex.Timezone.convert("Africa/Nairobi")
+                            |> Timex.format!("%H:%M", :strftime)}
+                          <% end %>
+                        </span>
+                        <%= if is_me do %>
+                          <% msg_time =
+                            DateTime.from_naive!(message.inserted_at, "Etc/UTC")
+                            |> DateTime.truncate(:second)
+
+                          is_read =
+                            if @other_last_read_at,
+                              do:
+                                DateTime.compare(
+                                  msg_time,
+                                  DateTime.truncate(@other_last_read_at, :second)
+                                ) != :gt,
+                              else: false %>
+                          <%= if is_read do %>
+                            <div class="flex">
+                              <svg
+                                class="w-3 h-3 text-green-500 -ml-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg><svg
+                                class="w-3 h-3 text-green-500 -ml-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              ><path
+                                fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd"
+                              /></svg>
+                            </div>
+                          <% else %>
+                            <div class="flex opacity-50">
+                              <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+        <%= if typing_text = (get_typing_text(@typing_users) || if(@self_typing, do: "You are typing...", else: nil)) do %>
+            <div class="flex items-center gap-2 px-4 py-2 mt-1">
+              <div class="flex gap-1">
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 0ms"
+                >
+                </div>
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 150ms"
+                >
+                </div>
+                <div
+                  class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                  style="animation-delay: 300ms"
+                >
+                </div>
+              </div>
+              <span class="text-xs text-gray-500 dark:text-gray-400 italic animate-pulse">
+                {typing_text}
+              </span>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="p-4 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shrink-0">
+          <%= if @replying_to do %>
+            <div class="mb-3 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                  Replying to <%= @replying_to.user.username %>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <%= content_cut(@replying_to.content, 80) %>
+                </p>
+              </div>
+              <button
+                type="button"
+                phx-click="clear_reply"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                aria-label="Clear reply"
+                title="Clear reply"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-5.707a1 1 0 010-1.414L8.586 10 6.293 7.707a1 1 0 011.414-1.414L10 8.586l2.293-2.293a1 1 0 011.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          <% end %>
+          <%!-- UPLOAD PREVIEW AREA --%>
+          <%= if @uploads.media_file.entries != [] do %>
+            <div class="px-4 py-2 flex flex-row gap-3 overflow-x-auto border-t border-gray-100 dark:border-zinc-800">
+              <%= for entry <- @uploads.media_file.entries do %>
+                <div class="relative flex-shrink-0 group">
+                  <div 
+                    phx-click="preview_entry" 
+                    phx-value-ref={entry.ref}
+                    class="h-16 w-16 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700 relative cursor-zoom-in"
+                  >
+                    <%= if String.starts_with?(entry.client_type, "image/") do %>
+                      <.live_img_preview entry={entry} class="h-full w-full object-cover" />
+                    <% else %>
+                      <div class="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800">
+                        <%= if String.starts_with?(entry.client_type, "video/") do %>
+                          <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                          </svg>
+                        <% else %>
+                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    
+                    <div class={"absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity " <> if(entry.progress == 100, do: "opacity-0 group-hover:opacity-10 pointer-events-none", else: "opacity-100")}>
+                      <%= if entry.progress < 100 do %>
+                        <span class="text-[10px] font-bold text-white"><%= entry.progress %>%</span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <button 
+                    phx-click="cancel-upload" 
+                    phx-value-ref={entry.ref} 
+                    class="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full p-0.5 shadow-md hover:bg-red-500 transition-colors"
+                    type="button"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <form phx-submit="send_message" phx-change="validate" class="flex gap-2 items-end">
+            <div id="chat-audio-recorder" class="flex items-center w-full gap-2" phx-hook="AudioRecorder">
+              <.live_file_input upload={@uploads.audio} id="chat-audio-upload" class="hidden" />
+              
+              <div class={["flex items-center gap-0.5 mb-2 shrink-0", @recording && "hidden"]}>
+                <div class="relative">
+                  <.live_file_input upload={@uploads.media_file} class="hidden" id="media-upload-input" />
+                  <button
+                    type="button"
+                    onclick="document.getElementById('media-upload-input').click()"
+                    class="h-9 w-9 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                    aria-label="Share media"
+                    title="Share media"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="relative">
+                  <div
+                    id="chat-emoji-picker"
+                    data-emoji-picker
+                    phx-update="ignore"
+                    class="hidden absolute bottom-full left-0 mb-2 z-50"
+                  >
+                    <div data-emoji-picker-container></div>
+                  </div>
+                  <button
+                    type="button"
+                    data-emoji-toggle
+                    class="h-9 w-9 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                    aria-label="Insert emoji"
+                    title="Emoji"
+                  >
+                    <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.5-5.5a1 1 0 011.414 0 3 3 0 004.243 0 1 1 0 111.414 1.414 5 5 0 01-7.071 0 1 1 0 010-1.414zM7 8a1.25 1.25 0 100-2.5A1.25 1.25 0 007 8zm6 0a1.25 1.25 0 100-2.5A1.25 1.25 0 0013 8z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex-1 relative mb-2">
+                <%!-- Normal Textarea --%>
+                <div class={@recording && "hidden"}>
+                  <textarea
+                    name="message[content]"
+                    id="chat-message-input"
+                    phx-hook="ChatInput"
+                    value={@composer_content}
+                    placeholder="Message..."
+                    autocomplete="off"
+                    rows="1"
+                    class="w-full resize-none rounded-3xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white px-4 py-3 focus:ring-blue-500 focus:border-blue-500 shadow-sm leading-6"
+                  ></textarea>
+                </div>
+
+                <%!-- Recording UI --%>
+                <div class={["absolute inset-0 bg-gray-50 dark:bg-zinc-800 rounded-3xl flex items-center px-4 gap-4", !@recording && "hidden"]} data-rec-show-on-start>
+                  <div class="flex items-center gap-1.5 min-w-[45px]">
+                    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    <span id="recording-timer" class="text-xs font-bold font-mono text-gray-700 dark:text-gray-200">0:00</span>
+                  </div>
+                  
+                  <%!-- Audio Visualizer Bars --%>
+                  <div id="recording-visualizer" class="flex-1 flex items-center justify-center gap-0.5 h-6" data-rec-visualizer phx-update="ignore">
+                    <%= for _ <- 1..24 do %>
+                      <div class="w-1 bg-blue-500 rounded-full transition-all duration-75 h-1"></div>
+                    <% end %>
+                  </div>
+
+                  <button
+                    type="button"
+                    phx-click="cancel_recording"
+                    class="text-xs font-bold text-red-500 hover:text-red-600 px-2 py-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center mb-2 shrink-0">
+                <button
+                  type="button"
+                  data-rec-action="start"
+                  class={["h-10 w-10 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400", @recording && "hidden"]}
+                  aria-label="Record voice message"
+                  title="Voice message"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                  </svg>
+                </button>
+                
+                <button
+                  type="button"
+                  data-rec-action="stop"
+                  class={["h-10 w-10 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 transition-transform active:scale-90", !@recording && "hidden"]}
+                  aria-label="Stop recording"
+                  title="Stop recording"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-6 w-6">
+                    <rect width="12" height="12" x="6" y="6" rx="2" />
+                  </svg>
+                </button>
+
+                <% is_uploading = Enum.any?(@uploads.media_file.entries, fn e -> e.progress < 100 end) %>
+                <button
+                  type="submit"
+                  disabled={is_uploading}
+                  class={["p-3 rounded-full shadow-md transition-all active:scale-95 flex items-center justify-center ml-1", @recording && "hidden", if(is_uploading, do: "bg-gray-400 cursor-not-allowed", else: "bg-blue-500 hover:bg-blue-600 text-white")]}
+                >
+                  <%= if is_uploading do %>
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  <% else %>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  <% end %>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% else %>
+      <div class="hidden md:flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500 bg-white dark:bg-zinc-900 h-full">
+        <div class="text-center">
+          <svg
+            class="w-20 h-20 mx-auto mb-4 opacity-20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          <p class="text-xl font-medium text-gray-500">Your Messages</p>
+          <p class="text-sm mt-1">Select a chat to start messaging</p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%= if @show_direct_chat_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Start a direct chat</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Search a username to begin.</p>
+        </div>
+        <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-200">
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+
+      <form phx-change="search_direct_users">
+        <input
+          type="text"
+          name="query"
+          value={@direct_search_query}
+          placeholder="Search username..."
+          autocomplete="off"
+          phx-debounce="250"
+          class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+        />
+      </form>
+
+      <div class="mt-4 max-h-80 space-y-2 overflow-y-auto">
+        <%= if @direct_search_query != "" && @direct_search_results == [] do %>
+          <p class="rounded-2xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-gray-400">No users found.</p>
+        <% end %>
+
+        <%= for user <- @direct_search_results do %>
+          <button
+            type="button"
+            phx-click="start_chat_with_user"
+            phx-value-user_id={user.id}
+            class="flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <img src={user.avatar_url || "/images/default_avatar.png"} class="h-11 w-11 rounded-full object-cover" />
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+              <p class="truncate text-xs text-gray-500 dark:text-gray-400"><%= user.email %></p>
+            </div>
+          </button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_group_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="w-full max-w-xl rounded-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create group chat</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Name the group and choose who joins.</p>
+        </div>
+        <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-800 dark:hover:text-gray-200">
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <form phx-change="update_group_name">
+          <input
+            type="text"
+            name="group_name"
+            value={@group_name || ""}
+            placeholder="Group name"
+            class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+          />
+        </form>
+
+        <form phx-change="search_group_users">
+          <input
+            type="text"
+            name="query"
+            value={@group_search_query}
+            placeholder="Search username..."
+            autocomplete="off"
+            phx-debounce="250"
+            class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100"
+          />
+        </form>
+
+        <%= if @selected_group_members != [] do %>
+          <div class="flex flex-wrap gap-2">
+            <%= for user_id <- @selected_group_members do %>
+              <% user = Enum.find(@group_search_results, &(&1.id == user_id)) %>
+              <%= if user do %>
+                <span class="flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <img src={user.avatar_url || "/images/default_avatar.png"} class="h-4 w-4 rounded-full object-cover" />
+                  <%= user.username %>
+                </span>
+              <% else %>
+                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  User <%= user_id %>
+                </span>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="max-h-72 space-y-2 overflow-y-auto">
+          <%= if @group_search_query != "" && @group_search_results == [] do %>
+            <p class="rounded-2xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-gray-400">No users found.</p>
+          <% end %>
+
+          <%= for user <- @group_search_results do %>
+            <% selected = user.id in @selected_group_members %>
+            <button
+              type="button"
+              phx-click="toggle_user_selection"
+              phx-value-user-id={user.id}
+              class={["flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors", if(selected, do: "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20", else: "border-gray-200 hover:bg-gray-50 dark:border-zinc-700 dark:hover:bg-zinc-800")]}
+            >
+              <img src={user.avatar_url || "/images/default_avatar.png"} class="h-11 w-11 rounded-full object-cover" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100"><%= user.username %></p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400"><%= user.email %></p>
+              </div>
+              <span class={["rounded-full px-2 py-1 text-[11px] font-semibold", if(selected, do: "bg-blue-600 text-white", else: "bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-gray-400")]}>
+                <%= if selected, do: "Selected", else: "Add" %>
+              </span>
+            </button>
+          <% end %>
+        </div>
+
+        <form phx-submit="create_group" class="flex justify-end gap-3 pt-2">
+          <input type="hidden" name="group_name" value={@group_name || ""} />
+          <button type="button" phx-click="close_new_chat_overlays" class="rounded-2xl px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800">Cancel</button>
+          <button type="submit" class="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Create Group</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_bottle_modal do %>
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" phx-click="close_new_chat_overlays">
+    <div class="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-b from-blue-600 via-blue-500 to-cyan-400 p-5 shadow-2xl" phx-click-away="close_new_chat_overlays" onclick="event.stopPropagation()">
+      <%!-- Floating bubbles background --%>
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <%!-- Bubble 1 --%>
+        <div class="absolute bottom-[-100px] left-[10%] h-16 w-16 animate-bubble rounded-full bg-white opacity-20" style="animation-delay: 0s;"></div>
+        <%!-- Bubble 2 --%>
+        <div class="absolute bottom-[-100px] left-[30%] h-24 w-24 animate-bubble-slow rounded-full bg-white opacity-10" style="animation-delay: 2s;"></div>
+        <%!-- Bubble 3 --%>
+        <div class="absolute bottom-[-100px] left-[55%] h-10 w-10 animate-bubble-fast rounded-full bg-white opacity-30" style="animation-delay: 4s;"></div>
+        <%!-- Bubble 4 --%>
+        <div class="absolute bottom-[-100px] left-[75%] h-20 w-20 animate-bubble rounded-full bg-white opacity-15" style="animation-delay: 1s;"></div>
+        <%!-- Bubble 5 --%>
+        <div class="absolute bottom-[-100px] left-[90%] h-12 w-12 animate-bubble-slow rounded-full bg-white opacity-25" style="animation-delay: 3s;"></div>
+        <%!-- Extra bubbles for density --%>
+        <div class="absolute bottom-[-100px] left-[20%] h-8 w-8 animate-bubble-fast rounded-full bg-white opacity-20" style="animation-delay: 5s;"></div>
+        <div class="absolute bottom-[-100px] left-[65%] h-14 w-14 animate-bubble rounded-full bg-white opacity-10" style="animation-delay: 6s;"></div>
+        <div class="absolute bottom-[-100px] left-[45%] h-6 w-6 animate-bubble-slow rounded-full bg-white opacity-25" style="animation-delay: 7s;"></div>
+      </div>
+
+      <%!-- Rope border decoration at top --%>
+      <div class="absolute left-0 right-0 top-0 h-3 bg-gradient-to-r- from-amber-700 via-amber-600 to-amber-700 opacity-90">
+        <svg class="h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 12">
+          <pattern id="ropePattern" x="0" y="0" width="20" height="12" patternUnits="userSpaceOnUse">
+            <path d="M0,6 Q5,0 10,6 T20,6" fill="none" stroke="#92400e" stroke-width="2"/>
+            <path d="M0,6 Q5,12 10,6 T20,6" fill="none" stroke="#b45309" stroke-width="1.5"/>
+          </pattern>
+          <rect width="100" height="12" fill="url(#ropePattern)"/>
+        </svg>
+      </div>
+
+      <div class="relative z-10">
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <%!-- Bottle icon with wave animation --%>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 2v5.586a1 1 0 01-.293.707L8.414 9.586A2 2 0 008 11v7a4 4 0 004 4h0a4 4 0 004-4v-7a2 2 0 00-.414-1.414l-1.293-1.293A1 1 0 0114 7.586V2m-4 0h4m-6 16h8" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white drop-shadow-sm">Throw a bottle</h3>
+              <p class="text-sm text-blue-100">Send something kind. One image max, up to 5 MB.</p>
+            </div>
+          </div>
+          <button type="button" phx-click="close_new_chat_overlays" class="rounded-full p-2 text-white/70 hover:bg-white/20 hover:text-white transition-colors">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          </button>
+        </div>
+
+        <form phx-submit="throw_bottle" phx-change="update_bottle_content" class="space-y-4">
+          <textarea
+            name="bottle[content]"
+            rows="5"
+            value={@bottle_content}
+            placeholder="Write something comforting, encouraging, or kind..."
+            class="w-full resize-none rounded-2xl border-0 bg-white/90 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+          ></textarea>
+
+          <div class="rounded-2xl border border-dashed border-white/40 bg-white/10 p-4 backdrop-blur-sm">
+            <.live_file_input upload={@uploads.bottle_image} class="block w-full text-sm text-white/90 file:mr-4 file:rounded-full file:border-0 file:bg-white/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-white/30" />
+            <p class="mt-2 text-xs text-blue-100">Accepted: JPG, PNG, WEBP, GIF. Max 5 MB.</p>
+          </div>
+
+          <%= if @uploads.bottle_image.entries != [] do %>
+            <div class="space-y-2">
+              <%= for entry <- @uploads.bottle_image.entries do %>
+                <div class="flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-3 py-3 backdrop-blur-sm">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-white"><%= entry.client_name %></p>
+                    <p class="text-xs text-blue-100"><%= entry.progress %>% uploaded</p>
+                  </div>
+                  <button type="button" phx-click="cancel-bottle-upload" phx-value-ref={entry.ref} class="rounded-full p-2 text-white/60 hover:bg-white/20 hover:text-red-300 transition-colors">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" phx-click="close_new_chat_overlays" class="rounded-2xl px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/20 transition-colors">Cancel</button>
+            <button type="submit" class="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-lg shadow-blue-900/20 transition hover:bg-blue-50 hover:shadow-xl hover:scale-105 active:scale-95">
+              <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Throw Bottle
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%!-- LIGHTBOX MODAL FOR PREVIEW --%>
+<%= if @preview_entry do %>
+  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <button phx-click="close_preview" class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+
+    <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+      <%= if String.starts_with?(@preview_entry.client_type, "image/") do %>
+        <.live_img_preview entry={@preview_entry} class="max-h-[85vh] w-auto rounded-lg shadow-2xl object-contain" />
+      <% else %>
+        <div class="max-h-[85vh] w-full aspect-video flex flex-col items-center justify-center bg-zinc-800 rounded-lg text-white p-8">
+           <svg class="w-20 h-20 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+           </svg>
+           <p class="text-lg font-medium"><%= @preview_entry.client_name %></p>
+           <p class="text-sm text-gray-400 mt-1 uppercase"><%= String.split(@preview_entry.client_type, "/") |> List.last() %></p>
+        </div>
+      <% end %>
+      
+      <div class="mt-4 flex items-center gap-4">
+         <div class="text-white text-sm font-mono bg-black/50 px-3 py-1 rounded-full">
+           <%= @preview_entry.client_name %>
+         </div>
+         
+         <%= if @preview_entry.progress < 100 do %>
+           <div class="text-orange-400 text-sm font-bold flex items-center gap-2">
+             <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+             Uploading... <%= @preview_entry.progress %>%
+           </div>
+         <% else %>
+           <div class="text-green-400 text-sm font-bold flex items-center gap-1">
+             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+             Ready to send
+           </div>
+         <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%!-- LIGHTBOX: Zoomed media (image or video) --%>
+<%= if @zoomed_image do %>
+  <div class="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4" phx-click="close_zoom">
+    <div class="relative max-w-[95vw] max-h-[95vh]" onclick="event.stopPropagation()">
+      <button phx-click="close_zoom" class="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      <%= if @zoomed_image["type"] == "video" do %>
+        <video src={@zoomed_image["url"]} controls autoplay class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl"></video>
+      <% else %>
+        <img src={@zoomed_image["url"]} class="max-h-[95vh] max-w-[95vw] rounded-lg shadow-2xl object-contain" />
+      <% end %>
+    </div>
+  </div>
+<% end %>

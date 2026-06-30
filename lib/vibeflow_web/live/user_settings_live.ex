@@ -1,0 +1,808 @@
+defmodule VibeflowWeb.UserSettingsLive do
+  use VibeflowWeb, :live_view
+  alias Vibeflow.Infrastructure.UploadCloudinary
+  alias Vibeflow.Accounts
+  alias Vibeflow.Socials
+  alias Vibeflow.Store
+  alias Phoenix.LiveView.JS
+  require Logger
+
+  @impl true
+  def mount(%{"token" => token}, _session, socket) do
+    socket =
+      case Accounts.update_user_email(socket.assigns.current_user, token) do
+        :ok ->
+          put_flash(socket, :info, "Email changed successfully.")
+
+        :error ->
+          put_flash(socket, :error, "Email change link is invalid or it has expired.")
+      end
+
+    # We use push_navigate to satisfy the test expectation of :live_redirect
+    {:ok, push_navigate(socket, to: ~p"/users/settings")}
+  end
+
+  @impl true
+  def mount(params, _session, socket) do
+    user = socket.assigns.current_user
+    email_changeset = Accounts.change_user_email(user)
+    password_changeset = Accounts.change_user_password(user)
+    profile_changeset = Accounts.change_user_profile(user)
+
+    glow_owned = Store.get_user_item(user.id, "profile-glow") != nil
+    open_glow_modal = glow_owned && Map.get(params, "glow") == "1"
+
+    socket =
+      socket
+      |> assign(:current_password, nil)
+      |> assign(:email_form_current_password, nil)
+      |> assign(:current_email, user.email)
+      |> assign(:email_form, to_form(email_changeset))
+      |> assign(:password_form, to_form(password_changeset))
+      |> assign(:profile_form, to_form(profile_changeset))
+      |> assign(:social_form, to_form(%{"platform" => "youtube", "username" => ""}))
+      |> assign(:socials, Socials.list_social_accounts(user.id))
+      |> assign(:glow_owned, glow_owned)
+      |> assign(:show_glow_modal, open_glow_modal)
+      |> assign(:glow_style, user.username_style || "neon-green")
+      |> assign(:trigger_submit, false)
+      |> put_flash(:debug, "Glow owned: #{glow_owned}")
+      |> allow_upload(:avatar,
+        accept: ~w(.jpg .jpeg .png .webp),
+        max_entries: 1,
+        max_file_size: 5_000_000
+      )
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("open_glow_modal", _params, socket) do
+    {:noreply, assign(socket, :show_glow_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_glow_modal", _params, socket) do
+    {:noreply, assign(socket, :show_glow_modal, false)}
+  end
+
+  @impl true
+  def handle_event("set_glow_style", %{"style" => style}, socket) do
+    user = socket.assigns.current_user
+
+    if socket.assigns.glow_owned do
+      case Accounts.update_user_profile(user, %{"username_style" => style}) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:current_user, updated_user)
+           |> assign(:glow_style, updated_user.username_style)
+           |> assign(:profile_form, to_form(Accounts.change_user_profile(updated_user)))
+           |> assign(:show_glow_modal, false)
+           |> put_flash(:info, "Username style updated.")}
+
+        {:error, changeset} ->
+          {:noreply, assign(socket, :profile_form, to_form(changeset))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Purchase Profile Glow to unlock styles.")}
+    end
+  end
+
+  @impl true
+  def handle_event("validate_social", %{"platform" => platform, "username" => username}, socket) do
+    {:noreply,
+     assign(socket, social_form: to_form(%{"platform" => platform, "username" => username}))}
+  end
+
+  @impl true
+  def handle_event("add_social", %{"platform" => platform, "username" => username}, socket) do
+    case Socials.create_social_account(socket.assigns.current_user, %{
+           "platform" => platform,
+           "username" => username
+         }) do
+      {:ok, _social} ->
+        socials = Socials.list_social_accounts(socket.assigns.current_user.id)
+
+        {:noreply,
+         socket
+         |> assign(:socials, socials)
+         |> assign(:social_form, to_form(%{"platform" => platform, "username" => ""}))
+         |> put_flash(:info, "Social account added successfully")}
+
+      {:error, :social_limit_reached} ->
+        {:noreply, put_flash(socket, :error, "You can only add up to 3 social accounts.")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, social_form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_social", %{"id" => id}, socket) do
+    case Socials.delete_social_account(id) do
+      {:ok, _} ->
+        socials = Socials.list_social_accounts(socket.assigns.current_user.id)
+
+        {:noreply,
+         assign(socket, :socials, socials) |> put_flash(:info, "Social account removed")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Could not remove social account")}
+    end
+  end
+
+  # --- PROFILE HANDLERS ---
+
+  @impl true
+  def handle_event("validate_profile", %{"user" => user_params}, socket) do
+    profile_form =
+      socket.assigns.current_user
+      |> Accounts.change_user_profile(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, profile_form: profile_form)}
+  end
+
+  @impl true
+  def handle_event("update_profile", %{"user" => user_params}, socket) do
+    user = socket.assigns.current_user
+
+    # 1. Consume the upload and upload to Cloudinary inside the callback.
+    uploaded_urls =
+      consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
+        case UploadCloudinary.upload_file(path) do
+          {:ok, result} ->
+            {:ok, result.url}
+
+          {:error, reason} ->
+            Logger.error("Failed to upload avatar: #{inspect(reason)}")
+            {:error, reason}
+        end
+      end)
+
+    # 2. If a file was uploaded, add the URL to params.
+    user_params =
+      case uploaded_urls do
+        [url | _] -> Map.put(user_params, "avatar_url", url)
+        [] -> user_params
+      end
+
+    # 3. Save to Database
+    case Accounts.update_user_profile(user, user_params) do
+      {:ok, updated_user} ->
+        info = "Profile updated successfully."
+
+        {:noreply,
+         socket
+         |> put_flash(:info, info)
+         |> assign(:current_user, updated_user)
+         |> assign(:profile_form, to_form(Accounts.change_user_profile(updated_user)))
+         # Redirect ensures the header/sidebar avatar updates immediately
+         |> push_navigate(to: ~p"/users/#{updated_user.username}")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :profile_form, to_form(changeset))}
+    end
+  end
+
+  # --- EMAIL & PASSWORD HANDLERS (Unchanged) ---
+
+  @impl true
+  def handle_event("validate_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    email_form =
+      socket.assigns.current_user
+      |> Accounts.change_user_email(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, email_form: email_form, email_form_current_password: password)}
+  end
+
+  @impl true
+  def handle_event("update_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.apply_user_email(user, password, user_params) do
+      {:ok, applied_user} ->
+        Accounts.deliver_user_update_email_instructions(
+          applied_user,
+          user.email,
+          &url(~p"/users/settings/confirm_email/#{&1}")
+        )
+
+        info = "A link to confirm your email change has been sent to the new address."
+        {:noreply, socket |> put_flash(:info, info) |> assign(email_form_current_password: nil)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  @impl true
+  def handle_event("validate_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    password_form =
+      socket.assigns.current_user
+      |> Accounts.change_user_password(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, password_form: password_form, current_password: password)}
+  end
+
+  @impl true
+  def handle_event("update_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_user_password(user, password, user_params) do
+      {:ok, user} ->
+        password_form =
+          user
+          |> Accounts.change_user_password(user_params)
+          |> to_form()
+
+        {:noreply, assign(socket, trigger_submit: true, password_form: password_form)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, password_form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_info(%{topic: "users:online", event: "presence_diff"}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_notifications, socket) do
+    {:noreply, socket}
+  end
+
+  # help
+  @impl true
+  def handle_info({:new_sidebar_message, _message}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:new_notification, _notification}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:update_sidebar, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(_message, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-4xl mx-auto py-8 px-4 rounded-lg sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+          Account Settings
+        </h1>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Manage your profile information and security preferences.
+        </p>
+      </div>
+
+      <div class="space-y-8">
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8 ">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Public Profile
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                This information will be displayed publicly so be careful what you share.
+              </p>
+
+              <.simple_form
+                for={@profile_form}
+                id="profile_form"
+                phx-change="validate_profile"
+                phx-submit="update_profile"
+                class="mt-6 space-y-6"
+              >
+                <div class="flex items-center gap-x-8">
+                  <div class="relative group">
+                    <%= if @uploads.avatar.entries != [] do %>
+                      <%= for entry <- @uploads.avatar.entries do %>
+                        <.live_img_preview
+                          entry={entry}
+                          class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700"
+                        />
+                      <% end %>
+                    <% else %>
+                      <%= if @current_user.avatar_url do %>
+                        <img
+                          src={@current_user.avatar_url}
+                          class="h-24 w-24 flex-none rounded-full bg-gray-50 object-cover ring-2 ring-gray-200 dark:ring-zinc-700"
+                        />
+                      <% else %>
+                        <div class="h-24 w-24 flex-none rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-500 flex items-center justify-center text-3xl font-bold ring-2 ring-gray-200 dark:ring-zinc-700">
+                          {String.first(@current_user.username || "?") |> String.upcase()}
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
+                      Profile photo
+                    </label>
+                    <div class="mt-2 flex items-center gap-x-3">
+                      <div class="relative">
+                        <.live_file_input
+                          upload={@uploads.avatar}
+                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <button
+                          type="button"
+                          class="rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-700 relative pointer-events-none"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <p class="text-[11px] text-gray-500 dark:text-gray-400">JPG/PNG, max 5MB</p>
+                    </div>
+                    <%= for entry <- @uploads.avatar.entries do %>
+                      <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+                        <p class="text-red-500 text-xs mt-1">{error_to_string(err)}</p>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <.input field={@profile_form[:username]} type="text" label="Username" required />
+                  </div>
+
+                  <div class="col-span-full">
+                    <.input
+                      field={@profile_form[:bio]}
+                      type="textarea"
+                      label="Bio"
+                      rows="3"
+                      placeholder="Tell us a little about yourself..."
+                    />
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Brief description for your profile.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Saving..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Save Profile
+                  </.button>
+                </div>
+              </.simple_form>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Username Glow Styles
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Unlock glow styles by purchasing <span class="font-semibold">Profile Glow</span>
+                in the Wave Store.
+              </p>
+
+              <div class="mt-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                <div>
+                  <p class="text-sm text-gray-700 dark:text-gray-200">
+                    Current style:
+                    <span class={"ml-2 font-bold " <> VibeflowWeb.CoreComponents.username_glow_class(@current_user)}>
+                      {@current_user.username}
+                    </span>
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {if @glow_owned,
+                      do: "You own Profile Glow.",
+                      else: "Locked until you purchase Profile Glow."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  phx-click="open_glow_modal"
+                  class={"inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm " <>
+                    if(@glow_owned,
+                      do: "bg-indigo-600 text-white hover:bg-indigo-500",
+                      else: "bg-gray-200 text-gray-500 cursor-not-allowed")}
+                  disabled={not @glow_owned}
+                >
+                  Choose Style
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Social Accounts
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Add up to 3 socials to display on your profile and use for verification.
+              </p>
+
+              <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                    Add Social
+                  </h3>
+
+                  <div class="mt-3 grid grid-cols-3 gap-3">
+                    <%= for platform <- ["youtube", "instagram", "x", "twitch", "tiktok", "discord"] do %>
+                      <% active = @social_form[:platform].value == platform %>
+                      <button
+                        type="button"
+                        phx-click="validate_social"
+                        phx-value-platform={platform}
+                        phx-value-username={@social_form[:username].value || ""}
+                        class={[
+                          "h-12 rounded-lg border text-xs font-semibold uppercase tracking-wide transition-all",
+                          (active &&
+                             "border-indigo-500/80 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 shadow-[0_0_12px_-6px_rgba(99,102,241,0.8)]") ||
+                            "border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-400"
+                        ]}
+                      >
+                        <span class="block text-[10px]">{String.upcase(platform)}</span>
+                      </button>
+                    <% end %>
+                  </div>
+
+                  <div class="mt-5">
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase mb-2">
+                      Username
+                    </label>
+                    <form phx-change="validate_social">
+                      <input
+                        type="hidden"
+                        name="platform"
+                        value={@social_form[:platform].value || "youtube"}
+                      />
+                      <div class="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 overflow-hidden">
+                        <span class="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 dark:bg-zinc-900/60 border-r border-gray-200 dark:border-zinc-700">
+                          {Vibeflow.Socials.get_social_prefix(
+                            @social_form[:platform].value || "youtube"
+                          )}
+                        </span>
+                        <input
+                          type="text"
+                          name="username"
+                          value={@social_form[:username].value || ""}
+                          placeholder="username"
+                          class="w-full px-3 py-2.5 text-sm bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
+                        />
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="mt-4">
+                    <button
+                      type="button"
+                      phx-click="add_social"
+                      phx-value-platform={@social_form[:platform].value || "youtube"}
+                      phx-value-username={@social_form[:username].value || ""}
+                      class="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                    >
+                      + Add Social
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                      Linked
+                    </h3>
+                    <span class="text-xs text-gray-400">{length(@socials || [])}/3</span>
+                  </div>
+
+                  <div class="mt-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-4 min-h-[180px]">
+                    <%= if Enum.empty?(@socials || []) do %>
+                      <div class="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+                        No socials linked yet
+                      </div>
+                    <% else %>
+                      <div class="space-y-3">
+                        <%= for social <- @socials do %>
+                          <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2">
+                            <div class="min-w-0">
+                              <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                                {social.platform}
+                              </p>
+                              <p class="text-xs text-gray-400 truncate">
+                                {social.username}
+                              </p>
+                            </div>
+                            <button
+                              phx-click="remove_social"
+                              phx-value-id={social.id}
+                              class="text-xs text-red-500 hover:text-red-600 font-semibold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8 ">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Email Address
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Update the email associated with your account.
+              </p>
+
+              <.simple_form
+                for={@email_form}
+                id="email_form"
+                phx-submit="update_email"
+                phx-change="validate_email"
+                class="mt-6 space-y-6"
+              >
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <.input field={@email_form[:email]} type="email" label="New Email" required />
+                  </div>
+
+                  <div class="sm:col-span-4">
+                    <.input
+                      field={@email_form[:current_password]}
+                      name="current_password"
+                      id="current_password_for_email"
+                      type="password"
+                      label="Current password"
+                      value={@email_form_current_password}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Update Email
+                  </.button>
+                </div>
+              </.simple_form>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-lg overflow-hidden">
+          <div class="px-4 py-6 sm:p-8 rounded-lg">
+            <div class="max-w-2xl ">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Change Password
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Ensure your account is using a long, random password to stay secure.
+              </p>
+
+              <.simple_form
+                for={@password_form}
+                id="password_form"
+                action={~p"/users/log_in?_action=password_updated"}
+                method="post"
+                phx-change="validate_password"
+                phx-submit="update_password"
+                phx-trigger-action={@trigger_submit}
+                class="mt-6 space-y-6"
+              >
+                <input
+                  name={@password_form[:email].name}
+                  type="hidden"
+                  id="hidden_user_email"
+                  value={@current_email}
+                />
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-3">
+                    <.input
+                      field={@password_form[:password]}
+                      type="password"
+                      label="New password"
+                      required
+                    />
+                  </div>
+                  <div class="sm:col-span-3">
+                    <.input
+                      field={@password_form[:password_confirmation]}
+                      type="password"
+                      label="Confirm new password"
+                    />
+                  </div>
+                  <div class="sm:col-span-6">
+                    <.input
+                      field={@password_form[:current_password]}
+                      name="current_password"
+                      type="password"
+                      label="Current password"
+                      id="current_password_for_password"
+                      value={@current_password}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 dark:border-white/10 pt-6">
+                  <.button phx-disable-with="Changing..." class="bg-indigo-600 hover:bg-indigo-500">
+                    Update Password
+                  </.button>
+                </div>
+              </.simple_form>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-xl overflow-hidden">
+          <div class="px-4 py-6 sm:p-8">
+            <div class="max-w-2xl" id="notification-settings" phx-hook="NotificationSettings">
+              <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-white">
+                Browser Notifications
+              </h2>
+              <p class="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                Control desktop popup notifications for new messages and activity.
+              </p>
+
+              <div class="mt-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                <p data-notifications-status class="text-sm text-gray-600 dark:text-gray-300">
+                  Status: Checking...
+                </p>
+                <button
+                  type="button"
+                  data-notifications-toggle
+                  class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                >
+                  Enable
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <%= if @show_glow_modal do %>
+      <div
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+        phx-click="close_glow_modal"
+      >
+        <div
+          class="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl"
+          phx-click={JS.exec("event.stopPropagation()")}
+        >
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Choose Username Style</h3>
+            <button
+              type="button"
+              phx-click="close_glow_modal"
+              class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-green"
+              class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 dark:hover:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
+                Neon Green
+              </div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-green">
+                {@current_user.username}
+              </div>
+            </button>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-blue"
+              class="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 hover:border-blue-400 dark:hover:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-blue-600 dark:text-blue-300">Neon Blue</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-blue">
+                {@current_user.username}
+              </div>
+            </button>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="neon-pink"
+              class="p-4 rounded-xl border border-pink-200 dark:border-pink-900/50 hover:border-pink-400 dark:hover:border-pink-700 bg-pink-50 dark:bg-pink-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-pink-900 dark:text-pink-300">Neon Pink</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-neon-pink">
+                {@current_user.username}
+              </div>
+            </button>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-serif"
+              class="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 hover:border-amber-400 dark:hover:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-amber-900 dark:text-amber-300">Regal Serif</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-serif">
+                {@current_user.username}
+              </div>
+            </button>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-mono"
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">Signal Mono</div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-mono">
+                {@current_user.username}
+              </div>
+            </button>
+            <button
+              type="button"
+              phx-click="set_glow_style"
+              phx-value-style="font-grotesk"
+              class="p-4 rounded-xl border border-violet-200 dark:border-violet-900/50 hover:border-violet-400 dark:hover:border-violet-700 bg-violet-50 dark:bg-violet-950/30 text-left transition-all"
+            >
+              <div class="text-sm font-semibold text-violet-900 dark:text-violet-300">
+                Pulse Grotesk
+              </div>
+              <div class="mt-2 text-lg font-bold username-glow-base username-style-font-grotesk">
+                {@current_user.username}
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  defp error_to_string(:too_large), do: "Image too large"
+  defp error_to_string(:too_many_files), do: "You have selected too many files"
+  defp error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
+  defp error_to_string(_), do: "Something went wrong"
+end

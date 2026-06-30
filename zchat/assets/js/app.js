@@ -6,6 +6,8 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
+import data from "@emoji-mart/data"
+import { Picker } from "emoji-mart"
 //import './user_socket.js'
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
@@ -20,6 +22,232 @@ Hooks.ChatInput = {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault(); 
         this.el.form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+<<<<<<< zchat2.0
+      } else if (e.key === "Escape") {
+        this.hideEmojiPicker();
+      }
+      this.pushTyping();
+    });
+    this.el.addEventListener("input", () => this.autoGrow());
+
+    this.bindEmojiUI();
+
+    this.handleEvent("clear-input", () => {
+      this.el.value = "";
+      this.autoGrow();
+    });
+    this.autoGrow();
+  },
+  updated() {
+    this.bindEmojiUI();
+    this.autoGrow();
+  },
+
+  typingTimer: null,
+  bindEmojiUI() {
+    const form = this.el.closest("form");
+    const emojiToggle = form?.querySelector("[data-emoji-toggle]");
+    const emojiPanel = form?.querySelector("[data-emoji-picker]");
+    const emojiPickerContainer = form?.querySelector("[data-emoji-picker-container]");
+
+    const sameNodes =
+      this.emojiToggle === emojiToggle &&
+      this.emojiPanel === emojiPanel &&
+      this.emojiPickerContainer === emojiPickerContainer;
+
+    if (sameNodes && this.emojiToggleClick && this.outsideClick) return;
+
+    if (this.emojiToggle && this.emojiToggleClick) {
+      this.emojiToggle.removeEventListener("click", this.emojiToggleClick);
+    }
+    if (this.outsideClick) {
+      document.removeEventListener("click", this.outsideClick);
+    }
+    if (this.fallbackEmojiWrap && this.fallbackEmojiClick) {
+      this.fallbackEmojiWrap.removeEventListener("click", this.fallbackEmojiClick);
+    }
+
+    this.form = form;
+    this.emojiToggle = emojiToggle;
+    this.emojiPanel = emojiPanel;
+    this.emojiPickerContainer = emojiPickerContainer;
+
+    if (!(this.emojiToggle && this.emojiPanel && this.emojiPickerContainer)) return;
+
+    if (!this.emojiPickerContainer.firstChild) {
+      try {
+        this.emojiPickerInstance = new Picker({
+          data,
+          theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+          previewPosition: "none",
+          navPosition: "top",
+          maxFrequentRows: 2,
+          perLine: 8,
+          set: "native",
+          onEmojiSelect: (emoji) => this.insertEmoji(emoji.native)
+        });
+        this.emojiPickerContainer.appendChild(this.emojiPickerInstance);
+      } catch (_err) {
+        this.renderEmojiFallback();
+      }
+    }
+
+    this.emojiToggleClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleEmojiPicker();
+    };
+
+    this.outsideClick = (e) => {
+      if (!this.emojiPanel.classList.contains("hidden")) {
+        const clickedInsidePicker = this.emojiPanel.contains(e.target);
+        const clickedToggle = this.emojiToggle.contains(e.target);
+        if (!clickedInsidePicker && !clickedToggle) {
+          this.hideEmojiPicker();
+        }
+      }
+    };
+
+    this.emojiToggle.addEventListener("click", this.emojiToggleClick);
+    document.addEventListener("click", this.outsideClick);
+  },
+  autoGrow() {
+    this.el.style.height = "auto";
+    const nextHeight = Math.min(this.el.scrollHeight, 144);
+    this.el.style.height = `${nextHeight}px`;
+  },
+  renderEmojiFallback() {
+    const emojis = ["😊","😀","😂","😍","😉","🤔","👍","👏","🔥","🎉","❤️","🙏","😎","😭","😅","😡","🤝","✅"];
+    const wrap = document.createElement("div");
+    wrap.className = "w-56 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg p-2";
+    wrap.innerHTML = emojis.map((emoji) =>
+      `<button type="button" data-fallback-emoji="${emoji}" class="p-1 text-xl rounded hover:bg-gray-100 dark:hover:bg-zinc-700">${emoji}</button>`
+    ).join("");
+    wrap.classList.add("grid", "grid-cols-6", "gap-1");
+    this.fallbackEmojiClick = (e) => {
+      const btn = e.target.closest("[data-fallback-emoji]");
+      if (!btn) return;
+      this.insertEmoji(btn.getAttribute("data-fallback-emoji"));
+    };
+    wrap.addEventListener("click", this.fallbackEmojiClick);
+    this.fallbackEmojiWrap = wrap;
+    this.emojiPickerContainer.appendChild(wrap);
+  },
+  toggleEmojiPicker() {
+    this.emojiPanel.classList.toggle("hidden");
+  },
+  hideEmojiPicker() {
+    if (this.emojiPanel) this.emojiPanel.classList.add("hidden");
+  },
+  insertEmoji(emoji) {
+    const start = this.el.selectionStart ?? this.el.value.length;
+    const end = this.el.selectionEnd ?? this.el.value.length;
+    const nextValue = this.el.value.slice(0, start) + emoji + this.el.value.slice(end);
+    this.el.value = nextValue;
+    const cursor = start + emoji.length;
+    this.el.setSelectionRange(cursor, cursor);
+    this.el.focus();
+    this.hideEmojiPicker();
+    this.pushTyping();
+  },
+  pushTyping() {
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+    } else {
+      // Send "true" immediately
+      this.pushEvent("update_typing_indicator", {is_typing: true});
+    }
+
+    // Wait 2 seconds of silence before sending "false"
+    this.typingTimer = setTimeout(() => {
+      this.pushEvent("update_typing_indicator", {is_typing: false});
+      this.typingTimer = null;
+    }, 2000);
+  },
+  destroyed() {
+    if (this.emojiToggle && this.emojiToggleClick) {
+      this.emojiToggle.removeEventListener("click", this.emojiToggleClick);
+    }
+    if (this.fallbackEmojiWrap && this.fallbackEmojiClick) {
+      this.fallbackEmojiWrap.removeEventListener("click", this.fallbackEmojiClick);
+    }
+    if (this.outsideClick) {
+      document.removeEventListener("click", this.outsideClick);
+    }
+  }
+}
+// In your app.js - replace the entire ChatHook with this:
+
+// Hooks.ChatHook = {
+//   mounted() {
+//     // 1. DEFINE VARIABLES FIRST (Fixes the ReferenceError)
+//     const form = this.el.querySelector("form");
+//     const input = this.el.querySelector("input[name='message[content]']");
+//     const conversationId = this.el.dataset.conversationId;
+
+//     if (!conversationId) return;
+
+//     // 2. CONNECT TO CHANNEL
+//     this.channel = userSocket.channel(`conversation:${conversationId}`, {});
+
+//     // 3. LISTEN FOR EVENTS (Server -> Client)
+    
+//     // Message received
+//     this.channel.on("new_message", (payload) => {
+//       this.pushEvent("display_new_message", payload);
+//     });
+
+//     // Typing indicator received
+//     this.channel.on("typing", (payload) => {
+//       this.pushEvent("update_typing_indicator", {
+//         user_id: payload.user.id,
+//         username: payload.user.username,
+//         is_typing: payload.typing
+//       });
+//     });
+
+//     // Join the channel
+//     this.channel.join()
+//       .receive("ok", resp => console.log("Joined conversation successfully", resp))
+//       .receive("error", resp => console.error("Unable to join conversation", resp));
+
+//     // 4. HANDLE INPUT (Client -> Server)
+    
+//   if (input) {
+//       let typingTimer;
+//       input.addEventListener("input", () => {
+//         clearTimeout(typingTimer);
+//         this.channel.push("typing", { typing: true });
+//         typingTimer = setTimeout(() => {
+//           this.channel.push("typing", { typing: false });
+//         }, 2000);
+//       });
+//     }
+
+//     // 5. HANDLE SUBMIT
+//     if (form && input) {
+//       form.addEventListener("submit", (e) => {
+//         e.preventDefault();
+//         const content = input.value.trim();
+
+//         if (content) {
+//           // Push to channel
+//           this.channel.push("new_message", { content: content })
+          
+//             .receive("ok", () => {
+//               console.log("Message sent");
+//               input.value = ""; // Clear input
+              
+//               // Stop typing indicator immediately upon send
+//               this.channel.push("typing", { typing: false });
+//             })
+//             .receive("error", (err) => console.error("Failed to send", err));
+//         }
+//       });
+//     }
+//   },
+
+=======
       }
       this.pushTyping();
     });
@@ -114,6 +342,7 @@ Hooks.ChatInput = {
 //     }
 //   },
 
+>>>>>>> ui-ux
 //   destroyed() {
 //     if (this.channel) {
 //       this.channel.leave();
@@ -222,10 +451,20 @@ Hooks.VideoAutoplay = {
         let entry = entries[0];
         if (entry.isIntersecting) {
           // Video is on screen
-          this.el.play().catch((error) => {
-            // Autoplay was prevented (browser restrictions)
-            console.log("Autoplay prevented: ", error);
-          });
+          try {
+            this.el.play().catch((error) => {
+              // Autoplay was prevented (browser restrictions)
+              // We catch this separately because it's a promise rejection
+              if (error.name !== "AbortError") {
+                console.log("Autoplay prevented: ", error);
+              }
+            });
+          } catch (error) {
+            // Catches other errors, like the one from the original report
+            if (error.name !== "AbortError") {
+              console.error("Error playing video:", error);
+            }
+          }
         } else {
           // Video is off screen
           this.el.pause();
@@ -269,10 +508,179 @@ Hooks.InfiniteScroll = {
 
 //diva camera use for waves "stories" on the zchat
 
+<<<<<<< zchat2.0
+// 1. Add this NEW Hook for playing back the video immediately
+Hooks.LocalVideoPreview = {
+  mounted() {
+    // Check if we just recorded something
+    if (window.recordedVideoBlobURL) {
+      this.el.src = window.recordedVideoBlobURL;
+    } 
+    // Otherwise, check if it was uploaded from gallery
+    else {
+      const input = document.getElementById("gallery-input");
+      if (input && input.files && input.files[0]) {
+        this.el.src = URL.createObjectURL(input.files[0]);
+      }
+    }
+    // Mute the video's own audio if a music preview is present
+    try { this.el.muted = !!window.musicSelected; } catch(e){}
+    // Observe DOM to toggle mute when music preview is added/removed
+    try {
+      const toggleMute = () => { try { this.el.muted = !!document.getElementById('music-preview-player'); } catch(e){} };
+      this.__musicObserver = new MutationObserver(() => toggleMute());
+      this.__musicObserver.observe(document.body, { childList: true, subtree: true });
+    } catch(e) {}
+  }
+  ,
+  destroyed() {
+    try { if (this.__musicObserver) this.__musicObserver.disconnect(); } catch(e){}
+  }
+};
+
+// Hook used by the Waves LiveView video preview element
+Hooks.VideoPreview = {
+  mounted() {
+    try {
+      // If we just recorded a video, use that blob URL
+      if (window.recordedVideoBlobURL) {
+        this.el.src = window.recordedVideoBlobURL;
+      } else {
+        // Fallback: if user picked from gallery input
+        const input = document.getElementById("gallery-input");
+        if (input && input.files && input.files[0]) {
+          this.el.src = URL.createObjectURL(input.files[0]);
+        }
+      }
+      // Mute the video's own audio if a music preview is present
+      try { this.el.muted = !!window.musicSelected; } catch(e){}
+
+      // Observe DOM so we can toggle muting when the music preview is added/removed
+      const toggleMute = () => { try { this.el.muted = !!document.getElementById('music-preview-player'); } catch(e){} };
+      this.__musicObserver = new MutationObserver(() => toggleMute());
+      this.__musicObserver.observe(document.body, { childList: true, subtree: true });
+
+      // Try to play (user gesture from button may allow autoplay)
+      this.el.play().catch(() => {});
+    } catch (e) { /* noop */ }
+  }
+  ,
+  destroyed() {
+    try {
+      if (this.__musicObserver) this.__musicObserver.disconnect();
+    } catch(e){}
+  }
+};
+
+// Hook used by the Waves LiveView image preview element
+Hooks.ImagePreview = {
+  mounted() {
+    try {
+      // If we just snapped a photo, show that immediately
+      if (window.lastCapturedPhotoURL) {
+        this.el.src = window.lastCapturedPhotoURL;
+      } else {
+        // Fallback to gallery input
+        const input = document.getElementById("gallery-input");
+        if (input && input.files && input.files[0]) {
+          this.el.src = URL.createObjectURL(input.files[0]);
+        }
+      }
+    } catch (e) { /* noop */ }
+  },
+  destroyed() {
+    // Revoke the temp URL when the image element is removed to free memory
+    try {
+      if (window.lastCapturedPhotoURL) {
+        URL.revokeObjectURL(window.lastCapturedPhotoURL);
+        window.lastCapturedPhotoURL = null;
+      }
+    } catch (e) { /* noop */ }
+  }
+};
+
+// 2. Updated CameraCapture Hook
+=======
+>>>>>>> ui-ux
 Hooks.CameraCapture = {
   mounted() {
     this.video = this.el.querySelector("#camera-feed");
     this.canvas = document.createElement("canvas");
+<<<<<<< zchat2.0
+    this.timerEl = this.el.querySelector("#recording-timer");
+    
+    // Initial State
+    this.facingMode = "user"; 
+    this.recording = false;
+    this.mediaRecorder = null;
+    this.recordingChunks = [];
+    this.timerInterval = null;
+    this.secondsRecorded = 0;
+    this.videoReady = false;
+    this.stream = null;
+
+    this.startCamera();
+    this.setupButtons();
+
+    this.handleEvent("switch-camera-mode", () => {
+      this.facingMode = this.facingMode === "selfie" ? "environment" : "selfie";
+      this.startCamera();
+      console.log("Switched camera to", this.facingMode); 
+    });
+  },
+
+  updated() {
+    const newVideo = this.el.querySelector("#camera-feed");
+    if (newVideo && newVideo !== this.video) {
+      this.video = newVideo;
+      if (this.stream) {
+        this.video.srcObject = this.stream;
+        this.video.play().catch(e => console.log("Autoplay blocked on update", e));
+      }
+    }
+    this.timerEl = this.el.querySelector("#recording-timer");
+    this.setupButtons();
+  },
+
+  destroyed() {
+    this.stopCamera();
+    this.stopTimer();
+  },
+
+  setupButtons() {
+    const snapBtn = this.el.querySelector("#btn-snap");
+    if (snapBtn && snapBtn.dataset.listenerAttached !== "true") {
+      snapBtn.addEventListener("click", (e) => { 
+        e.preventDefault(); 
+        console.log("Snap button clicked");
+        if (!this.videoReady) {
+          this.forceVideoPlay().then(() => this.captureImage());
+        } else {
+          this.captureImage(); 
+        }
+      });
+      snapBtn.dataset.listenerAttached = "true";
+    }
+    
+    const recordBtn = this.el.querySelector("#btn-record");
+    if (recordBtn && recordBtn.dataset.listenerAttached !== "true") {
+      recordBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (!this.videoReady) {
+          this.forceVideoPlay().then(() => {
+            if (!this.recording) this.startRecording(recordBtn);
+            else this.stopRecording(recordBtn);
+          });
+          console.log("Camera record started" );
+        } else {
+          if (!this.recording) await this.startRecording(recordBtn);
+          else this.stopRecording(recordBtn);
+        }
+      });
+      recordBtn.dataset.listenerAttached = "true";
+    }
+    console.log("Camera record stopped" );
+=======
     this.facingMode = "user"; // Start with Front Camera
     this.recording = false;
     this.mediaRecorder = null;
@@ -307,19 +715,28 @@ Hooks.CameraCapture = {
 
   destroyed() {
     this.stopCamera();
+>>>>>>> ui-ux
   },
 
   stopCamera() {
     if (this.stream) {
+<<<<<<< zchat2.0
+      this.stream.getTracks().forEach(track => track.stop());
+=======
       try {
         this.stream.getTracks().forEach(track => track.stop());
       } catch (e) { /* noop */ }
+>>>>>>> ui-ux
     }
   },
 
   startCamera() {
+<<<<<<< zchat2.0
+    this.stopCamera();
+=======
     this.stopCamera(); // Stop existing before starting new
     
+>>>>>>> ui-ux
     const constraints = { 
       video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
       audio: false 
@@ -328,6 +745,35 @@ Hooks.CameraCapture = {
     navigator.mediaDevices.getUserMedia(constraints)
       .then(stream => {
         this.stream = stream;
+<<<<<<< zchat2.0
+        this.videoReady = false;
+        if (this.video) {
+          this.video.srcObject = stream;
+          this.video.muted = true;
+          this.video.play().then(() => {
+            this.videoReady = true;
+            this.video.style.transform = this.facingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
+          }).catch(err => console.warn("Waiting for interaction", err));
+        }
+      })
+      .catch(err => console.error("Camera Error:", err));
+  },
+
+  forceVideoPlay() {
+    return this.video.play().then(() => {
+      this.videoReady = true;
+    }).catch(err => console.warn("Still blocked", err));
+  },
+
+  async ensureAudioForRecording() {
+    try {
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (this.stream) {
+        audioStream.getAudioTracks().forEach(track => this.stream.addTrack(track));
+      }
+    } catch (err) {
+      console.warn("Mic access denied", err);
+=======
         this.video.srcObject = stream;
         // Wait for metadata before playing to ensure dimensions are available
         this.video.onloadedmetadata = () => this.video.play().catch(()=>{});
@@ -361,12 +807,22 @@ Hooks.CameraCapture = {
       // If user denies mic, we still allow video-only recording
       console.warn('Could not get audio for recording:', err);
       return this.stream;
+>>>>>>> ui-ux
     }
   },
 
   async startRecording(btn) {
     if (!this.stream) return;
     this.recordingChunks = [];
+<<<<<<< zchat2.0
+    await this.ensureAudioForRecording();
+
+    let options = { mimeType: 'video/webm' };
+    if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+      options = { mimeType: 'video/webm; codecs=vp9' };
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      options = { mimeType: 'video/mp4' };
+=======
 
     // Try to attach audio track if possible (won't throw if user denies)
     await this.ensureAudioForRecording();
@@ -377,22 +833,50 @@ Hooks.CameraCapture = {
       options.mimeType = 'video/webm;codecs=vp9';
     } else if (MediaRecorder.isTypeSupported('video/mp4')) {
       options.mimeType = 'video/mp4';
+>>>>>>> ui-ux
     }
 
     try {
       this.mediaRecorder = new MediaRecorder(this.stream, options);
     } catch (err) {
+<<<<<<< zchat2.0
+      console.error("Failed to create MediaRecorder", err);
+=======
       console.error('MediaRecorder failed:', err);
       try { this.pushEvent('camera-error', {reason: 'mediarecorder_failed'}); } catch(e){}
+>>>>>>> ui-ux
       return;
     }
 
     this.mediaRecorder.ondataavailable = (e) => {
+<<<<<<< zchat2.0
+      if (e.data.size > 0) this.recordingChunks.push(e.data);
+=======
       if (e.data && e.data.size > 0) this.recordingChunks.push(e.data);
+>>>>>>> ui-ux
     };
 
     this.mediaRecorder.onstop = () => {
       const blob = new Blob(this.recordingChunks, { type: this.recordingChunks[0]?.type || 'video/webm' });
+<<<<<<< zchat2.0
+      
+      if (window.recordedVideoBlobURL) URL.revokeObjectURL(window.recordedVideoBlobURL);
+      window.recordedVideoBlobURL = URL.createObjectURL(blob);
+
+      const mime = blob.type || 'video/webm';
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      const filename = `recording_${Date.now()}.${ext}`;
+      const file = new File([blob], filename, { type: mime });
+
+      this.upload("media", [file]);
+      
+      this.recording = false;
+      this.stopTimer();
+      if (btn) {
+        btn.classList.remove('animate-pulse', 'bg-red-700', 'scale-110');
+        btn.innerHTML = `<div class="w-4 h-4 bg-white rounded-sm"></div>`;
+      }
+=======
       // Upload blob to LiveView upload named 'media'
       try { this.upload('media', [blob]); } catch(e){ console.error('Upload failed', e); }
       this.recording = false;
@@ -401,10 +885,22 @@ Hooks.CameraCapture = {
         btn.classList.remove('animate-pulse', 'ring-4', 'ring-red-900');
         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>`;
       } catch (e) {}
+>>>>>>> ui-ux
     };
 
     this.mediaRecorder.start();
     this.recording = true;
+<<<<<<< zchat2.0
+    this.startTimer();
+
+    if (btn) {
+      btn.classList.add('animate-pulse', 'bg-red-700', 'scale-110');
+      btn.innerHTML = `<div class="w-3 h-3 bg-white rounded-sm"></div>`;
+    }
+  },
+
+  stopRecording(btn) {
+=======
     // Update UI
     try {
       btn.classList.add('animate-pulse', 'ring-4', 'ring-red-900');
@@ -413,27 +909,87 @@ Hooks.CameraCapture = {
   },
 
   stopRecording() {
+>>>>>>> ui-ux
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
   },
 
   captureImage() {
+<<<<<<< zchat2.0
+    if (!this.video || !this.video.videoWidth) return;
+=======
     // If video metadata isn't available yet, don't try to capture
     if (!this.video || !this.video.videoWidth || !this.video.videoHeight) {
       try { this.pushEvent('camera-error', {reason: 'video-not-ready'}); } catch(e){}
       return;
     }
+>>>>>>> ui-ux
 
     this.canvas.width = this.video.videoWidth;
     this.canvas.height = this.video.videoHeight;
     const ctx = this.canvas.getContext("2d");
+<<<<<<< zchat2.0
+
+=======
     
     // Apply mirror if front camera
+>>>>>>> ui-ux
     if (this.facingMode === "user") {
       ctx.translate(this.canvas.width, 0);
       ctx.scale(-1, 1);
     }
+<<<<<<< zchat2.0
+
+    ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+
+    this.canvas.toBlob((blob) => {
+      const filename = `photo_${Date.now()}.jpg`;
+      const file = new File([blob], filename, { type: "image/jpeg" });
+
+      if (window.recordedVideoBlobURL) URL.revokeObjectURL(window.recordedVideoBlobURL);
+      window.recordedVideoBlobURL = URL.createObjectURL(file); 
+
+      this.upload("media", [file]);
+    }, "image/jpeg", 0.9);
+  },
+
+  startTimer() {
+    this.secondsRecorded = 0;
+    if (this.timerEl) {
+      this.timerEl.classList.remove("hidden");
+      this.timerEl.innerText = "00:00";
+    }
+    this.timerInterval = setInterval(() => {
+      this.secondsRecorded++;
+      const m = Math.floor(this.secondsRecorded / 60).toString().padStart(2, '0');
+      const s = (this.secondsRecorded % 60).toString().padStart(2, '0');
+      if (this.timerEl) this.timerEl.innerText = `${m}:${s}`;
+    }, 1000);
+  },
+
+  stopTimer() {
+    clearInterval(this.timerInterval);
+    if (this.timerEl) this.timerEl.classList.add("hidden");
+  }
+};
+
+//waves checker HOok
+// Inside your existing Hooks object
+
+Hooks.WaveVideo = {
+  mounted() {
+    this.el.addEventListener("ended", () => {
+      this.pushEvent("video_ended", {})
+    })
+    // Attempt play, mute if blocked by browser policy
+    this.el.play().catch(e => {
+      this.el.muted = true
+      this.el.play()
+    })
+  }
+}
+=======
     
     ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
@@ -443,6 +999,7 @@ Hooks.CameraCapture = {
   }
 };
 
+>>>>>>> ui-ux
 
 //auto scroll for chat messages
 Hooks.ScrollToBottom = {
@@ -473,6 +1030,15 @@ Hooks.WavesModal = {
         // also add an explicit hidden to ensure Tailwind hides it immediately
         nav.classList.add('hidden');
       }
+<<<<<<< zchat2.0
+      // Also hide the top header so Waves is a full-bleed experience
+      const header = document.querySelector('header');
+      if (header) {
+        header.classList.add('hidden');
+        header.setAttribute('aria-hidden', 'true');
+      }
+=======
+>>>>>>> ui-ux
     } catch (e) { /* noop */ }
   },
   destroyed() {
@@ -482,10 +1048,22 @@ Hooks.WavesModal = {
         nav.classList.remove('mobile-nav-hidden');
         nav.classList.remove('hidden');
       }
+<<<<<<< zchat2.0
+      const header = document.querySelector('header');
+      if (header) {
+        header.classList.remove('hidden');
+        header.removeAttribute('aria-hidden');
+      }
+=======
+>>>>>>> ui-ux
     } catch (e) { /* noop */ }
   }
 }
 
+<<<<<<< zchat2.0
+
+=======
+>>>>>>> ui-ux
 // Create the LiveSocket ONCE, passing the Hooks
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbacksMs: 2500,
@@ -523,6 +1101,44 @@ setOnFeedClass();
 window.addEventListener('popstate', setOnFeedClass);
 window.addEventListener('phx:page-loading-stop', setOnFeedClass);
 
+<<<<<<< zchat2.0
+// Attempt to autoplay music preview when the audio element is added to the DOM.
+function tryPlayMusicPreview() {
+  try {
+    const audio = document.getElementById('music-preview-player');
+    // Track whether music is present so previews can react
+    window.musicSelected = !!audio;
+    if (!audio) return;
+    // If already playing, nothing to do
+    if (!audio.paused) return;
+    audio.play().then(() => {
+      console.log('Music preview playing');
+    }).catch((err) => {
+      console.warn('Music preview autoplay blocked', err);
+      // Reveal controls so user can start playback manually
+      audio.controls = true;
+      audio.classList.remove('hidden');
+    });
+  } catch(e) { /* noop */ }
+}
+
+// Observe DOM changes and try to play when the preview element appears
+const musicObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    if (m.addedNodes && m.addedNodes.length) {
+      tryPlayMusicPreview();
+      break;
+    }
+  }
+});
+musicObserver.observe(document.body, { childList: true, subtree: true });
+// Also attempt once on navigation stop
+window.addEventListener('phx:page-loading-stop', tryPlayMusicPreview);
+// Try immediately on load
+tryPlayMusicPreview();
+
+=======
+>>>>>>> ui-ux
 // Control mobile bottom nav visibility for index vs conversation routes.
 function setBottomNavVisibility() {
   try {
@@ -590,4 +1206,8 @@ window.addEventListener('phx:page-loading-stop', setBottomNavVisibility);
   });
 })();
 
+<<<<<<< zchat2.0
 window.liveSocket = liveSocket
+=======
+window.liveSocket = liveSocket
+>>>>>>> ui-ux

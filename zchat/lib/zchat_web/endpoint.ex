@@ -28,8 +28,19 @@ socket "/live", Phoenix.LiveView.Socket,
     at: "/",
     from: :zchat,
     gzip: false,
-    only: ZchatWeb.static_paths()
-
+    only: ~w(
+      assets
+      fonts
+      images
+      uploads
+      favicon.ico
+      favicon-16x16.png
+      favicon-32x32.png
+      apple-touch-icon.png
+      site.webmanifest
+      browserconfig.xml
+      robots.txt
+    )
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

@@ -19,6 +19,10 @@ defmodule Zchat.Repo.Migrations.CreateWavesTables do
       add :media_type, :string, default: "image"
       add :caption, :string
       add :expires_at, :utc_datetime
+      add :music_preview_url, :string
+      add :music_title, :string
+      add :music_artist, :string
+      add :music_cover_url, :string
       timestamps()
     end
 

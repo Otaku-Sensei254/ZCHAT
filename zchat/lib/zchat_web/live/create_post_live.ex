@@ -26,8 +26,8 @@ defmodule ZchatWeb.CreatePostLive do
      |> assign(:uploaded_files, [])
      |> allow_upload(:media,
        accept: ~w(.jpg .jpeg .png .gif .mp4 .mov .webp),
-       max_entries: 20,
-       max_file_size: 20_000_000,
+       max_entries: 21,#this is inside chat not vibe
+       max_file_size: 100_000_000,
        auto_upload: true,
        progress: &handle_progress/3
      )}
@@ -87,7 +87,10 @@ defmodule ZchatWeb.CreatePostLive do
 
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
+<<<<<<< zchat2.0
+=======
     # 1. Use files that were already consumed and stored in assigns
+>>>>>>> ui-ux
     clean_media =
       socket.assigns.uploaded_files
       |> Enum.map(fn file -> Map.take(file, ["url", "type"]) end)
@@ -163,7 +166,7 @@ defmodule ZchatWeb.CreatePostLive do
     {:noreply, assign(socket, changeset: new_changeset, form: to_form(new_changeset, as: :post))}
   end
 
-  def error_to_string(:too_large), do: "File is too large (Max 20MB)"
+  def error_to_string(:too_large), do: "File is too large. (Max 50MB)"
   def error_to_string(:too_many_files), do: "You have selected too many files"
   def error_to_string(:not_accepted), do: "You have selected an unacceptable file type"
 end

@@ -1,0 +1,627 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center">
+          <.link navigate={~p"/chat/#{@conversation.uuid}"} class="mr-4">
+            <.icon name="hero-arrow-left" class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </.link>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Group Settings</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Tab Navigation -->
+    <div class="mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex flex-wrap gap-2">
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="members"
+            class={"flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all #{if @active_tab == :members, do: "bg-blue-600 text-white shadow-md", else: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}"}
+          >
+            <.icon name="hero-users" class="w-4 h-4" />
+            <span>Members (<%= length(@members) %>)</span>
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="media"
+            class={"flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all #{if @active_tab == :media, do: "bg-blue-600 text-white shadow-md", else: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}"}
+          >
+            <.icon name="hero-photo" class="w-4 h-4" />
+            <span>Media</span>
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="skins"
+            class={"flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all #{if @active_tab == :skins, do: "bg-blue-600 text-white shadow-md", else: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}"}
+          >
+            <.icon name="hero-paint-brush" class="w-4 h-4" />
+            <span>Message Skins</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Content Area -->
+      <div class="lg:col-span-2">
+        
+        <!-- Group Info (Always Visible) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Group Information</h2>
+          
+          <%= if @is_admin do %>
+            <.form phx-submit="update_group_info" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group Name</label>
+                <input
+                  type="text"
+                  name="conversation[name]"
+                  value={@conversation.name}
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Group Bio</label>
+                <textarea
+                  name="conversation[bio]"
+                  rows="4"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                ><%= @conversation.bio %></textarea>
+              </div>
+              
+              <button
+                type="submit"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                Update Group Info
+              </button>
+            </.form>
+          <% else %>
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Group Name</h3>
+                <p class="mt-1 text-gray-900 dark:text-white"><%= @conversation.name %></p>
+              </div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Group Bio</h3>
+                <p class="mt-1 text-gray-900 dark:text-white"><%= @conversation.bio || "No bio set" %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Members Tab -->
+        <%= if @active_tab == :members do %>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Members (<%= length(@members) %>)</h2>
+              <%= if @is_admin do %>
+                <button
+                  phx-click="toggle_add_member_modal"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                  Add Member
+                </button>
+              <% end %>
+            </div>
+            
+            <div class="space-y-3">
+              <%= for member <- @members do %>
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <img
+                      src={member.user.avatar_url || "/images/default-avatar.png"}
+                      alt={member.user.username}
+                      class="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <p class="font-medium text-gray-900 dark:text-white">
+                        <%= member.user.username %>
+                        <%= if member.role == "admin" do %>
+                          <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            Admin
+                          </span>
+                        <% end %>
+                      </p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Joined <%= Timex.format!(member.inserted_at, "{Mfull} {D}, {YYYY}") %>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <%= if @is_admin && member.user_id != @current_user.id do %>
+                    <button
+                      phx-click="remove_member"
+                      phx-value-member_id={member.id}
+                      class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      <.icon name="hero-trash" class="w-4 h-4" />
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Media Tab -->
+        <%= if @active_tab == :media do %>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <!-- Media Sub-tabs -->
+            <div class="flex space-x-1 mb-6 border-b border-gray-200 dark:border-gray-700">
+              <button
+                phx-click="switch_media_tab"
+                phx-value-tab="media_files"
+                class={"px-4 py-2 text-sm font-medium border-b-2 transition-colors #{if @media_tab == :media_files, do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"}"}
+              >
+                Media (<%= length(@media_content) %>)
+              </button>
+              <button
+                phx-click="switch_media_tab"
+                phx-value-tab="documents"
+                class={"px-4 py-2 text-sm font-medium border-b-2 transition-colors #{if @media_tab == :documents, do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"}"}
+              >
+                Documents (<%= length(@docs_content) %>)
+              </button>
+              <button
+                phx-click="switch_media_tab"
+                phx-value-tab="links"
+                class={"px-4 py-2 text-sm font-medium border-b-2 transition-colors #{if @media_tab == :links, do: "border-blue-500 text-blue-600 dark:text-blue-400", else: "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"}"}
+              >
+                Links (<%= length(@links_content) %>)
+              </button>
+            </div>
+
+            <!-- Media Files Sub-tab -->
+            <%= if @media_tab == :media_files do %>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shared Media</h3>
+                <%= if @media_content == [] do %>
+                  <p class="text-gray-500 dark:text-gray-400 text-center py-8">No media shared yet</p>
+                <% else %>
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <%= for media <- @media_content do %>
+                      <div class="relative group cursor-pointer">
+                        <%= case media.type do %>
+                          <% "image" -> %>
+                            <img
+                              src={media.url}
+                              alt="Shared image"
+                              class="w-full h-32 object-cover rounded-lg"
+                            />
+                          <% "video" -> %>
+                            <video
+                              src={media.url}
+                              class="w-full h-32 object-cover rounded-lg"
+                              controls
+                            />
+                          <% "audio" -> %>
+                            <div class="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                              <.icon name="hero-musical-note" class="w-8 h-8 text-gray-500" />
+                            </div>
+                          <% "unknown" -> %>
+                            <div class="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                              <.icon name="hero-document" class="w-8 h-8 text-gray-500" />
+                              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Unknown file type</p>
+                            </div>
+                        <% end %>
+                        
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-lg">
+                          <p class="text-white text-xs truncate"><%= media.user.username %></p>
+                          <p class="text-white/80 text-xs"><%= Timex.format!(media.inserted_at, "{M}/{D}") %></p>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <!-- Documents Sub-tab -->
+            <%= if @media_tab == :documents do %>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shared Documents</h3>
+                <%= if @docs_content == [] do %>
+                  <p class="text-gray-500 dark:text-gray-400 text-center py-8">No documents shared yet</p>
+                <% else %>
+                  <div class="space-y-3">
+                    <%= for doc <- @docs_content do %>
+                      <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                          <.icon name="hero-document-text" class="w-8 h-8 text-gray-500" />
+                          <div>
+                            <p class="font-medium text-gray-900 dark:text-white"><%= doc.filename %></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                              Shared by <%= doc.user.username %> • <%= Timex.format!(doc.inserted_at, "{Mfull} {D}, {YYYY}") %>
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          <.icon name="hero-arrow-down-tray" class="w-5 h-5" />
+                        </a>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <!-- Links Sub-tab -->
+            <%= if @media_tab == :links do %>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shared Links</h3>
+                <%= if @links_content == [] do %>
+                  <p class="text-gray-500 dark:text-gray-400 text-center py-8">No links shared yet</p>
+                <% else %>
+                  <div class="space-y-4">
+                    <%= for link_item <- @links_content do %>
+                      <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-start space-x-2 mb-2">
+                          <img
+                            src={link_item.user.avatar_url || "/images/default-avatar.png"}
+                            alt={link_item.user.username}
+                            class="w-6 h-6 rounded-full"
+                          />
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= link_item.user.username %>
+                          </span>
+                          <span class="text-sm text-gray-500 dark:text-gray-400">
+                            <%= Timex.format!(link_item.inserted_at, "{Mfull} {D}, {YYYY}") %>
+                          </span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2"><%= link_item.message %></p>
+                        <div class="space-y-1">
+                          <%= for link <- link_item.links do %>
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="block text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm truncate"
+                            >
+                              <%= link %>
+                            </a>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Message Skins Tab -->
+        <%= if @active_tab == :skins do %>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Message Skins</h2>
+            
+            <div class="space-y-4">
+              <!-- Default Skin -->
+              <div class="relative group">
+                <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Default</h3>
+                    <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+                      Free
+                    </span>
+                  </div>
+
+                  <div class="mb-4 h-24 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <div class="text-gray-500 dark:text-gray-400 text-xs">
+                      <p>Classic clean look</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Classic clean look</p>
+                      <%= if @selected_skin in ["default", nil, ""] do %>
+                        <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                      <% end %>
+                    </div>
+                    <button
+                      phx-click="select_skin"
+                      phx-value-skin="default"
+                      class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                        if(@selected_skin in ["default", nil, ""], 
+                          do: "bg-green-600 text-white", 
+                          else: "bg-purple-600 text-white hover:bg-purple-700")}
+                    >
+                      {if @selected_skin in ["default", nil, ""], do: "Active", else: "Select"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Glassmorphism Pro -->
+              <div class="relative group">
+                <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Glassmorphism Pro</h3>
+                    <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
+                      1200 waves
+                    </span>
+                  </div>
+
+                  <div class="mb-4 h-24 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                    <div class="text-blue-600 dark:text-blue-400 text-xs">
+                      <p>Frosted glass</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Frosted glass effect</p>
+                      <%= if @selected_skin == "glassmorphism_pro" do %>
+                        <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                      <% end %>
+                    </div>
+                    <%= if Store.get_user_item(@current_user.id, "skin_glassmorphism_pro") do %>
+                      <button
+                        phx-click="select_skin"
+                        phx-value-skin="glassmorphism_pro"
+                        class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                          if(@selected_skin == "glassmorphism_pro", 
+                            do: "bg-green-600 text-white", 
+                            else: "bg-purple-600 text-white hover:bg-purple-700")}
+                      >
+                        {if @selected_skin == "glassmorphism_pro", do: "Active", else: "Select"}
+                      </button>
+                    <% else %>
+                      <div class="px-3 py-1 text-xs rounded-full bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        Not Owned
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Matrix Rain -->
+              <div class="relative group">
+                <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Matrix Rain</h3>
+                    <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full">
+                      2500 waves
+                    </span>
+                  </div>
+
+                  <div class="mb-4 h-24 rounded-lg bg-black flex items-center justify-center overflow-hidden">
+                    <div class="text-green-500 text-xs font-mono opacity-80">
+                      <p>01001000</p>
+                      <p>01100101</p>
+                      <p>01101100</p>
+                      <p>01101100</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Digital code rain</p>
+                      <%= if @selected_skin == "matrix_rain" do %>
+                        <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                      <% end %>
+                    </div>
+                    <%= if Store.get_user_item(@current_user.id, "skin_matrix_rain") do %>
+                      <button
+                        phx-click="select_skin"
+                        phx-value-skin="matrix_rain"
+                        class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                          if(@selected_skin == "matrix_rain", 
+                            do: "bg-green-600 text-white", 
+                            else: "bg-purple-600 text-white hover:bg-purple-700")}
+                      >
+                        {if @selected_skin == "matrix_rain", do: "Active", else: "Select"}
+                      </button>
+                    <% else %>
+                      <div class="px-3 py-1 text-xs rounded-full bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        Not Owned
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Holographic Foil -->
+              <div class="relative group">
+                <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Holographic Foil</h3>
+                    <span class="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full">
+                      3500 waves
+                    </span>
+                  </div>
+
+                  <div class="mb-4 h-24 rounded-lg bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center">
+                    <div class="text-white text-xs font-bold">
+                      <p>HOLOGRAPHIC</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Rainbow gradient</p>
+                      <%= if @selected_skin == "holographic_foil" do %>
+                        <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                      <% end %>
+                    </div>
+                    <%= if Store.get_user_item(@current_user.id, "skin_holographic_foil") do %>
+                      <button
+                        phx-click="select_skin"
+                        phx-value-skin="holographic_foil"
+                        class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                          if(@selected_skin == "holographic_foil", 
+                            do: "bg-green-600 text-white", 
+                            else: "bg-purple-600 text-white hover:bg-purple-700")}
+                      >
+                        {if @selected_skin == "holographic_foil", do: "Active", else: "Select"}
+                      </button>
+                    <% else %>
+                      <div class="px-3 py-1 text-xs rounded-full bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        Not Owned
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vantablack -->
+              <div class="relative group">
+                <div class="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white">Vantablack</h3>
+                    <span class="text-xs px-2 py-1 bg-gray-900 text-gray-300 rounded-full">
+                      5000 waves
+                    </span>
+                  </div>
+
+                  <div class="mb-4 h-24 rounded-lg bg-black flex items-center justify-center">
+                    <div class="text-gray-800 text-xs">
+                      <p>ULTRA BLACK</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Darkest possible</p>
+                      <%= if @selected_skin == "vantablack" do %>
+                        <p class="text-xs font-medium text-green-600 dark:text-green-400">Active</p>
+                      <% end %>
+                    </div>
+                    <%= if Store.get_user_item(@current_user.id, "skin_vantablack") do %>
+                      <button
+                        phx-click="select_skin"
+                        phx-value-skin="vantablack"
+                        class={"px-3 py-1 text-xs rounded-full transition-colors " <> 
+                          if(@selected_skin == "vantablack", 
+                            do: "bg-green-600 text-white", 
+                            else: "bg-purple-600 text-white hover:bg-purple-700")}
+                      >
+                        {if @selected_skin == "vantablack", do: "Active", else: "Select"}
+                      </button>
+                    <% else %>
+                      <div class="px-3 py-1 text-xs rounded-full bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        Not Owned
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Group Details -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Group Details</h3>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
+              <p class="text-gray-900 dark:text-white">
+                <%= Timex.format!(@conversation.inserted_at, "{Mfull} {D}, {YYYY}") %>
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Members</p>
+              <p class="text-gray-900 dark:text-white"><%= length(@members) %> people</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Your Role</p>
+              <p class="text-gray-900 dark:text-white">
+                <%= if Enum.any?(@members, fn m -> m.user_id == @current_user.id && m.role == "admin" end) do %>
+                  Admin
+                <% else %>
+                  Member
+                <% end %>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actions</h3>
+          <div class="space-y-3">
+            <button
+              phx-click="leave_group"
+              class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+            >
+              Leave Group
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <%= if @show_add_member_modal do %>
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Member</h3>
+            <button
+              phx-click="toggle_add_member_modal"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <.icon name="hero-x-mark" class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <input
+              type="text"
+              phx-target={@myself}
+              phx-keyup="search_users"
+              name="search_query"
+              value={@search_query}
+              placeholder="Search users..."
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          
+          <div class="max-h-60 overflow-y-auto space-y-2">
+            <%= for user <- @search_results do %>
+              <div class="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+                <div class="flex items-center space-x-3">
+                  <img
+                    src={user.avatar_url || "/images/default-avatar.png"}
+                    alt={user.username}
+                    class="w-8 h-8 rounded-full"
+                  />
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">
+                    <%= user.username %>
+                  </span>
+                </div>
+                <button
+                  phx-click="add_member"
+                  phx-value-user_id={user.id}
+                  class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  <.icon name="hero-plus" class="w-4 h-4" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

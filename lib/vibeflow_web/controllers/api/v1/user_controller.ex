@@ -5,6 +5,7 @@ defmodule VibeflowWeb.Api.V1.UserController do
     case Vibeflow.Accounts.get_user_by_username(username) do
       nil -> conn |> put_status(:not_found) |> json(%{error: "User not found"})
       user ->
+        user = Vibeflow.Repo.preload(user, :roles)
         followers = Vibeflow.Accounts.get_user_followers(user.id)
         following = Vibeflow.Accounts.get_user_following(user.id)
         posts = Vibeflow.Posts.list_posts(user_id: user.id, per_page: 20)
@@ -206,8 +207,16 @@ defmodule VibeflowWeb.Api.V1.UserController do
       active_message_skin: user.active_message_skin,
       followers_count: followers_count,
       following_count: following_count,
-      inserted_at: user.inserted_at
+      inserted_at: user.inserted_at,
+      roles: clean_roles(user)
     }
+  end
+
+  defp clean_roles(user) do
+    case Map.get(user, :roles) do
+      nil -> []
+      roles -> Enum.map(roles, & %{name: &1.name})
+    end
   end
 
   defp user_json(user) do

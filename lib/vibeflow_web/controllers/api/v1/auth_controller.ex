@@ -38,7 +38,7 @@ defmodule VibeflowWeb.Api.V1.AuthController do
   end
 
   def me(conn, _params) do
-    user = conn.assigns.current_user
+    user = Vibeflow.Repo.preload(conn.assigns.current_user, :roles)
     json(conn, %{data: %{user: user_json(user)}})
   end
 
@@ -137,8 +137,16 @@ defmodule VibeflowWeb.Api.V1.AuthController do
       username_style: user.username_style,
       active_message_skin: user.active_message_skin,
       confirmed_at: user.confirmed_at,
-      inserted_at: user.inserted_at
+      inserted_at: user.inserted_at,
+      roles: clean_roles(user)
     }
+  end
+
+  defp clean_roles(user) do
+    case Map.get(user, :roles) do
+      nil -> []
+      roles -> Enum.map(roles, & %{name: &1.name})
+    end
   end
 
   defp format_changeset(changeset) do

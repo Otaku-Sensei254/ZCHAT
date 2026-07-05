@@ -169,7 +169,21 @@ defmodule VibeflowWeb.Api.V1.UserController do
       user ->
         if conn.assigns.current_user.id == user.id do
           stats = Vibeflow.Posts.list_creator_hub_posts(user.id)
-          json(conn, %{data: %{stats: stats}})
+          json(conn, %{
+            data: %{
+              stats: Enum.map(stats, fn s ->
+                %{
+                  post: post_json(s.post),
+                  seed_count: s.seed_count,
+                  rippled_count: s.rippled_count,
+                  frontier_count: s.frontier_count,
+                  likes_count: s.likes_count,
+                  comments_count: s.comments_count,
+                  ripplers: Enum.map(s.ripplers || [], &user_json/1)
+                }
+              end)
+            }
+          })
         else
           conn |> put_status(:forbidden) |> json(%{error: "Not your profile"})
         end
@@ -239,6 +253,7 @@ defmodule VibeflowWeb.Api.V1.UserController do
       media_files: clean_media_files(post.media_files),
       tags: post.tags || [],
       category: post.category,
+      view_count: Map.get(post, :view_count, 0),
       likes_count: Map.get(post, :likes_count, 0),
       comments_count: Map.get(post, :comments_count, 0),
       user: user_json(post.user),

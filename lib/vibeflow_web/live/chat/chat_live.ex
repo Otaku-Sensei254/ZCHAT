@@ -57,6 +57,7 @@ defmodule VibeflowWeb.Chat.ChatLive do
      |> assign(:user_search_query, "")
      |> assign(:user_search_results, [])
      |> assign(:replying_to, nil)
+     |> assign(:editing_message, nil)
      |> assign(:composer_content, "")
      |> assign(:preview_entry, nil)
      |> assign(:zoomed_image, nil)
@@ -459,27 +460,48 @@ defmodule VibeflowWeb.Chat.ChatLive do
     final_params =
       if replying_to, do: Map.put(final_params, "reply_to_id", replying_to.id), else: final_params
 
-    # 3. Create
-    if final_params["content"] != "" || uploaded_files != [] do
-      case Chat.create_message(final_params) do
+    editing_message = socket.assigns[:editing_message]
+
+    # 3. Create or Edit
+    if editing_message do
+      case Chat.update_message(editing_message, %{content: message_params["content"]}) do
         {:ok, _message} ->
           messages = Chat.list_messages(conversation)
 
           {:noreply,
            socket
+           |> assign(:editing_message, nil)
            |> assign(:replying_to, nil)
            |> assign(:composer_content, "")
            |> assign(:messages, messages)
-           |> schedule_link_previews(messages)
-           |> push_event("scroll-to-bottom", %{})
-           |> assign(:self_typing, false)
            |> push_event("clear-input", %{})}
 
         {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Failed to send message.")}
+          {:noreply, put_flash(socket, :error, "Failed to update message.")}
       end
     else
-      {:noreply, socket}
+      if final_params["content"] != "" || uploaded_files != [] do
+        case Chat.create_message(final_params) do
+          {:ok, _message} ->
+            messages = Chat.list_messages(conversation)
+
+            {:noreply,
+             socket
+             |> assign(:replying_to, nil)
+             |> assign(:editing_message, nil)
+             |> assign(:composer_content, "")
+             |> assign(:messages, messages)
+             |> schedule_link_previews(messages)
+             |> push_event("scroll-to-bottom", %{})
+             |> assign(:self_typing, false)
+             |> push_event("clear-input", %{})}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to send message.")}
+        end
+      else
+        {:noreply, socket}
+      end
     end
   end
 
@@ -900,6 +922,31 @@ defmodule VibeflowWeb.Chat.ChatLive do
   @impl true
   def handle_event("clear_reply", _params, socket) do
     {:noreply, assign(socket, :replying_to, nil)}
+  end
+
+  @impl true
+  def handle_event("prepare_edit", %{"id" => message_id}, socket) do
+    message_id = String.to_integer(message_id)
+    message = Chat.get_message!(message_id)
+
+    if message.user_id == socket.assigns.current_user.id do
+      {:noreply,
+       socket
+       |> assign(:editing_message, message)
+       |> assign(:replying_to, nil)
+       |> assign(:composer_content, message.content)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("clear_edit", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:editing_message, nil)
+     |> assign(:composer_content, "")
+     |> push_event("clear-input", %{})}
   end
 
   @impl true

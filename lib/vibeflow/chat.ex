@@ -196,7 +196,13 @@ end
         convo = Repo.get!(Conversation, message.conversation_id)
         broadcast_message(convo, message)
         notify_sidebar_members(message.conversation_id, message)
-        {:ok, message}
+        # Return preloaded message for API consumption
+        preloaded =
+          message
+          |> Repo.preload([:user, shared_post: :user, shared_wave: :user, reply_to: :user])
+          |> Map.put(:conversation_uuid, convo.uuid)
+
+        {:ok, preloaded}
 
       error ->
         error
@@ -214,6 +220,31 @@ end
       Vibeflow.PubSub,
       "conversation:#{convo.uuid}",
       {:message_deleted, message}
+    )
+  end
+
+  def update_message(%Message{} = message, attrs) do
+    message
+    |> Message.changeset(attrs)
+    |> Repo.update()
+    |> case do
+      {:ok, updated_msg} ->
+        preloaded_msg = Repo.preload(updated_msg, [:user, shared_post: :user, shared_wave: :user, reply_to: :user])
+        notify_message_updated(preloaded_msg)
+        {:ok, preloaded_msg}
+
+      error ->
+        error
+    end
+  end
+
+  defp notify_message_updated(message) do
+    convo = get_conversation!(message.conversation_id)
+
+    Phoenix.PubSub.broadcast(
+      Vibeflow.PubSub,
+      "conversation:#{convo.uuid}",
+      {:message_updated, message}
     )
   end
 
@@ -332,7 +363,7 @@ end
     # now get the post (supports id or uuid)
     post = Vibeflow.Posts.get_post!(post_id_or_uuid)
 
-    content = "Shared a post"
+    content = ""
 
     {:ok, message} =
       create_message(%{
@@ -367,7 +398,7 @@ end
 
     post = Vibeflow.Posts.get_post!(post_id_or_uuid)
 
-    content = if message && message != "", do: message, else: "Shared a post"
+    content = message || ""
 
     # Create messages for each recipient
     results =

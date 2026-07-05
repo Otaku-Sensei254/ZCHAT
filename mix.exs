@@ -59,7 +59,8 @@ defmodule Vibeflow.MixProject do
       {:canada, "~> 2.0"},
       {:httpoison, "~> 1.6"},
       {:req, "~> 0.5.0"},
-      {:oban, "~> 2.17"}
+      {:oban, "~> 2.17"},
+      {:cors_plug, "~> 3.0"}
     ]
   end
 

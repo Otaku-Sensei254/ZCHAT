@@ -48,6 +48,7 @@ defmodule Vibeflow.Posts.Post do
           view_count: integer(),
           category: String.t() | nil,
           reposts_count: integer(),
+          saves_count: integer(),
           likes_count: integer(),
           comments_count: integer(),
           user_id: integer() | nil,
@@ -69,6 +70,7 @@ defmodule Vibeflow.Posts.Post do
     field :view_count, :integer, default: 0
     field :category, :string
     field :reposts_count, :integer, default: 0
+    field :saves_count, :integer, default: 0
     field :likes_count, :integer, default: 0
     field :comments_count, :integer, virtual: true, default: 0
     field :is_featured, :boolean, virtual: true, default: false

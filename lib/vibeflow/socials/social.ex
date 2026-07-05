@@ -181,6 +181,10 @@ defmodule Vibeflow.Socials do
     end
   end
 
+  def get_social_account!(id) do
+    Repo.get!(SocialAccount, id)
+  end
+
   def delete_social_account(id) do
     Repo.get!(SocialAccount, id) |> Repo.delete()
   end

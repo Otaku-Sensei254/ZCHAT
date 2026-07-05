@@ -539,6 +539,15 @@ defmodule Vibeflow.Accounts do
     Repo.all(query)
   end
 
+  def suggest_users(current_user_id, exclude_ids, limit \\ 5) do
+    from(u in User,
+      where: u.id != ^current_user_id and u.id not in ^exclude_ids,
+      order_by: fragment("RANDOM()"),
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
   # --- ASSIGNMENT HELPERS ---
 
   def assign_role_to_user(user_id, role_id) when is_integer(user_id) and is_integer(role_id) do
@@ -660,11 +669,18 @@ defmodule Vibeflow.Accounts do
   end
 
   def follow_user(user_a, user_b) do
-    user_a
-    |> Repo.preload(:following)
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.put_assoc(:following, [user_b | user_a.following])
-    |> Repo.update()
+    existing = Repo.get_by(Vibeflow.Socials.Follow, follower_id: user_a.id, following_id: user_b.id)
+    if existing do
+      {:error, :already_following}
+    else
+      %Vibeflow.Socials.Follow{}
+      |> Vibeflow.Socials.Follow.changeset(%{follower_id: user_a.id, following_id: user_b.id})
+      |> Repo.insert()
+      |> case do
+        {:ok, _} -> {:ok, :followed}
+        error -> error
+      end
+    end
   end
 
   # Adding mentions to posts and comments

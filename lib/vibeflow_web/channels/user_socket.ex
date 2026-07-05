@@ -3,11 +3,10 @@ defmodule VibeflowWeb.UserSocket do
 
   channel "conversation:*", VibeflowWeb.ConversationChannel
   channel "chat_topic", VibeflowWeb.ChatChannelChannel
+  channel "relay:*", VibeflowWeb.RelayChannel
 
   @impl true
   def connect(%{"token" => token} = _params, socket, _connect_info) do
-    IO.inspect(token, label: "UserSocket connect token")
-
     case Base.url_decode64(token) do
       {:ok, decoded_token} ->
         if user = Vibeflow.Accounts.get_user_by_session_token(decoded_token) do

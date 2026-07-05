@@ -1,5 +1,24 @@
 import Config
 
+# Load BREVO_API_KEY from .env file if present (for local development)
+if File.exists?(".env") do
+  ".env"
+  |> File.read!()
+  |> String.split("\n")
+  |> Enum.each(fn line ->
+    line = String.trim(line)
+    if String.starts_with?(line, "export BREVO_API_KEY=") do
+      value =
+        line
+        |> String.replace_prefix("export BREVO_API_KEY=", "")
+        |> String.trim()
+        |> String.trim(~s('))
+        |> String.trim(~s("))
+      System.put_env("BREVO_API_KEY", value)
+    end
+  end)
+end
+
 # Configure your database
 config :vibeflow, Vibeflow.Repo,
   username: "dtech",
@@ -75,7 +94,8 @@ config :vibeflow, VibeflowWeb.Endpoint,
 config :vibeflow, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+# Set level to :warn to suppress noisy SQL debug and API request logs
+config :logger, :console, level: :warning, format: "[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

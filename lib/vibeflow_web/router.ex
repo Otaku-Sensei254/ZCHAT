@@ -17,10 +17,108 @@ defmodule VibeflowWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_auth do
+    plug VibeflowWeb.Plugs.ApiAuth
+  end
+
   scope "/api", VibeflowWeb do
     pipe_through :api
 
     get "/unread_chats_count", Api.UnreadController, :show
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through :api
+
+    post "/auth/register", AuthController, :register
+    post "/auth/login", AuthController, :login
+    post "/auth/forgot-password", AuthController, :forgot_password
+    post "/auth/reset-password", AuthController, :reset_password
+    post "/auth/confirm-email", AuthController, :confirm_email
+    post "/auth/resend-confirmation", AuthController, :resend_confirmation
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through :api
+
+    get "/feed", FeedController, :index
+    get "/feed/trending", FeedController, :trending
+    get "/feed/categories", FeedController, :categories
+    get "/feed/posts/search", FeedController, :search_posts
+    get "/feed/tags", FeedController, :tags
+    get "/feed/categories/counts", FeedController, :category_counts
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, VibeflowWeb.Plugs.OptionalApiAuth]
+
+    get "/posts/:uuid", PostController, :show
+    get "/feed/suggestions", FeedController, :suggestions
+    get "/waves", WaveController, :index
+    get "/waves/:username", WaveController, :show_user_waves
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, :api_auth]
+
+    get "/auth/me", AuthController, :me
+    post "/auth/logout", AuthController, :logout
+
+    post "/posts", PostController, :create
+    put "/posts/:uuid", PostController, :update
+    delete "/posts/:uuid", PostController, :delete
+    post "/posts/:uuid/like", PostController, :like
+    post "/posts/:uuid/repost", PostController, :repost
+    post "/posts/:uuid/save", PostController, :save
+    post "/posts/:uuid/share", PostController, :share
+    post "/posts/:uuid/view", PostController, :track_view
+    post "/posts/:uuid/comments", PostController, :create_comment
+    delete "/comments/:comment_id", PostController, :delete_comment
+    put "/comments/:comment_id", PostController, :update_comment
+    post "/comments/:comment_id/pin", PostController, :pin_comment
+    post "/comments/:comment_id/like", PostController, :like_comment
+
+    get "/users/search", UserController, :search
+    get "/users/:username", UserController, :show
+    post "/users/:username/follow", UserController, :follow
+    delete "/users/:username/follow", UserController, :unfollow
+    get "/users/:username/followers", UserController, :followers
+    get "/users/:username/following", UserController, :following
+    get "/users/:username/creator-hub", UserController, :creator_hub
+    put "/users/profile", UserController, :update_profile
+    put "/users/password", UserController, :update_password
+    get "/users/saved-posts", UserController, :saved_posts
+    get "/users/verification-status", UserController, :verification_status
+    get "/users/social-accounts", UserController, :social_accounts
+    post "/users/social-accounts", UserController, :add_social_account
+    delete "/users/social-accounts/:id", UserController, :delete_social_account
+    post "/users/verify", UserController, :submit_verification
+
+    get "/chat/conversations", ChatController, :conversations
+    get "/chat/conversations/:uuid/messages", ChatController, :messages
+    post "/chat/conversations/:uuid/messages", ChatController, :create_message
+    delete "/chat/conversations/:uuid/messages/:id", ChatController, :delete_message
+    put "/chat/conversations/:uuid/messages/:id", ChatController, :update_message
+    post "/chat/start/:username", ChatController, :start_conversation
+    put "/chat/conversations/:uuid/skin", ChatController, :update_skin
+    post "/chat/conversations/:uuid/read", ChatController, :mark_read
+    get "/chat/unread-count", ChatController, :unread_count
+
+    post "/waves", WaveController, :create
+    post "/waves/:uuid/view", WaveController, :mark_viewed
+    post "/waves/:uuid/like", WaveController, :like
+
+    post "/music/tracks", MusicController, :create_track
+
+    post "/uploads/media", MediaController, :upload
+
+    get "/store/items", StoreController, :index
+    post "/store/purchase", StoreController, :purchase
+
+    get "/notifications", NotificationController, :index
+    post "/notifications/:id/read", NotificationController, :mark_read
+    post "/notifications/read-all", NotificationController, :mark_all_read
+    delete "/notifications", NotificationController, :clear
   end
 
   # Authenticated upload API - requires login via session

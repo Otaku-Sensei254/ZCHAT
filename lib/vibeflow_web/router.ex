@@ -119,6 +119,20 @@ defmodule VibeflowWeb.Router do
     post "/notifications/:id/read", NotificationController, :mark_read
     post "/notifications/read-all", NotificationController, :mark_all_read
     delete "/notifications", NotificationController, :clear
+
+    # Admin API
+    get "/admin/stats", AdminController, :stats
+    get "/admin/users", AdminController, :users
+    put "/admin/users/:id/roles", AdminController, :update_user_roles
+    post "/admin/users/:user_id/toggle_role/:role_id", AdminController, :toggle_role
+    delete "/admin/users/:user_id/remove_role/:role_id", AdminController, :remove_role
+    get "/admin/verifications", AdminController, :verifications
+    post "/admin/verifications/:id/approve", AdminController, :approve_verification
+    post "/admin/verifications/:id/reject", AdminController, :reject_verification
+    get "/admin/roles", AdminController, :roles
+    post "/admin/roles", AdminController, :create_role
+    get "/admin/permissions", AdminController, :permissions
+    get "/admin/verifications/count", AdminController, :verification_count
   end
 
   # Authenticated upload API - requires login via session

@@ -1,5 +1,6 @@
 defmodule VibeflowWeb.Api.V1.UserController do
   use VibeflowWeb, :controller
+  import Ecto.Query
 
   def show(conn, %{"username" => username}) do
     case Vibeflow.Accounts.get_user_by_username(username) do
@@ -8,7 +9,13 @@ defmodule VibeflowWeb.Api.V1.UserController do
         user = Vibeflow.Repo.preload(user, :roles)
         followers = Vibeflow.Accounts.get_user_followers(user.id)
         following = Vibeflow.Accounts.get_user_following(user.id)
-        posts = Vibeflow.Posts.list_posts(user_id: user.id, per_page: 20)
+        posts =
+          Vibeflow.Posts.Post
+          |> where([p], p.user_id == ^user.id and p.status == "published")
+          |> order_by([p], desc: p.inserted_at)
+          |> limit(20)
+          |> Vibeflow.Repo.all()
+          |> Vibeflow.Repo.preload([:user, :likes, :reposts, comments: :user])
         is_following = if conn.assigns[:current_user] do
           Enum.any?(followers, fn f -> f.id == conn.assigns[:current_user].id end)
         else
@@ -229,9 +236,12 @@ defmodule VibeflowWeb.Api.V1.UserController do
   defp clean_roles(user) do
     case Map.get(user, :roles) do
       nil -> []
-      roles -> Enum.map(roles, & %{name: &1.name})
+      %Ecto.Association.NotLoaded{} -> []
+      roles -> Enum.map(roles, & %{name: &1.name, id: &1.id})
     end
   end
+
+  defp user_json(%Ecto.Association.NotLoaded{}), do: nil
 
   defp user_json(user) do
     %{

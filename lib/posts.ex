@@ -14,8 +14,6 @@ defmodule Vibeflow.Posts do
   @daily_post_bonus_limit 3
   @like_points 2
   @post_author_like_points 3
-  @ripple_points 3
-  @post_author_ripple_points 5
 
   # --- TRENDING ---
 
@@ -1057,14 +1055,9 @@ defmodule Vibeflow.Posts do
     :ok
   end
 
-  defp award_like_points(%Post{} = post, user_id, ripple_status) do
+  defp award_like_points(%Post{} = post, user_id, _ripple_status) do
     Accounts.grant_points(user_id, @like_points)
     maybe_award_author_points(post.user_id, user_id, @post_author_like_points)
-
-    if ripple_status == :rippled do
-      Accounts.grant_points(user_id, @ripple_points)
-      maybe_award_author_points(post.user_id, user_id, @post_author_ripple_points)
-    end
   end
 
   defp award_like_points(_, _, _), do: :ok

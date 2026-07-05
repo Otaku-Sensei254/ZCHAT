@@ -145,7 +145,8 @@ defmodule VibeflowWeb.Api.V1.AuthController do
   defp clean_roles(user) do
     case Map.get(user, :roles) do
       nil -> []
-      roles -> Enum.map(roles, & %{name: &1.name})
+      %Ecto.Association.NotLoaded{} -> []
+      roles -> Enum.map(roles, & %{name: &1.name, id: &1.id})
     end
   end
 

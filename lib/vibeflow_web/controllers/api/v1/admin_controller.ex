@@ -173,7 +173,7 @@ defmodule VibeflowWeb.Api.V1.AdminController do
     json(conn, %{
       data: %{
         permissions:
-          Enum.map(all_permissions, fn p -> %{id: p.id, name: p.name, slug: p.slug} end)
+          Enum.map(all_permissions, fn p -> %{id: p.id, slug: p.slug, description: p.description} end)
       }
     })
   end
@@ -219,7 +219,7 @@ defmodule VibeflowWeb.Api.V1.AdminController do
       id: role.id,
       name: role.name,
       permissions:
-        Enum.map(role.permissions || [], fn p -> %{id: p.id, name: p.name, slug: p.slug} end)
+        Enum.map(role.permissions || [], fn p -> %{id: p.id, slug: p.slug, description: p.description} end)
     }
   end
 end

@@ -450,10 +450,10 @@
       </div>
     <% else %>
       <%!-- GUEST VIEW: Centered and Closer Together --%>
-      <div class="flex justify-center items-center gap-12 h-16">
+      <div class="flex justify-center items-center gap-6 h-16 px-2">
         <.link
           navigate={~p"/feed"}
-          class="flex flex-col items-center justify-center h-full w-16 space-y-1 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors group"
+          class="flex flex-col items-center justify-center h-full w-14 space-y-1 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors group"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -472,12 +472,9 @@
           <span class="text-[10px] font-medium">Feed</span>
         </.link>
 
-        <%!-- Vertical Divider (Optional - Remove if you want just space) --%>
-        <div class="h-8 w-px bg-gray-200 dark:bg-zinc-800"></div>
-
         <.link
           navigate={~p"/users/log_in"}
-          class="flex flex-col items-center justify-center h-full w-16 space-y-1 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors group"
+          class="flex flex-col items-center justify-center h-full w-14 space-y-1 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors group"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -495,7 +492,50 @@
           </svg>
           <span class="text-[10px] font-medium">Log In</span>
         </.link>
+
+        <.link
+          navigate={~p"/privacy"}
+          class="flex flex-col items-center justify-center h-full w-14 space-y-1 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors group"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 group-hover:scale-110 transition-transform">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+          </svg>
+          <span class="text-[10px] font-medium">Privacy</span>
+        </.link>
       </div>
     <% end %>
   </nav>
 <% end %>
+
+<div
+  id="cookie-consent"
+  phx-hook="CookieConsent"
+  class="fixed bottom-24 md:bottom-4 left-4 right-4 z-[100] md:left-auto md:right-4 md:max-w-sm"
+>
+  <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-2xl p-5">
+    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+      We use essential cookies for authentication and security. By continuing, you agree to our
+      <.link navigate={~p"/privacy"} class="text-indigo-600 hover:underline dark:text-indigo-400">Privacy Policy</.link>
+      and
+      <.link navigate={~p"/terms"} class="text-indigo-600 hover:underline dark:text-indigo-400">Terms of Service</.link>.
+    </p>
+    <div class="flex gap-2">
+      <button data-decline class="flex-1 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-zinc-600 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors">
+        Decline
+      </button>
+      <button data-accept class="flex-1 px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200">
+        Accept
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer class="hidden md:block border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center justify-center gap-6 text-xs text-gray-400 dark:text-gray-500">
+      <span>&copy; 2026 Vibeflow</span>
+      <.link navigate={~p"/privacy"} class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy Policy</.link>
+      <.link navigate={~p"/terms"} class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms of Service</.link>
+    </div>
+  </div>
+</footer>

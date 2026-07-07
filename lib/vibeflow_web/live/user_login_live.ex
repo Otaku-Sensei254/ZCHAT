@@ -82,6 +82,12 @@ defmodule VibeflowWeb.UserLoginLive do
               >
                 Log in <span aria-hidden="true" class="ml-2">→</span>
               </.button>
+              <p class="mt-3 text-center text-xs text-gray-400">
+                By signing in, you agree to our
+                <.link navigate={~p"/terms"} class="text-indigo-600 hover:underline dark:text-indigo-400">Terms</.link>
+                and
+                <.link navigate={~p"/privacy"} class="text-indigo-600 hover:underline dark:text-indigo-400">Privacy Policy</.link>
+              </p>
             </div>
           </.simple_form>
         </div>

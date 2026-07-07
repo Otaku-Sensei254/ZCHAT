@@ -12,7 +12,7 @@ defmodule VibeflowWeb.Api.V1.StoreController do
 
     json(conn, %{
       data: %{
-        items: Enum.map(items, &item_json/1),
+        items: Enum.map(items, &item_json(&1, user)),
         points_balance: points
       }
     })
@@ -57,14 +57,31 @@ defmodule VibeflowWeb.Api.V1.StoreController do
     end
   end
 
-  defp item_json(item) do
+  defp item_json(item, user) do
+    {owned, expires_at} =
+      if user do
+        case Store.get_user_item(user.id, item.item_slug) do
+          nil -> {false, nil}
+          inv ->
+            if Vibeflow.Store.expired?(inv) do
+              {false, nil}
+            else
+              {true, inv.metadata["expires_at"]}
+            end
+        end
+      else
+        {false, nil}
+      end
+
     %{
       id: item.id,
       item_name: item.item_name,
       item_slug: item.item_slug,
       worth: item.worth,
       duration: item.duration,
-      category: item.category
+      category: item.category,
+      owned: owned,
+      expires_at: expires_at
     }
   end
 end

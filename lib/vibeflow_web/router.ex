@@ -164,10 +164,13 @@ defmodule VibeflowWeb.Router do
     end
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", VibeflowWeb do
-  #   pipe_through :api
-  # end
+  # Static pages
+  scope "/", VibeflowWeb do
+    pipe_through :browser
+
+    get "/privacy", PageController, :privacy
+    get "/terms", PageController, :terms
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:vibeflow, :dev_routes) do

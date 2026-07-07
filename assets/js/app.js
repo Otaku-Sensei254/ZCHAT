@@ -1777,4 +1777,21 @@ window.togglePasswordVisibility = function(inputId, button) {
   button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
 };
 
+Hooks.CookieConsent = {
+  mounted() {
+    const key = "vibeflow_cookie_consent";
+    if (localStorage.getItem(key)) {
+      this.el.style.display = "none";
+    }
+    this.el.querySelector("[data-accept]")?.addEventListener("click", () => {
+      localStorage.setItem(key, "accepted");
+      this.el.style.display = "none";
+    });
+    this.el.querySelector("[data-decline]")?.addEventListener("click", () => {
+      localStorage.setItem(key, "declined");
+      this.el.style.display = "none";
+    });
+  }
+};
+
 window.liveSocket = liveSocket

@@ -211,7 +211,7 @@ defmodule Vibeflow.Store do
     if count == 1, do: :ok, else: Repo.rollback(:insufficient_points)
   end
 
-  defp expired?(inventory) do
+  def expired?(inventory) do
     case Map.get(inventory.metadata || %{}, "expires_at") do
       nil ->
         false

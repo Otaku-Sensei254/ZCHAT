@@ -98,11 +98,13 @@ defmodule VibeflowWeb.Api.V1.WaveController do
   end
 
   defp user_json(user) do
+    cosmetics = Vibeflow.Store.get_active_cosmetics(user.id)
     %{
       id: user.id,
       username: user.username,
       avatar_url: user.avatar_url,
-      is_verified: user.is_verified
+      is_verified: user.is_verified,
+      frame: cosmetics.frame
     }
   end
 

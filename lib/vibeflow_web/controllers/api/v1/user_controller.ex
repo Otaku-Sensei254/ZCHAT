@@ -67,13 +67,22 @@ defmodule VibeflowWeb.Api.V1.UserController do
 
   def update_profile(conn, %{"user" => user_params}) do
     current_user = conn.assigns.current_user
-    case Vibeflow.Accounts.update_user_profile(current_user, user_params) do
-      {:ok, user} ->
-        json(conn, %{data: %{user: profile_json(user, 0, 0)}})
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{errors: format_changeset(changeset)})
+
+    if Map.has_key?(user_params, "username_style") and
+         user_params["username_style"] != "none" and
+         not Vibeflow.Store.has_active_item?(current_user.id, "profile-glow") do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{errors: %{username_style: ["Purchase Profile Glow from the Wave Store to unlock username styles."]}})
+    else
+      case Vibeflow.Accounts.update_user_profile(current_user, user_params) do
+        {:ok, user} ->
+          json(conn, %{data: %{user: profile_json(user, 0, 0)}})
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{errors: format_changeset(changeset)})
+      end
     end
   end
 

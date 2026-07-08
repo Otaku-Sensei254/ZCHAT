@@ -1,9 +1,7 @@
 defmodule VibeflowWeb.Api.V1.MediaController do
   use VibeflowWeb, :controller
 
-  alias Vibeflow.Infrastructure.UploadCloudinary
-
-  @upload_dir "/tmp/vibeflow/uploads"
+  @upload_dir "priv/static/uploads"
 
   def upload(conn, params) do
     content_type =
@@ -23,7 +21,8 @@ defmodule VibeflowWeb.Api.V1.MediaController do
       end
 
     upload_id = params["upload_id"] || Ecto.UUID.generate()
-    dest = Path.join(@upload_dir, "#{upload_id}#{ext}")
+    filename = "#{upload_id}#{ext}"
+    dest = Path.join(@upload_dir, filename)
     File.mkdir_p!(@upload_dir)
 
     {:ok, binary, conn} =
@@ -31,24 +30,9 @@ defmodule VibeflowWeb.Api.V1.MediaController do
 
     File.write!(dest, binary)
 
-    kind =
-      cond do
-        String.starts_with?(content_type, "image/") -> :image
-        String.starts_with?(content_type, "video/") -> :video
-        true -> :auto
-      end
+    url = "/uploads/#{filename}"
+    resource_type = if String.starts_with?(content_type, "video/"), do: "video", else: "image"
 
-    case UploadCloudinary.upload_file(dest, kind,
-           filename: Path.basename(dest),
-           content_type: content_type
-         ) do
-      {:ok, result} ->
-        json(conn, %{data: %{url: result.url, resource_type: result.resource_type}})
-
-      {:error, reason} ->
-        conn
-        |> put_status(:internal_server_error)
-        |> json(%{error: "Upload failed: #{inspect(reason)}"})
-    end
+    json(conn, %{data: %{url: url, resource_type: resource_type}})
   end
 end

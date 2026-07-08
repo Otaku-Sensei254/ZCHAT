@@ -61,6 +61,7 @@ defmodule VibeflowWeb.Api.V1.ChatController do
       target ->
         case Vibeflow.Chat.find_or_create_direct_conversation(current_user.id, target.id) do
           {:ok, conversation} ->
+            conversation = Vibeflow.Repo.preload(conversation, [conversation_members: :user])
             conn
             |> put_status(:created)
             |> json(%{data: %{conversation: conversation_json(conversation, current_user.id)}})

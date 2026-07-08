@@ -53,9 +53,10 @@ defmodule VibeflowWeb.Api.V1.WaveController do
     wave = Vibeflow.Waves.get_wave_by_uuid(uuid)
 
     if wave do
-      {status, _} = Vibeflow.Posts.toggle_like(user.id, "Wave", wave.id)
+      was_liked = Vibeflow.Posts.is_liked?(user.id, "Wave", wave.id)
+      Vibeflow.Posts.toggle_like(user.id, "Wave", wave.id)
       likes_count = Vibeflow.Posts.count_likes("Wave", wave.id)
-      json(conn, %{data: %{liked: status == :liked, likes_count: likes_count}})
+      json(conn, %{data: %{liked: !was_liked, likes_count: likes_count}})
     else
       conn |> put_status(:not_found) |> json(%{error: "Wave not found"})
     end

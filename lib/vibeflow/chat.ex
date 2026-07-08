@@ -502,7 +502,6 @@ end
     |> Repo.insert()
     |> case do
       {:ok, conversation} ->
-        # Add both users as members
         Ecto.Multi.new()
         |> Ecto.Multi.insert(:member1, ConversationMember.changeset(%ConversationMember{}, %{
             conversation_id: conversation.id,
@@ -518,11 +517,12 @@ end
         |> case do
           {:ok, _} ->
             {:ok, conversation}
-
-          {:error, changeset} ->
-            {:error, changeset}
+          {:error, _changeset} ->
+            {:error, :member_insert_failed}
         end
 
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 

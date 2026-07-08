@@ -59,10 +59,17 @@ defmodule VibeflowWeb.Api.V1.ChatController do
     case Vibeflow.Accounts.get_user_by_username(username) do
       nil -> conn |> put_status(:not_found) |> json(%{error: "User not found"})
       target ->
-        {:ok, conversation} = Vibeflow.Chat.find_or_create_direct_conversation(current_user.id, target.id)
-        conn
-        |> put_status(:created)
-        |> json(%{data: %{conversation: conversation_json(conversation, current_user.id)}})
+        case Vibeflow.Chat.find_or_create_direct_conversation(current_user.id, target.id) do
+          {:ok, conversation} ->
+            conn
+            |> put_status(:created)
+            |> json(%{data: %{conversation: conversation_json(conversation, current_user.id)}})
+
+          {:error, _reason} ->
+            conn
+            |> put_status(:internal_server_error)
+            |> json(%{error: "Could not start conversation"})
+        end
     end
   end
 

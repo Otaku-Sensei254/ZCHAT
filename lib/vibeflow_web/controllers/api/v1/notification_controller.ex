@@ -41,7 +41,10 @@ defmodule VibeflowWeb.Api.V1.NotificationController do
         avatar_url: notif.actor.avatar_url
       }),
       post_id: notif.post_id,
+      post_uuid: notif.post && notif.post.uuid,
+      post_title: notif.post && notif.post.title,
       conversation_id: notif.conversation_id,
+      conversation_uuid: notif.conversation && notif.conversation.uuid,
       inserted_at: notif.inserted_at
     }
   end

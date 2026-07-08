@@ -10,7 +10,7 @@ defmodule Vibeflow.Notifications do
       where: n.user_id == ^user_id,
       order_by: [desc: n.inserted_at],
       limit: ^limit,
-      preload: [:actor, :post, :user]
+      preload: [:actor, :post, :user, :conversation]
     )
     |> Repo.all()
   end

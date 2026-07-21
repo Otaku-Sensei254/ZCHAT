@@ -109,16 +109,31 @@ defmodule VibeflowWeb.Api.V1.FeedController do
       )
     ) |> MapSet.new()
 
+    author_ids = Enum.map(posts, & &1.user_id) |> Enum.uniq()
+
+    followed_author_ids = if author_ids != [] do
+      Vibeflow.Repo.all(
+        from f in Vibeflow.Socials.Follow,
+          where: f.follower_id == ^current_user.id and f.following_id in ^author_ids,
+          select: f.following_id
+      )
+      |> MapSet.new()
+    else
+      MapSet.new()
+    end
+
     Enum.map(posts, fn post ->
       is_liked = Enum.any?(post.likes || [], &(&1.user_id == current_user.id))
       is_reposted = Enum.any?(post.reposts || [], &(&1.user_id == current_user.id))
       is_saved = MapSet.member?(saved_post_ids, post.id)
+      is_following = MapSet.member?(followed_author_ids, post.user_id)
       seeds = Map.get(seed_data, post.id, %{seed_count: 0, rippled_count: 0})
 
       post_json(post)
       |> Map.put(:is_liked, is_liked)
       |> Map.put(:is_reposted, is_reposted)
       |> Map.put(:is_saved, is_saved)
+      |> Map.put(:is_following, is_following)
       |> Map.put(:seed_count, seeds.seed_count)
       |> Map.put(:rippled_count, seeds.rippled_count)
     end)

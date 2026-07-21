@@ -97,17 +97,40 @@ defmodule Vibeflow.Accounts do
 
   ## User registration
 
+  @referral_points 50
+  @new_user_points 500
+
   def register_user(attrs) do
-    # UPDATED: Handle avatar upload before changeset
+    invite_code = attrs["invite_code"] || attrs[:invite_code]
+
     attrs = handle_image_upload(attrs, "avatar_url")
+    attrs = Map.drop(attrs, ["invite_code", :invite_code])
+
+    inviter =
+      if invite_code && invite_code != "" do
+        Repo.get_by(User, invite_code: invite_code)
+      end
+
+    attrs = if inviter do
+      Map.put(attrs, "referred_by_id", inviter.id)
+    else
+      attrs
+    end
 
     %User{}
     |> User.registration_changeset(attrs)
+    |> Ecto.Changeset.put_change(:invite_code, attrs["username"] || attrs[:username])
     |> Repo.insert()
     |> case do
       {:ok, user} ->
-        grant_points(user.id, 500)
-        {:ok, user}
+        grant_points(user.id, @new_user_points)
+
+        if inviter do
+          grant_points(inviter.id, @referral_points)
+          grant_points(user.id, @referral_points)
+        end
+
+        {:ok, Repo.reload!(user)}
 
       {:error, changeset} ->
         {:error, changeset}
@@ -525,7 +548,7 @@ defmodule Vibeflow.Accounts do
 
     query = from(u in User,
       where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term),
-      order_by: [asc: u.inserted_at],
+      order_by: [desc: u.inserted_at],
       preload: [:roles]
     )
 
@@ -546,6 +569,42 @@ defmodule Vibeflow.Accounts do
       limit: ^limit
     )
     |> Repo.all()
+  end
+
+  def suggest_users_for_onboarding(current_user_id, limit \\ 8) do
+    from(u in User,
+      where: u.id != ^current_user_id,
+      order_by: fragment("RANDOM()"),
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  def batch_follow(follower_id, usernames) when is_list(usernames) do
+    users = from(u in User, where: u.username in ^usernames) |> Repo.all()
+
+    Enum.each(users, fn target ->
+      unless target.id == follower_id do
+        existing = Repo.get_by(Vibeflow.Socials.Follow,
+          follower_id: follower_id,
+          following_id: target.id
+        )
+
+        unless existing do
+          %Vibeflow.Socials.Follow{}
+          |> Vibeflow.Socials.Follow.changeset(%{follower_id: follower_id, following_id: target.id})
+          |> Repo.insert()
+
+          Vibeflow.Notifications.create_notification(%{
+            type: "follow",
+            user_id: target.id,
+            actor_id: follower_id
+          })
+        end
+      end
+    end)
+
+    {:ok, length(users)}
   end
 
   # --- ASSIGNMENT HELPERS ---

@@ -268,6 +268,59 @@ defmodule Vibeflow.Posts do
     end
   end
 
+  # --- CURRENTS (short-form video feed) ---
+
+  def list_currents(opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+
+    from(p in Post,
+      where: p.status == "published" and p.content_type == "current",
+      join: u in assoc(p, :user),
+      left_join: l in assoc(p, :likes),
+      left_join: c in assoc(p, :comments),
+      group_by: [p.id, u.id],
+      order_by: [desc: p.inserted_at],
+      limit: ^per_page,
+      offset: ^((page - 1) * per_page),
+      select_merge: %{
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      }
+    )
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  def list_currents_for_user(user_id, opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+    following_user_ids = opts[:following_user_ids]
+
+    following_ids = following_user_ids ||
+      (user_id && (
+        Vibeflow.Accounts.get_user_following(user_id)
+        |> Enum.map(& &1.id)
+      )) || []
+
+    from(p in Post,
+      where: p.status == "published" and p.content_type == "current" and p.user_id in ^following_ids,
+      join: u in assoc(p, :user),
+      left_join: l in assoc(p, :likes),
+      left_join: c in assoc(p, :comments),
+      group_by: [p.id, u.id],
+      order_by: [desc: p.inserted_at],
+      limit: ^per_page,
+      offset: ^((page - 1) * per_page),
+      select_merge: %{
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      }
+    )
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
   def list_seeded_users_for_post(post_id, limit \\ 50) do
     from(ps in PostSeed,
       where: ps.post_id == ^post_id,

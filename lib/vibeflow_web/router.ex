@@ -54,8 +54,15 @@ defmodule VibeflowWeb.Router do
 
     get "/posts/:uuid", PostController, :show
     get "/feed/suggestions", FeedController, :suggestions
+    get "/users/search", UserController, :search
+    get "/users/profile/:code", UserController, :profile_by_code
+    get "/users/:username", UserController, :show
+    get "/users/:username/followers", UserController, :followers
+    get "/users/:username/following", UserController, :following
     get "/waves", WaveController, :index
     get "/waves/:username", WaveController, :show_user_waves
+    get "/currents", CurrentController, :index
+    get "/currents/:uuid", CurrentController, :show
   end
 
   scope "/api/v1", VibeflowWeb.Api.V1 do
@@ -78,7 +85,8 @@ defmodule VibeflowWeb.Router do
     post "/comments/:comment_id/pin", PostController, :pin_comment
     post "/comments/:comment_id/like", PostController, :like_comment
 
-    get "/users/search", UserController, :search
+    get "/users/suggestions", UserController, :suggestions
+    post "/users/batch-follow", UserController, :batch_follow
     get "/users/saved-posts", UserController, :saved_posts
     get "/users/verification-status", UserController, :verification_status
     get "/users/social-accounts", UserController, :social_accounts
@@ -87,11 +95,8 @@ defmodule VibeflowWeb.Router do
     post "/users/verify", UserController, :submit_verification
     put "/users/profile", UserController, :update_profile
     put "/users/password", UserController, :update_password
-    get "/users/:username", UserController, :show
     post "/users/:username/follow", UserController, :follow
     delete "/users/:username/follow", UserController, :unfollow
-    get "/users/:username/followers", UserController, :followers
-    get "/users/:username/following", UserController, :following
     get "/users/:username/creator-hub", UserController, :creator_hub
 
     get "/chat/conversations", ChatController, :conversations
@@ -107,6 +112,8 @@ defmodule VibeflowWeb.Router do
     post "/waves", WaveController, :create
     post "/waves/:uuid/view", WaveController, :mark_viewed
     post "/waves/:uuid/like", WaveController, :like
+
+    post "/currents", CurrentController, :create
 
     post "/music/tracks", MusicController, :create_track
 

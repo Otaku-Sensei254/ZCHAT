@@ -179,6 +179,43 @@ defmodule VibeflowWeb.Api.V1.UserController do
     end
   end
 
+  def suggestions(conn, _params) do
+    current_user = conn.assigns[:current_user]
+    users = if current_user do
+      Vibeflow.Accounts.suggest_users_for_onboarding(current_user.id)
+    else
+      []
+    end
+    json(conn, %{data: %{users: Enum.map(users, &user_json/1)}})
+  end
+
+  def batch_follow(conn, %{"usernames" => usernames}) do
+    current_user = conn.assigns.current_user
+    Vibeflow.Accounts.batch_follow(current_user.id, usernames)
+    json(conn, %{data: %{followed: true}})
+  end
+
+  def profile_by_code(conn, %{"code" => code}) do
+    case Vibeflow.Accounts.get_user_by_username(code) do
+      nil -> json(conn, %{data: nil})
+      user ->
+        user = Vibeflow.Repo.preload(user, :roles)
+        json(conn, %{
+          data: %{
+            user: %{
+              id: user.id,
+              username: user.username,
+              avatar_url: user.avatar_url,
+              bio: user.bio,
+              is_verified: user.is_verified,
+              username_style: user.username_style,
+              roles: clean_roles(user)
+            }
+          }
+        })
+    end
+  end
+
   def creator_hub(conn, %{"username" => username}) do
     case Vibeflow.Accounts.get_user_by_username(username) do
       nil -> conn |> put_status(:not_found) |> json(%{error: "User not found"})

@@ -172,8 +172,9 @@ defmodule Vibeflow.Socials do
 
       attrs =
         attrs
-        |> Map.put("url", url)
-        |> Map.put("user_id", user.id)
+        |> Map.put(:username, username)
+        |> Map.put(:url, url)
+        |> Map.put(:user_id, user.id)
 
       %SocialAccount{}
       |> SocialAccount.changeset(attrs)

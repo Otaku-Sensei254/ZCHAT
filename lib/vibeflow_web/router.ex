@@ -56,6 +56,11 @@ defmodule VibeflowWeb.Router do
     get "/feed/suggestions", FeedController, :suggestions
     get "/users/search", UserController, :search
     get "/users/profile/:code", UserController, :profile_by_code
+    get "/users/streak", UserController, :streak
+    get "/users/suggestions", UserController, :suggestions
+    get "/users/saved-posts", UserController, :saved_posts
+    get "/users/verification-status", UserController, :verification_status
+    get "/users/social-accounts", UserController, :social_accounts
     get "/users/:username", UserController, :show
     get "/users/:username/followers", UserController, :followers
     get "/users/:username/following", UserController, :following
@@ -85,11 +90,7 @@ defmodule VibeflowWeb.Router do
     post "/comments/:comment_id/pin", PostController, :pin_comment
     post "/comments/:comment_id/like", PostController, :like_comment
 
-    get "/users/suggestions", UserController, :suggestions
     post "/users/batch-follow", UserController, :batch_follow
-    get "/users/saved-posts", UserController, :saved_posts
-    get "/users/verification-status", UserController, :verification_status
-    get "/users/social-accounts", UserController, :social_accounts
     post "/users/social-accounts", UserController, :add_social_account
     delete "/users/social-accounts/:id", UserController, :delete_social_account
     post "/users/verify", UserController, :submit_verification
@@ -98,6 +99,7 @@ defmodule VibeflowWeb.Router do
     post "/users/:username/follow", UserController, :follow
     delete "/users/:username/follow", UserController, :unfollow
     get "/users/:username/creator-hub", UserController, :creator_hub
+    post "/users/ping", UserController, :ping
 
     get "/chat/conversations", ChatController, :conversations
     get "/chat/conversations/:uuid/messages", ChatController, :messages

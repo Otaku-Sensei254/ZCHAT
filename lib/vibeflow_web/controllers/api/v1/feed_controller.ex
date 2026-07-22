@@ -175,7 +175,7 @@ defmodule VibeflowWeb.Api.V1.FeedController do
   defp clean_media_files(files) do
     Enum.filter(files, fn f ->
       url = f["url"] || f[:url] || ""
-      !String.contains?(url, "cloudinary.com")
+      url != "" && !String.contains?(url, "cloudinary.com")
     end)
   end
 end

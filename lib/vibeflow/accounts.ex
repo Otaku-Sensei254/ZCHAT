@@ -774,4 +774,45 @@ defmodule Vibeflow.Accounts do
   end
 
   def grant_points(_, _), do: {:error, :invalid_input}
+
+  def ping_user(user_id) do
+    user = Repo.get(User, user_id)
+    today = Date.utc_today()
+    yesterday = Date.add(today, -1)
+
+    case user do
+      nil ->
+        {:error, :not_found}
+
+      %User{} = user ->
+        {new_current, new_longest} =
+          cond do
+            user.last_ping_date == today ->
+              {user.current_streak || 0, user.longest_streak || 0}
+
+            user.last_ping_date == yesterday ->
+              new_current = (user.current_streak || 0) + 1
+              new_longest = max(new_current, user.longest_streak || 0)
+              {new_current, new_longest}
+
+            true ->
+              {1, max(1, user.longest_streak || 0)}
+          end
+
+        user
+        |> Ecto.Changeset.change(%{
+          last_ping_date: today,
+          current_streak: new_current,
+          longest_streak: new_longest
+        })
+        |> Repo.update()
+    end
+  end
+
+  def get_streak(user_id) do
+    case Repo.get(User, user_id) do
+      nil -> {:error, :not_found}
+      user -> {:ok, %{current_streak: user.current_streak || 0, longest_streak: user.longest_streak || 0}}
+    end
+  end
 end

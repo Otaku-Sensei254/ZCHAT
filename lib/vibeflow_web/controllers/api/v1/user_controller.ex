@@ -6,16 +6,25 @@ defmodule VibeflowWeb.Api.V1.UserController do
     case Vibeflow.Accounts.get_user_by_username(username) do
       nil -> conn |> put_status(:not_found) |> json(%{error: "User not found"})
       user ->
-        user = Vibeflow.Repo.preload(user, :roles)
+        user = Vibeflow.Repo.preload(user, [:roles, :social_accounts])
         followers = Vibeflow.Accounts.get_user_followers(user.id)
         following = Vibeflow.Accounts.get_user_following(user.id)
         posts =
           Vibeflow.Posts.Post
-          |> where([p], p.user_id == ^user.id and p.status == "published")
+          |> where([p], p.user_id == ^user.id and p.status == "published" and p.content_type == "standard")
           |> order_by([p], desc: p.inserted_at)
           |> limit(20)
           |> Vibeflow.Repo.all()
           |> Vibeflow.Repo.preload([:user, :likes, :reposts, comments: :user])
+
+        currents =
+          Vibeflow.Posts.Post
+          |> where([p], p.user_id == ^user.id and p.status == "published" and p.content_type == "current")
+          |> order_by([p], desc: p.inserted_at)
+          |> limit(20)
+          |> Vibeflow.Repo.all()
+          |> Vibeflow.Repo.preload([:user, :likes, :reposts, comments: :user])
+
         is_following = if conn.assigns[:current_user] do
           Enum.any?(followers, fn f -> f.id == conn.assigns[:current_user].id end)
         else
@@ -26,6 +35,7 @@ defmodule VibeflowWeb.Api.V1.UserController do
           data: %{
             user: profile_json(user, length(followers), length(following)),
             posts: Enum.map(posts, &post_json/1),
+            currents: Enum.map(currents, &post_json/1),
             is_following: is_following
           }
         })
@@ -113,6 +123,26 @@ defmodule VibeflowWeb.Api.V1.UserController do
     json(conn, %{data: %{posts: Enum.map(posts, &post_json/1)}})
   end
 
+  def ping(conn, _params) do
+    current_user = conn.assigns.current_user
+    case Vibeflow.Accounts.ping_user(current_user.id) do
+      {:ok, _user} ->
+        json(conn, %{data: %{pinged: true}})
+      {:error, _} ->
+        json(conn, %{data: %{pinged: false}})
+    end
+  end
+
+  def streak(conn, _params) do
+    current_user = conn.assigns.current_user
+    case Vibeflow.Accounts.get_streak(current_user.id) do
+      {:ok, streak_data} ->
+        json(conn, %{data: streak_data})
+      {:error, _} ->
+        json(conn, %{data: %{current_streak: 0, longest_streak: 0}})
+    end
+  end
+
   def verification_status(conn, _params) do
     current_user = conn.assigns.current_user
     pending = Vibeflow.Accounts.check_verification_status(current_user)
@@ -154,6 +184,12 @@ defmodule VibeflowWeb.Api.V1.UserController do
       {:error, changeset} ->
         conn |> put_status(:unprocessable_entity) |> json(%{errors: format_changeset(changeset)})
     end
+  end
+
+  def add_social_account(conn, params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Expected platform and username", received: params})
   end
 
   def delete_social_account(conn, %{"id" => id}) do
@@ -275,8 +311,20 @@ defmodule VibeflowWeb.Api.V1.UserController do
       followers_count: followers_count,
       following_count: following_count,
       inserted_at: user.inserted_at,
-      roles: clean_roles(user)
+      roles: clean_roles(user),
+      social_accounts: clean_social_accounts(user)
     }
+  end
+
+  defp clean_social_accounts(user) do
+    case Map.get(user, :social_accounts) do
+      nil -> []
+      %Ecto.Association.NotLoaded{} -> []
+      accounts ->
+        Enum.map(accounts, fn a ->
+          %{id: a.id, platform: a.platform, url: a.url, username: a.username}
+        end)
+    end
   end
 
   defp clean_roles(user) do
@@ -332,7 +380,7 @@ defmodule VibeflowWeb.Api.V1.UserController do
   defp clean_media_files(files) do
     Enum.filter(files, fn f ->
       url = f["url"] || f[:url] || ""
-      !String.contains?(url, "cloudinary.com")
+      url != "" && !String.contains?(url, "cloudinary.com")
     end)
   end
 end

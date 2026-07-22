@@ -1,9 +1,8 @@
 defmodule VibeflowWeb.Api.UploadController do
   use VibeflowWeb, :controller
 
+  alias Vibeflow.Infrastructure.UploadCloudinary
   alias Vibeflow.UploadTracker
-
-  @upload_dir "priv/static/uploads"
 
   def init(conn, params) do
     upload_id = params["upload_id"] || Ecto.UUID.generate()
@@ -16,7 +15,6 @@ defmodule VibeflowWeb.Api.UploadController do
         _ -> 0
       end
 
-    File.mkdir_p!(@upload_dir)
     UploadTracker.register(upload_id, name, type, size)
 
     json(conn, %{upload_id: upload_id})
@@ -25,19 +23,7 @@ defmodule VibeflowWeb.Api.UploadController do
   def upload(conn, %{"upload_id" => upload_id}) do
     content_type = List.first(get_req_header(conn, "content-type")) || "application/octet-stream"
 
-    ext =
-      case content_type do
-        "image/jpeg" -> ".jpg"
-        "image/png" -> ".png"
-        "image/gif" -> ".gif"
-        "image/webp" -> ".webp"
-        "video/mp4" -> ".mp4"
-        "video/quicktime" -> ".mov"
-        "video/webm" -> ".webm"
-        _ -> ".bin"
-      end
-
-    dest = Path.join(@upload_dir, "#{upload_id}#{ext}")
+    dest = Path.join(System.tmp_dir!(), "#{upload_id}#{extension_for(content_type)}")
 
     {:ok, binary, conn} =
       Plug.Conn.read_body(conn, length: 100_000_000, read_length: 1_000_000)
@@ -52,32 +38,66 @@ defmodule VibeflowWeb.Api.UploadController do
   def upload_media(conn, params) do
     content_type = params["content_type"] || List.first(get_req_header(conn, "content-type")) || "image/jpeg"
 
-    ext =
-      case content_type do
-        "image/jpeg" -> ".jpg"
-        "image/png" -> ".png"
-        "image/gif" -> ".gif"
-        "image/webp" -> ".webp"
-        "video/mp4" -> ".mp4"
-        "video/quicktime" -> ".mov"
-        "video/webm" -> ".webm"
-        "video/x-matroska" -> ".mkv"
-        _ -> ".bin"
-      end
-
     upload_id = params["upload_id"] || Ecto.UUID.generate()
-    filename = "#{upload_id}#{ext}"
-    dest = Path.join(@upload_dir, filename)
-    File.mkdir_p!(@upload_dir)
+    filename = "#{upload_id}#{extension_for(content_type)}"
+    temp_path = Path.join(System.tmp_dir!(), filename)
 
     {:ok, binary, conn} =
       Plug.Conn.read_body(conn, length: 100_000_000, read_length: 1_000_000)
 
-    File.write!(dest, binary)
+    with :ok <- File.write(temp_path, binary),
+         {:ok, media} <-
+           UploadCloudinary.upload_file(
+             temp_path,
+             upload_kind_for(content_type),
+             filename: filename,
+             content_type: content_type
+           ) do
+      File.rm(temp_path)
+      json(conn, %{data: %{url: media.url, resource_type: media.resource_type}})
+    else
+      {:error, reason} ->
+        File.rm(temp_path)
 
-    url = "/uploads/#{filename}"
-    resource_type = if String.starts_with?(content_type, "video/"), do: "video", else: "image"
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Upload failed", reason: inspect(reason)})
+    end
+  end
 
-    json(conn, %{data: %{url: url, resource_type: resource_type}})
+  defp extension_for(content_type) do
+    content_type
+    |> String.split(";", parts: 2)
+    |> hd()
+    |> String.trim()
+    |> case do
+      "image/jpeg" -> ".jpg"
+      "image/png" -> ".png"
+      "image/gif" -> ".gif"
+      "image/webp" -> ".webp"
+      "video/mp4" -> ".mp4"
+      "video/quicktime" -> ".mov"
+      "video/webm" -> ".webm"
+      "video/x-matroska" -> ".mkv"
+      "audio/mpeg" -> ".mp3"
+      "audio/mp3" -> ".mp3"
+      "audio/mp4" -> ".m4a"
+      "audio/aac" -> ".aac"
+      "audio/wav" -> ".wav"
+      "audio/ogg" -> ".ogg"
+      "audio/opus" -> ".opus"
+      "audio/flac" -> ".flac"
+      "audio/webm" -> ".webm"
+      _ -> ".bin"
+    end
+  end
+
+  defp upload_kind_for(content_type) do
+    cond do
+      String.starts_with?(content_type, "image/") -> :image
+      String.starts_with?(content_type, "video/") -> :video
+      String.starts_with?(content_type, "audio/") -> :audio
+      true -> :auto
+    end
   end
 end

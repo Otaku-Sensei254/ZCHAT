@@ -107,6 +107,8 @@ defmodule VibeflowWeb.Router do
     delete "/chat/conversations/:uuid/messages/:id", ChatController, :delete_message
     put "/chat/conversations/:uuid/messages/:id", ChatController, :update_message
     post "/chat/start/:username", ChatController, :start_conversation
+    post "/chat/groups", ChatController, :create_group
+    post "/chat/bottles", ChatController, :throw_bottle
     put "/chat/conversations/:uuid/skin", ChatController, :update_skin
     post "/chat/conversations/:uuid/read", ChatController, :mark_read
     get "/chat/unread-count", ChatController, :unread_count

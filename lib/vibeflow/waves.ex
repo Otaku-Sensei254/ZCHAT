@@ -57,7 +57,7 @@ defmodule Vibeflow.Waves do
       |> where([w], w.expires_at > ^DateTime.utc_now())
       |> order_by([w], desc: w.inserted_at)
       |> Repo.all()
-      |> Repo.preload(:user)
+      |> Repo.preload([:user, :music_track])
 
     # those you've already seen
     seen_wave_ids =

@@ -89,7 +89,23 @@ defmodule VibeflowWeb.UserRegistrationLive do
               </p>
             </div>
 
-            <div class="pt-4">
+            <div class="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="agree-terms"
+                name="agree_terms"
+                required
+                class="mt-1 h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-zinc-800"
+              />
+              <label for="agree-terms" class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                I agree to the
+                <.link navigate={~p"/terms"} class="text-indigo-600 hover:underline dark:text-indigo-400 font-medium">Terms and Conditions</.link>
+                and
+                <.link navigate={~p"/privacy"} class="text-indigo-600 hover:underline dark:text-indigo-400 font-medium">Privacy Policy</.link>
+              </label>
+            </div>
+
+            <div class="pt-2">
               <.button
                 phx-disable-with="Creating account..."
                 class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"

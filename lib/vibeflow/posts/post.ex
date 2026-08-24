@@ -48,6 +48,7 @@ defmodule Vibeflow.Posts.Post do
           view_count: integer(),
           category: String.t() | nil,
           reposts_count: integer(),
+          saves_count: integer(),
           likes_count: integer(),
           comments_count: integer(),
           user_id: integer() | nil,
@@ -58,7 +59,8 @@ defmodule Vibeflow.Posts.Post do
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil,
           media_files: [map()],
-          status: String.t() | nil
+          status: String.t() | nil,
+          content_type: String.t() | nil
         }
 
   schema "posts" do
@@ -69,6 +71,7 @@ defmodule Vibeflow.Posts.Post do
     field :view_count, :integer, default: 0
     field :category, :string
     field :reposts_count, :integer, default: 0
+    field :saves_count, :integer, default: 0
     field :likes_count, :integer, default: 0
     field :comments_count, :integer, virtual: true, default: 0
     field :is_featured, :boolean, virtual: true, default: false
@@ -76,6 +79,8 @@ defmodule Vibeflow.Posts.Post do
     field :media_files, {:array, :map}, default: []
     # Processing status: published, processing, failed
     field :status, :string, default: "published"
+    # Content type: standard (regular post) or current (short video)
+    field :content_type, :string, default: "standard"
     # Keep old fields for backward compatibility
     field :media_url, :string, virtual: true
     field :media_type, :string, virtual: true
@@ -125,7 +130,8 @@ defmodule Vibeflow.Posts.Post do
       :likes_count,
       :reposts_count,
       :comments_count,
-      :status
+      :status,
+      :content_type
     ])
     |> validate_required([:title, :content, :user_id, :media_files])
     |> validate_length(:title, min: 3, max: 200)
@@ -215,7 +221,7 @@ defmodule Vibeflow.Posts.Post do
             is_map(media) and
               is_binary(Map.get(media, "url")) and
               is_binary(Map.get(media, "type")) and
-                Map.get(media, "type") in ["image", "video"]
+                Map.get(media, "type") in ["image", "video", "audio"]
           end) ->
             changeset
 

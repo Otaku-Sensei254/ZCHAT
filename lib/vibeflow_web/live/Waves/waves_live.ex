@@ -332,12 +332,19 @@ defmodule VibeflowWeb.Waves.WavesLive do
           results =
             consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
               Logger.info(">>> UPLOADING TO CLOUDINARY: #{path} <<<")
-              UploadCloudinary.upload_file(path, :auto, filename: entry.client_name, content_type: entry.client_type)
+              case UploadCloudinary.upload_file(path, :auto, filename: entry.client_name, content_type: entry.client_type) do
+                {:ok, media} ->
+                  {:ok, media}
+
+                {:error, reason} ->
+                  Logger.error(">>> UPLOAD FAILED: #{inspect(reason)} <<<")
+                  {:error, reason}
+              end
             end)
 
           case results do
-            [media | _] ->
-              Logger.info(">>> CLOUDINARY SUCCESS: #{inspect(media)} <<<")
+            [media | _] when is_map(media) ->
+              Logger.info(">>> UPLOAD SUCCESS: #{inspect(media)} <<<")
 
               music_track_id =
                 if socket.assigns.selected_music do

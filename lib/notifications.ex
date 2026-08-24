@@ -10,7 +10,7 @@ defmodule Vibeflow.Notifications do
       where: n.user_id == ^user_id,
       order_by: [desc: n.inserted_at],
       limit: ^limit,
-      preload: [:actor, :post, :user]
+      preload: [:actor, :post, :user, :conversation]
     )
     |> Repo.all()
   end
@@ -64,7 +64,7 @@ defmodule Vibeflow.Notifications do
       notification ->
         {:ok, updated} =
           notification
-          |> Ecto.Changeset.change(read_at: NaiveDateTime.utc_now())
+          |> Ecto.Changeset.change(read_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second))
           |> Repo.update()
 
         # Broadcast update
@@ -80,7 +80,7 @@ defmodule Vibeflow.Notifications do
 
   def mark_all_read(user_id) do
     from(n in Notification, where: n.user_id == ^user_id and is_nil(n.read_at))
-    |> Repo.update_all(set: [read_at: NaiveDateTime.utc_now()])
+    |> Repo.update_all(set: [read_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)])
 
     Phoenix.PubSub.broadcast(Vibeflow.PubSub, "notifications:#{user_id}", :update_notifications)
   end

@@ -16,6 +16,13 @@ defmodule Vibeflow.Accounts.User do
     field(:points, :integer, default: 0)
     field(:username_style, :string)
     field(:active_message_skin, :string, default: "default")
+    field(:invite_code, :string)
+    field(:uuid, Ecto.UUID, autogenerate: true)
+    belongs_to(:referred_by, Vibeflow.Accounts.User, define_field: false)
+    field(:referred_by_id, :integer)
+    field(:last_ping_date, :date)
+    field(:current_streak, :integer, default: 0)
+    field(:longest_streak, :integer, default: 0)
     has_many(:posts, Post)
     has_many(:social_accounts, Vibeflow.Socials.SocialAccount)
     has_many(:verification_requests, Vibeflow.Accounts.VerificationRequest)
@@ -59,7 +66,7 @@ defmodule Vibeflow.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:username, :email, :password, :avatar_url])
+    |> cast(attrs, [:username, :email, :password, :avatar_url, :invite_code, :referred_by_id])
     |> validate_email(opts)
     |> validate_required([:username])
     # Combined the constraints

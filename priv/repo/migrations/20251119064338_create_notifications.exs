@@ -5,7 +5,7 @@ defmodule Vibeflow.Repo.Migrations.CreateNotifications do
     create table(:notifications) do
       # "like", "comment", "repost"
       add :type, :string, null: false
-      add :read_at, :naive_datetime
+      add :read_at, :utc_datetime
 
       # Who RECEIVES the notification
       add :user_id, references(:users, on_delete: :delete_all), null: false

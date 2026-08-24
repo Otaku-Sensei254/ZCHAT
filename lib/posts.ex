@@ -14,8 +14,6 @@ defmodule Vibeflow.Posts do
   @daily_post_bonus_limit 3
   @like_points 2
   @post_author_like_points 3
-  @ripple_points 3
-  @post_author_ripple_points 5
 
   # --- TRENDING ---
 
@@ -53,9 +51,9 @@ defmodule Vibeflow.Posts do
           left_join: c in assoc(p, :comments),
           join: u in assoc(p, :user),
           group_by: [p.id, u.id],
-          order_by: [desc: p.inserted_at],
-          limit: ^limit,
-          select_merge: %{
+        order_by: fragment("? DESC, RANDOM()", p.inserted_at),
+        limit: ^limit,
+        select_merge: %{
             likes_count: count(l.id, :distinct),
             comments_count: count(c.id, :distinct)
           },
@@ -95,11 +93,10 @@ defmodule Vibeflow.Posts do
         order_by: [
           desc:
             fragment(
-              "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN 1 ELSE 0 END",
+              "CASE WHEN MAX(?) = 'admin' OR MAX(?) = 'moderator' THEN 1 ELSE 0 END, RANDOM()",
               r.name,
               r.name
             ),
-          desc: p.inserted_at
         ],
         select_merge: %{
           likes_count: count(l.id, :distinct),
@@ -124,7 +121,7 @@ defmodule Vibeflow.Posts do
 
     # Preload associations efficiently
     posts
-    |> Repo.preload([:user, :likes, comments: :user])
+    |> Repo.preload([:user, :likes, :reposts, comments: :user])
   end
 
   def list_feed_for_user(user_id, opts \\ [])
@@ -183,7 +180,7 @@ defmodule Vibeflow.Posts do
         left_join: c in assoc(p, :comments),
         where: ps.user_id == ^user_id or p.user_id == ^user_id,
         group_by: [p.id, u.id],
-        order_by: [desc: p.inserted_at],
+        order_by: fragment("? DESC, RANDOM()", p.inserted_at),
         select_merge: %{
           likes_count: count(l.id, :distinct),
           comments_count: count(c.id, :distinct)
@@ -198,7 +195,7 @@ defmodule Vibeflow.Posts do
 
     query
     |> Repo.all()
-    |> Repo.preload([:user, :likes, comments: :user])
+    |> Repo.preload([:user, :likes, :reposts, comments: :user])
   end
 
   defp get_fallback_posts(user_id, per_page, search_term, category) do
@@ -269,6 +266,59 @@ defmodule Vibeflow.Posts do
 
       posts
     end
+  end
+
+  # --- CURRENTS (short-form video feed) ---
+
+  def list_currents(opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+
+    from(p in Post,
+      where: p.status == "published" and p.content_type == "current",
+      join: u in assoc(p, :user),
+      left_join: l in assoc(p, :likes),
+      left_join: c in assoc(p, :comments),
+      group_by: [p.id, u.id],
+      order_by: [desc: p.inserted_at],
+      limit: ^per_page,
+      offset: ^((page - 1) * per_page),
+      select_merge: %{
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      }
+    )
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
+  end
+
+  def list_currents_for_user(user_id, opts \\ []) do
+    page = opts[:page] || 1
+    per_page = opts[:per_page] || opts[:limit] || 20
+    following_user_ids = opts[:following_user_ids]
+
+    following_ids = following_user_ids ||
+      (user_id && (
+        Vibeflow.Accounts.get_user_following(user_id)
+        |> Enum.map(& &1.id)
+      )) || []
+
+    from(p in Post,
+      where: p.status == "published" and p.content_type == "current" and p.user_id in ^following_ids,
+      join: u in assoc(p, :user),
+      left_join: l in assoc(p, :likes),
+      left_join: c in assoc(p, :comments),
+      group_by: [p.id, u.id],
+      order_by: [desc: p.inserted_at],
+      limit: ^per_page,
+      offset: ^((page - 1) * per_page),
+      select_merge: %{
+        likes_count: count(l.id, :distinct),
+        comments_count: count(c.id, :distinct)
+      }
+    )
+    |> Repo.all()
+    |> Repo.preload([:user, :likes, comments: :user])
   end
 
   def list_seeded_users_for_post(post_id, limit \\ 50) do
@@ -653,8 +703,8 @@ defmodule Vibeflow.Posts do
 
     query
     |> preload(^preload)
-    |> order_by([c], desc: c.pinned, asc: c.inserted_at)
-    |> Repo.all()
+  |> order_by([c], desc: c.pinned, desc: c.inserted_at)
+  |> Repo.all()
   end
 
   def create_comment(attrs \\ %{}) do
@@ -739,7 +789,9 @@ defmodule Vibeflow.Posts do
   end
 
   def delete_comment(%Comment{} = comment) do
-    Repo.delete(comment)
+    result = Repo.delete(comment)
+    Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post_comments:#{comment.post_id}", {:comment_deleted, comment.id, comment.post_id})
+    result
   end
 
   defp handle_comment_update({:ok, comment}) do
@@ -875,6 +927,23 @@ defmodule Vibeflow.Posts do
     Repo.get_by(Like, user_id: user_id, likeable_type: target_type, likeable_id: target_id)
   end
 
+  def is_liked?(user_id, likeable_type, likeable_id) do
+    Repo.exists?(
+      from(l in Like,
+        where:
+          l.user_id == ^user_id and l.likeable_type == ^likeable_type and
+            l.likeable_id == ^likeable_id
+      )
+    )
+  end
+
+  def count_likes(likeable_type, likeable_id) do
+    Repo.aggregate(
+      from(l in Like, where: l.likeable_type == ^likeable_type and l.likeable_id == ^likeable_id),
+      :count
+    )
+  end
+
   def get_repost_by_user_and_post(user_id, post_id) do
     from(r in Repost,
       where: r.user_id == ^user_id and r.post_id == ^post_id
@@ -889,22 +958,58 @@ defmodule Vibeflow.Posts do
   end
 
   def save_post(user_id, post_id) do
-    %SavedPosts{}
-    |> SavedPosts.changeset(%{user_id: user_id, post_id: post_id})
-    |> Repo.insert()
+    result =
+      Repo.transaction(fn ->
+        %SavedPosts{}
+        |> SavedPosts.changeset(%{user_id: user_id, post_id: post_id})
+        |> Repo.insert!()
+
+        from(p in Post, where: p.id == ^post_id)
+        |> Repo.update_all(inc: [saves_count: 1])
+
+        Repo.get(Post, post_id)
+      end)
+
+    case result do
+      {:ok, post} ->
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:post_saved, %{post_id: post_id, user_id: user_id}})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_saved, %{post_id: post_id, user_id: user_id}})
+        {:ok, {:saved, post}}
+
+      error ->
+        error
+    end
   end
 
   def unsave_post(user_id, post_id) do
-    case get_saved_post_by_user_and_post(user_id, post_id) do
-      nil -> {:ok, nil}
-      saved_post -> Repo.delete(saved_post)
+    result =
+      Repo.transaction(fn ->
+        case get_saved_post_by_user_and_post(user_id, post_id) do
+          nil -> :ok
+          saved_post -> Repo.delete!(saved_post)
+        end
+
+        from(p in Post, where: p.id == ^post_id)
+        |> Repo.update_all(inc: [saves_count: -1])
+
+        Repo.get(Post, post_id)
+      end)
+
+    case result do
+      {:ok, post} ->
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "post:#{post_id}", {:post_unsaved, %{post_id: post_id, user_id: user_id}})
+        Phoenix.PubSub.broadcast(Vibeflow.PubSub, "posts", {:post_unsaved, %{post_id: post_id, user_id: user_id}})
+        {:ok, {:unsaved, post}}
+
+      error ->
+        error
     end
   end
 
   def toggle_save_post(user_id, post_id) do
     case get_saved_post_by_user_and_post(user_id, post_id) do
       nil -> save_post(user_id, post_id)
-      saved_post -> unsave_post(user_id, post_id)
+      _saved_post -> unsave_post(user_id, post_id)
     end
   end
 
@@ -1003,14 +1108,9 @@ defmodule Vibeflow.Posts do
     :ok
   end
 
-  defp award_like_points(%Post{} = post, user_id, ripple_status) do
+  defp award_like_points(%Post{} = post, user_id, _ripple_status) do
     Accounts.grant_points(user_id, @like_points)
     maybe_award_author_points(post.user_id, user_id, @post_author_like_points)
-
-    if ripple_status == :rippled do
-      Accounts.grant_points(user_id, @ripple_points)
-      maybe_award_author_points(post.user_id, user_id, @post_author_ripple_points)
-    end
   end
 
   defp award_like_points(_, _, _), do: :ok
@@ -1433,7 +1533,7 @@ defmodule Vibeflow.Posts do
         left_join: c in assoc(p, :comments),
         where: p.id not in ^exclude_ids and p.user_id != ^user_id,
         group_by: [p.id, u.id],
-        order_by: [desc: p.inserted_at],
+        order_by: fragment("? DESC, RANDOM()", p.inserted_at),
         limit: ^limit,
         select_merge: %{
           likes_count: count(l.id, :distinct),

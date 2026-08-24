@@ -46,7 +46,7 @@ Git SSH.TXT
 /dev.local.exs
 /.env
 /.env.*
-
+/.env.example
 /.superpowers
 
 # Ignore live uploads directory

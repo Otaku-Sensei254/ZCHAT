@@ -42,75 +42,61 @@
 
     <div class="lg:col-span-2 relative">
       <div class="bg-white dark:bg-zinc-900 rounded-lg shadow border border-gray-100 dark:border-zinc-800 p-3 mb-4">
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide">
+        <div class="flex items-center gap-3 overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
           <%= if @current_user do %>
             <.link
               navigate={~p"/waves"}
-              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+              class="flex flex-col items-center gap-1 shrink-0"
             >
-              <div class="relative w-14 h-14 rounded-full border-2 border-dashed border-blue-400 p-0.5 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800 transition group">
-                <%= if @current_user.avatar_url do %>
-                  <img
-                    src={@current_user.avatar_url}
-                    class={"w-full h-full rounded-full object-cover opacity-60 group-hover:opacity-100 transition " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}
-                  />
-                <% else %>
-                  <div class={"w-full h-full rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 flex items-center justify-center font-bold text-sm opacity-60 group-hover:opacity-100 transition " <> VibeflowWeb.CoreComponents.avatar_frame_class(@current_user)}>
-                    {VibeflowWeb.CoreComponents.initials(@current_user)}
-                  </div>
-                <% end %>
+              <div class="relative w-14 h-14 rounded-full border-2 border-dashed border-blue-400 p-0.5 flex items-center justify-center">
+                <img
+                  src={@current_user.avatar_url || "/images/default_avatar.png"}
+                  class="w-full h-full rounded-full object-cover opacity-60"
+                />
                 <div class="absolute inset-0 flex items-center justify-center">
                   <div class="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
                     <.icon name="hero-plus" class="w-4 h-4" />
                   </div>
                 </div>
               </div>
-              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center">
-                You
-              </span>
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center">You</span>
             </.link>
-
-            <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
+            <div class="w-px bg-gray-200 dark:bg-zinc-700 h-14 shrink-0"></div>
           <% else %>
             <.link
               navigate={~p"/users/log_in"}
-              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+              class="flex flex-col items-center gap-1 shrink-0"
             >
               <div class="w-14 h-14 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center bg-gray-100 dark:bg-zinc-800">
                 <.icon name="hero-arrow-right-end-on-rectangle" class="w-6 h-6 text-gray-500" />
               </div>
               <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400">Log In</span>
             </.link>
-            <div class="w-px bg-gray-200 dark:bg-zinc-700 mx-1 h-14"></div>
+            <div class="w-px bg-gray-200 dark:bg-zinc-700 h-14 shrink-0"></div>
+          <% end %>
+
+          <%= if @current_user && length(@waves) == 0 do %>
+            <div class="flex items-center justify-center w-full py-2">
+              <span class="text-xs text-gray-400 dark:text-gray-500">No waves yet — create one!</span>
+            </div>
           <% end %>
 
           <%= for wave_group <- @waves do %>
-            <% frame_class = VibeflowWeb.CoreComponents.avatar_frame_class(wave_group.user) %>
-            <% has_frame = frame_class != "" %>
-            <% seen_dim = if has_frame && !wave_group.has_unseen, do: "opacity-60", else: "" %>
             <.link
               navigate={~p"/waves/view/#{wave_group.user.username}"}
-              class="flex flex-col items-center gap-1 cursor-pointer shrink-0"
+              class="flex flex-col items-center gap-1 shrink-0"
             >
               <div class={[
-                "relative w-14 h-14 rounded-full p-0.5 flex items-center justify-center transition group",
-                !has_frame && wave_group.has_unseen &&
-                  "bg-gradient-to-tr from-yellow-400 to-pink-600",
-                !has_frame && !wave_group.has_unseen &&
-                  "border-2 border-gray-200 dark:border-zinc-700",
-                has_frame && "#{frame_class} #{seen_dim}"
+                "relative w-14 h-14 rounded-full p-0.5 flex items-center justify-center",
+                wave_group.has_unseen && "bg-gradient-to-tr from-yellow-400 to-pink-600",
+                !wave_group.has_unseen && "border-2 border-gray-200 dark:border-zinc-700"
               ]}>
                 <div class="bg-white dark:bg-zinc-900 rounded-full p-0.5 w-full h-full">
-                  <div class={"w-full h-full rounded-full overflow-hidden " <> VibeflowWeb.CoreComponents.avatar_frame_class(wave_group.user)}>
-                    <img src={wave_group.user.avatar_url} class="w-full h-full object-cover" />
-                  </div>
+                  <img src={wave_group.user.avatar_url || "/images/default_avatar.png"} class="w-full h-full rounded-full object-cover" />
                 </div>
               </div>
-              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 w-14 text-center flex items-center justify-center gap-0.5">
-                <span class={"truncate " <> VibeflowWeb.CoreComponents.username_glow_class(wave_group.user)}>
-                  {wave_group.user.username}
-                </span>
-                <.verified_badge user={wave_group.user} class="h-5 w-5 shrink-0" />
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate w-14 text-center">
+                {wave_group.user.username}
               </span>
             </.link>
           <% end %>

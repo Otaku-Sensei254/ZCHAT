@@ -438,7 +438,7 @@
         <div
           id="chat-scroll-container"
           phx-hook="ScrollToBottom"
-          class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-white dark:bg-zinc-900"
+          class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide p-4 space-y-4 bg-white dark:bg-zinc-900"
         >
           <div id="messages" class="flex flex-col space-y-2 min-h-0">
             <%= for {message, index} <- Enum.with_index(@messages) do %>

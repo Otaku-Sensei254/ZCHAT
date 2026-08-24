@@ -90,24 +90,96 @@ defmodule Vibeflow.Accounts do
     Repo.get_by(User, username: username)
   end
 
-  def get_user!(id) do
+  @invite_prefix "INV-VF-"
+
+  def get_user_by_invite_code(code) when is_binary(code) do
+    Repo.get_by(User, invite_code: code)
+  end
+
+  def generate_invite_code do
+    {:ok, result} = Repo.query("SELECT nextval('invite_code_seq') as seq")
+
+    seq =
+      result.rows
+      |> List.first()
+      |> List.first()
+
+    @invite_prefix <> String.pad_leading(Integer.to_string(seq), 3, "0")
+  end
+
+  def get_user_by_uuid(uuid) when is_binary(uuid) do
+    with {:ok, uuid} <- Ecto.UUID.cast(uuid) do
+      Repo.get_by(User, uuid: uuid)
+    end
+  end
+
+  def get_user_by_uuid!(uuid) when is_binary(uuid) do
+    with {:ok, uuid} <- Ecto.UUID.cast(uuid) do
+      Repo.get_by!(User, uuid: uuid)
+      |> Repo.preload(roles: :permissions)
+    end
+  end
+
+  def get_user(id_or_uuid) when is_integer(id_or_uuid) do
+    Repo.get(User, id_or_uuid)
+    |> Repo.preload(roles: :permissions)
+  end
+
+  def get_user(id_or_uuid) when is_binary(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} -> get_user_by_uuid(uuid)
+      :error -> get_user(String.to_integer(id_or_uuid))
+    end
+  end
+
+  def get_user!(id) when is_integer(id) do
     Repo.get!(User, id)
     |> Repo.preload(roles: :permissions)
   end
 
+  def get_user!(id_or_uuid) when is_binary(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} -> get_user_by_uuid!(uuid)
+      :error -> get_user!(String.to_integer(id_or_uuid))
+    end
+  end
+
   ## User registration
 
+  @referral_points 50
+  @new_user_points 500
+
   def register_user(attrs) do
-    # UPDATED: Handle avatar upload before changeset
+    invite_code = attrs["invite_code"] || attrs[:invite_code]
+
     attrs = handle_image_upload(attrs, "avatar_url")
+    attrs = Map.drop(attrs, ["invite_code", :invite_code])
+
+    inviter =
+      if invite_code && invite_code != "" do
+        get_user_by_invite_code(invite_code) || get_user_by_username(invite_code)
+      end
+
+    attrs = if inviter do
+      Map.put(attrs, "referred_by_id", inviter.id)
+    else
+      attrs
+    end
 
     %User{}
     |> User.registration_changeset(attrs)
+    |> Ecto.Changeset.put_change(:invite_code, generate_invite_code())
     |> Repo.insert()
     |> case do
       {:ok, user} ->
-        grant_points(user.id, 500)
-        {:ok, user}
+        grant_points(user.id, @new_user_points)
+
+        if inviter do
+          grant_points(inviter.id, @referral_points)
+          grant_points(user.id, @referral_points)
+        end
+
+        {:ok, Repo.reload!(user)}
 
       {:error, changeset} ->
         {:error, changeset}
@@ -525,7 +597,7 @@ defmodule Vibeflow.Accounts do
 
     query = from(u in User,
       where: ilike(u.username, ^search_term) or ilike(u.bio, ^search_term),
-      order_by: [asc: u.inserted_at],
+      order_by: [desc: u.inserted_at],
       preload: [:roles]
     )
 
@@ -537,6 +609,51 @@ defmodule Vibeflow.Accounts do
     end
 
     Repo.all(query)
+  end
+
+  def suggest_users(current_user_id, exclude_ids, limit \\ 5) do
+    from(u in User,
+      where: u.id != ^current_user_id and u.id not in ^exclude_ids,
+      order_by: fragment("RANDOM()"),
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  def suggest_users_for_onboarding(current_user_id, limit \\ 8) do
+    from(u in User,
+      where: u.id != ^current_user_id,
+      order_by: fragment("RANDOM()"),
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  def batch_follow(follower_id, usernames) when is_list(usernames) do
+    users = from(u in User, where: u.username in ^usernames) |> Repo.all()
+
+    Enum.each(users, fn target ->
+      unless target.id == follower_id do
+        existing = Repo.get_by(Vibeflow.Socials.Follow,
+          follower_id: follower_id,
+          following_id: target.id
+        )
+
+        unless existing do
+          %Vibeflow.Socials.Follow{}
+          |> Vibeflow.Socials.Follow.changeset(%{follower_id: follower_id, following_id: target.id})
+          |> Repo.insert()
+
+          Vibeflow.Notifications.create_notification(%{
+            type: "follow",
+            user_id: target.id,
+            actor_id: follower_id
+          })
+        end
+      end
+    end)
+
+    {:ok, length(users)}
   end
 
   # --- ASSIGNMENT HELPERS ---
@@ -660,11 +777,18 @@ defmodule Vibeflow.Accounts do
   end
 
   def follow_user(user_a, user_b) do
-    user_a
-    |> Repo.preload(:following)
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.put_assoc(:following, [user_b | user_a.following])
-    |> Repo.update()
+    existing = Repo.get_by(Vibeflow.Socials.Follow, follower_id: user_a.id, following_id: user_b.id)
+    if existing do
+      {:error, :already_following}
+    else
+      %Vibeflow.Socials.Follow{}
+      |> Vibeflow.Socials.Follow.changeset(%{follower_id: user_a.id, following_id: user_b.id})
+      |> Repo.insert()
+      |> case do
+        {:ok, _} -> {:ok, :followed}
+        error -> error
+      end
+    end
   end
 
   # Adding mentions to posts and comments
@@ -699,4 +823,45 @@ defmodule Vibeflow.Accounts do
   end
 
   def grant_points(_, _), do: {:error, :invalid_input}
+
+  def ping_user(user_id) do
+    user = Repo.get(User, user_id)
+    today = Date.utc_today()
+    yesterday = Date.add(today, -1)
+
+    case user do
+      nil ->
+        {:error, :not_found}
+
+      %User{} = user ->
+        {new_current, new_longest} =
+          cond do
+            user.last_ping_date == today ->
+              {user.current_streak || 0, user.longest_streak || 0}
+
+            user.last_ping_date == yesterday ->
+              new_current = (user.current_streak || 0) + 1
+              new_longest = max(new_current, user.longest_streak || 0)
+              {new_current, new_longest}
+
+            true ->
+              {1, max(1, user.longest_streak || 0)}
+          end
+
+        user
+        |> Ecto.Changeset.change(%{
+          last_ping_date: today,
+          current_streak: new_current,
+          longest_streak: new_longest
+        })
+        |> Repo.update()
+    end
+  end
+
+  def get_streak(user_id) do
+    case Repo.get(User, user_id) do
+      nil -> {:error, :not_found}
+      user -> {:ok, %{current_streak: user.current_streak || 0, longest_streak: user.longest_streak || 0}}
+    end
+  end
 end

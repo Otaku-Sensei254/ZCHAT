@@ -11,7 +11,7 @@ defmodule VibeflowWeb.Endpoint do
     same_site: "Lax"
   ]
   socket "/socket", VibeflowWeb.UserSocket,
-    websocket: true,
+    websocket: [check_origin: false],
     longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket,
@@ -67,6 +67,12 @@ defmodule VibeflowWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+
+  plug CORSPlug, origin: [
+    "https://vibeflow.gigalixirapp.com",
+    "http://localhost:3000",
+    ~r"^https://[\w-]+\.vercel\.app$"
+  ]
 
   # Serve uploaded files from priv/static/uploads
   plug Plug.Static,

@@ -17,10 +17,133 @@ defmodule VibeflowWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_auth do
+    plug VibeflowWeb.Plugs.ApiAuth
+  end
+
   scope "/api", VibeflowWeb do
     pipe_through :api
 
     get "/unread_chats_count", Api.UnreadController, :show
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through :api
+
+    post "/auth/register", AuthController, :register
+    post "/auth/login", AuthController, :login
+    post "/auth/forgot-password", AuthController, :forgot_password
+    post "/auth/reset-password", AuthController, :reset_password
+    post "/auth/confirm-email", AuthController, :confirm_email
+    post "/auth/resend-confirmation", AuthController, :resend_confirmation
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through :api
+
+    get "/feed", FeedController, :index
+    get "/feed/trending", FeedController, :trending
+    get "/feed/categories", FeedController, :categories
+    get "/feed/posts/search", FeedController, :search_posts
+    get "/feed/tags", FeedController, :tags
+    get "/feed/categories/counts", FeedController, :category_counts
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, VibeflowWeb.Plugs.OptionalApiAuth]
+
+    get "/posts/:uuid", PostController, :show
+    get "/feed/suggestions", FeedController, :suggestions
+    get "/users/search", UserController, :search
+    get "/users/profile/:code", UserController, :profile_by_code
+    get "/users/streak", UserController, :streak
+    get "/users/suggestions", UserController, :suggestions
+    get "/users/saved-posts", UserController, :saved_posts
+    get "/users/verification-status", UserController, :verification_status
+    get "/users/social-accounts", UserController, :social_accounts
+    get "/users/:username", UserController, :show
+    get "/users/:username/followers", UserController, :followers
+    get "/users/:username/following", UserController, :following
+    get "/waves", WaveController, :index
+    get "/waves/:username", WaveController, :show_user_waves
+    get "/currents", CurrentController, :index
+    get "/currents/:uuid", CurrentController, :show
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, :api_auth]
+
+    get "/auth/me", AuthController, :me
+    post "/auth/logout", AuthController, :logout
+
+    post "/posts", PostController, :create
+    put "/posts/:uuid", PostController, :update
+    delete "/posts/:uuid", PostController, :delete
+    post "/posts/:uuid/like", PostController, :like
+    post "/posts/:uuid/repost", PostController, :repost
+    post "/posts/:uuid/save", PostController, :save
+    post "/posts/:uuid/share", PostController, :share
+    post "/posts/:uuid/view", PostController, :track_view
+    post "/posts/:uuid/comments", PostController, :create_comment
+    delete "/comments/:comment_id", PostController, :delete_comment
+    put "/comments/:comment_id", PostController, :update_comment
+    post "/comments/:comment_id/pin", PostController, :pin_comment
+    post "/comments/:comment_id/like", PostController, :like_comment
+
+    post "/users/batch-follow", UserController, :batch_follow
+    post "/users/social-accounts", UserController, :add_social_account
+    delete "/users/social-accounts/:id", UserController, :delete_social_account
+    post "/users/verify", UserController, :submit_verification
+    put "/users/profile", UserController, :update_profile
+    put "/users/password", UserController, :update_password
+    post "/users/:username/follow", UserController, :follow
+    delete "/users/:username/follow", UserController, :unfollow
+    get "/users/:username/creator-hub", UserController, :creator_hub
+    post "/users/ping", UserController, :ping
+
+    get "/chat/conversations", ChatController, :conversations
+    get "/chat/conversations/:uuid/messages", ChatController, :messages
+    post "/chat/conversations/:uuid/messages", ChatController, :create_message
+    delete "/chat/conversations/:uuid/messages/:id", ChatController, :delete_message
+    put "/chat/conversations/:uuid/messages/:id", ChatController, :update_message
+    post "/chat/start/:username", ChatController, :start_conversation
+    post "/chat/groups", ChatController, :create_group
+    post "/chat/bottles", ChatController, :throw_bottle
+    put "/chat/conversations/:uuid/skin", ChatController, :update_skin
+    post "/chat/conversations/:uuid/read", ChatController, :mark_read
+    get "/chat/unread-count", ChatController, :unread_count
+
+    post "/waves", WaveController, :create
+    post "/waves/:uuid/view", WaveController, :mark_viewed
+    post "/waves/:uuid/like", WaveController, :like
+
+    post "/currents", CurrentController, :create
+
+    post "/music/tracks", MusicController, :create_track
+
+    post "/uploads/media", MediaController, :upload
+
+    get "/store/items", StoreController, :index
+    post "/store/purchase", StoreController, :purchase
+
+    get "/notifications", NotificationController, :index
+    post "/notifications/:id/read", NotificationController, :mark_read
+    post "/notifications/read-all", NotificationController, :mark_all_read
+    delete "/notifications", NotificationController, :clear
+
+    # Admin API
+    get "/admin/stats", AdminController, :stats
+    get "/admin/users", AdminController, :users
+    put "/admin/users/:id/roles", AdminController, :update_user_roles
+    post "/admin/users/:user_id/toggle_role/:role_id", AdminController, :toggle_role
+    delete "/admin/users/:user_id/remove_role/:role_id", AdminController, :remove_role
+    get "/admin/verifications", AdminController, :verifications
+    post "/admin/verifications/:id/approve", AdminController, :approve_verification
+    post "/admin/verifications/:id/reject", AdminController, :reject_verification
+    get "/admin/roles", AdminController, :roles
+    post "/admin/roles", AdminController, :create_role
+    get "/admin/permissions", AdminController, :permissions
+    get "/admin/verifications/count", AdminController, :verification_count
   end
 
   # Authenticated upload API - requires login via session
@@ -52,10 +175,13 @@ defmodule VibeflowWeb.Router do
     end
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", VibeflowWeb do
-  #   pipe_through :api
-  # end
+  # Static pages
+  scope "/", VibeflowWeb do
+    pipe_through :browser
+
+    get "/privacy", PageController, :privacy
+    get "/terms", PageController, :terms
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:vibeflow, :dev_routes) do

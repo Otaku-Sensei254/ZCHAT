@@ -7,8 +7,7 @@ defmodule Vibeflow.Repo.Migrations.CreateNotesForUsers do
       add :song_name, :string
       add :user_id, references(:users, on_delete: :delete_all), null: false
       add :actor_id, references(:users, on_delete: :delete_all), null: false
-      remove :replies, {:array, :map}, default: []
-      add :reactions, {:array, :map}, default: []
+      add :replies, {:array, :map}, default: []
 
       timestamps()
     end

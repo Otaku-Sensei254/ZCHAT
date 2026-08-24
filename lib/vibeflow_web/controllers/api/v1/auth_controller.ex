@@ -151,6 +151,8 @@ defmodule VibeflowWeb.Api.V1.AuthController do
 
     %{
       id: user.id,
+      uuid: user.uuid,
+      invite_code: user.invite_code,
       username: user.username,
       email: user.email,
       avatar_url: user.avatar_url,

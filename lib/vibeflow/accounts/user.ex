@@ -17,6 +17,7 @@ defmodule Vibeflow.Accounts.User do
     field(:username_style, :string)
     field(:active_message_skin, :string, default: "default")
     field(:invite_code, :string)
+    field(:uuid, Ecto.UUID, autogenerate: true)
     belongs_to(:referred_by, Vibeflow.Accounts.User, define_field: false)
     field(:referred_by_id, :integer)
     field(:last_ping_date, :date)

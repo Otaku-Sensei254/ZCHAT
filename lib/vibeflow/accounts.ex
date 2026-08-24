@@ -90,9 +90,58 @@ defmodule Vibeflow.Accounts do
     Repo.get_by(User, username: username)
   end
 
-  def get_user!(id) do
+  @invite_prefix "INV-VF-"
+
+  def get_user_by_invite_code(code) when is_binary(code) do
+    Repo.get_by(User, invite_code: code)
+  end
+
+  def generate_invite_code do
+    {:ok, result} = Repo.query("SELECT nextval('invite_code_seq') as seq")
+
+    seq =
+      result.rows
+      |> List.first()
+      |> List.first()
+
+    @invite_prefix <> String.pad_leading(Integer.to_string(seq), 3, "0")
+  end
+
+  def get_user_by_uuid(uuid) when is_binary(uuid) do
+    with {:ok, uuid} <- Ecto.UUID.cast(uuid) do
+      Repo.get_by(User, uuid: uuid)
+    end
+  end
+
+  def get_user_by_uuid!(uuid) when is_binary(uuid) do
+    with {:ok, uuid} <- Ecto.UUID.cast(uuid) do
+      Repo.get_by!(User, uuid: uuid)
+      |> Repo.preload(roles: :permissions)
+    end
+  end
+
+  def get_user(id_or_uuid) when is_integer(id_or_uuid) do
+    Repo.get(User, id_or_uuid)
+    |> Repo.preload(roles: :permissions)
+  end
+
+  def get_user(id_or_uuid) when is_binary(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} -> get_user_by_uuid(uuid)
+      :error -> get_user(String.to_integer(id_or_uuid))
+    end
+  end
+
+  def get_user!(id) when is_integer(id) do
     Repo.get!(User, id)
     |> Repo.preload(roles: :permissions)
+  end
+
+  def get_user!(id_or_uuid) when is_binary(id_or_uuid) do
+    case Ecto.UUID.cast(id_or_uuid) do
+      {:ok, uuid} -> get_user_by_uuid!(uuid)
+      :error -> get_user!(String.to_integer(id_or_uuid))
+    end
   end
 
   ## User registration
@@ -108,7 +157,7 @@ defmodule Vibeflow.Accounts do
 
     inviter =
       if invite_code && invite_code != "" do
-        Repo.get_by(User, invite_code: invite_code)
+        get_user_by_invite_code(invite_code) || get_user_by_username(invite_code)
       end
 
     attrs = if inviter do
@@ -119,7 +168,7 @@ defmodule Vibeflow.Accounts do
 
     %User{}
     |> User.registration_changeset(attrs)
-    |> Ecto.Changeset.put_change(:invite_code, attrs["username"] || attrs[:username])
+    |> Ecto.Changeset.put_change(:invite_code, generate_invite_code())
     |> Repo.insert()
     |> case do
       {:ok, user} ->

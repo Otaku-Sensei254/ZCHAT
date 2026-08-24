@@ -232,7 +232,11 @@ defmodule VibeflowWeb.Api.V1.UserController do
   end
 
   def profile_by_code(conn, %{"code" => code}) do
-    case Vibeflow.Accounts.get_user_by_username(code) do
+    user =
+      Vibeflow.Accounts.get_user_by_invite_code(code) ||
+        Vibeflow.Accounts.get_user_by_username(code)
+
+    case user do
       nil -> json(conn, %{data: nil})
       user ->
         user = Vibeflow.Repo.preload(user, :roles)
@@ -240,7 +244,9 @@ defmodule VibeflowWeb.Api.V1.UserController do
           data: %{
             user: %{
               id: user.id,
+              uuid: user.uuid,
               username: user.username,
+              invite_code: user.invite_code,
               avatar_url: user.avatar_url,
               bio: user.bio,
               is_verified: user.is_verified,

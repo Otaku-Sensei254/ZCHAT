@@ -64,6 +64,26 @@ defmodule Vibeflow.Drifts do
     |> Repo.insert()
   end
 
+  # --- UPDATE ---
+
+  @doc """
+  Updates a drift with the given attributes.
+  """
+  def update_drift(drift, attrs) do
+    drift
+    |> Drifts.changeset(attrs)
+    |> Repo.update()
+  end
+
+  # --- DELETE ---
+
+  @doc """
+  Deletes a drift.
+  """
+  def delete_drift(drift) do
+    Repo.delete(drift)
+  end
+
   # --- INTERACTIONS ---
 
   @doc """
@@ -123,6 +143,36 @@ defmodule Vibeflow.Drifts do
       payload: %{}
     })
     |> Repo.insert()
+  end
+
+  @doc """
+  Replies to a drift. Creates interaction, notifies author.
+  """
+  def reply_to_drift(drift, actor, params) do
+    content = params["content"] || params[:content]
+    if content && content != "" do
+      Repo.transaction(fn ->
+        %DriftInteraction{}
+        |> DriftInteraction.changeset(%{
+          drift_id: drift.id,
+          actor_id: actor.id,
+          type: "reply",
+          payload: %{content: content}
+        })
+        |> Repo.insert!()
+
+        if drift.user_id != actor.id do
+          Notifications.create_notification(%{
+            type: "drift_reply",
+            user_id: drift.user_id,
+            actor_id: actor.id,
+            data: %{drift_id: drift.id, drift_uuid: drift.uuid, content: content}
+          })
+        end
+      end)
+    else
+      {:error, "Reply content required"}
+    end
   end
 
   # --- PRIVATE ---

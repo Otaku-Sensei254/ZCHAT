@@ -68,6 +68,16 @@ defmodule VibeflowWeb.Router do
     get "/waves/:username", WaveController, :show_user_waves
     get "/currents", CurrentController, :index
     get "/currents/:uuid", CurrentController, :show
+
+    # Drifts
+    get "/drifts", DriftController, :index
+    get "/drifts/:id", DriftController, :show
+    post "/drifts", DriftController, :create
+    post "/drifts/:id/react", DriftController, :react
+    delete "/drifts/:id/react", DriftController, :remove_reaction
+    post "/drifts/:id/reply", DriftController, :reply
+    delete "/drifts/:id", DriftController, :delete
+    put "/drifts/:id", DriftController, :update
   end
 
   scope "/api/v1", VibeflowWeb.Api.V1 do

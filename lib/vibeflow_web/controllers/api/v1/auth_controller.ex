@@ -129,10 +129,16 @@ defmodule VibeflowWeb.Api.V1.AuthController do
     user = Vibeflow.Accounts.get_user_by_email(email)
 
     if user do
-      Vibeflow.Accounts.deliver_user_confirmation_instructions(
-        user,
-        fn token -> "http://localhost:3000/confirm-email/#{token}" end
-      )
+      # Run email delivery in background to not block the response
+      Task.Supervisor.async_nolink(Vibeflow.TaskSupervisor, fn ->
+        Vibeflow.Accounts.deliver_user_confirmation_instructions(
+          user,
+          fn token ->
+            frontend_url = System.get_env("FRONTEND_URL", "http://localhost:3000")
+            "#{frontend_url}/confirm-email/#{token}"
+          end
+        )
+      end)
     end
 
     json(conn, %{

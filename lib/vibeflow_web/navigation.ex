@@ -18,7 +18,7 @@ defmodule VibeflowWeb.Navigation do
         section: nil
       },
 
-      # Admin only section
+       # Admin only section
       %{
         section: "User Management",
         roles: ["admin"]
@@ -41,6 +41,13 @@ defmodule VibeflowWeb.Navigation do
         path: "/admin/verification-requests",
         label: "Verification Requests",
         icon: "shield",
+        roles: ["admin"],
+        section: "User Management"
+      },
+      %{
+        path: "/admin/communications-hub",
+        label: "Communications Hub",
+        icon: "mail",
         roles: ["admin"],
         section: "User Management"
       },

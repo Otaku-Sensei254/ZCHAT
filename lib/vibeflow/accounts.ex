@@ -864,4 +864,36 @@ defmodule Vibeflow.Accounts do
       user -> {:ok, %{current_streak: user.current_streak || 0, longest_streak: user.longest_streak || 0}}
     end
   end
+
+  # =================================================================
+  # COMMUNICATIONS / BROADCAST
+  # =================================================================
+
+  @doc """
+  Sends a broadcast email to all confirmed users.
+  Returns the count of emails sent.
+  """
+  def broadcast_email(subject, body, sender \\ nil) do
+    users =
+      from(u in User,
+        where: not is_nil(u.email) and not is_nil(u.confirmed_at),
+        select: u
+      )
+      |> Repo.all()
+
+    sender_name = sender || "VibeFlow Team"
+
+    results =
+      Enum.map(users, fn user ->
+        UserNotifier.deliver_broadcast_email(user, subject, body, sender_name)
+      end)
+
+    sent_count =
+      Enum.count(results, fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+
+    {:ok, sent_count, length(users)}
+  end
 end

@@ -155,6 +155,7 @@ defmodule VibeflowWeb.Router do
     get "/admin/verifications", AdminController, :verifications
     post "/admin/verifications/:id/approve", AdminController, :approve_verification
     post "/admin/verifications/:id/reject", AdminController, :reject_verification
+    post "/admin/broadcast-email", AdminController, :broadcast_email
     get "/admin/roles", AdminController, :roles
     post "/admin/roles", AdminController, :create_role
     get "/admin/permissions", AdminController, :permissions
@@ -288,6 +289,7 @@ defmodule VibeflowWeb.Router do
         VibeflowWeb.UserActivityHook
       ] do
       live "/dashboard", DashboardLive, :index
+      live "/communications-hub", CommunicationsHubLive, :index
       live "/verification-requests", VerificationsLive, :index
       live "/users", ManagementLive, :index
       live "/users/:user_id/edit_roles", UserRolesLive, :edit

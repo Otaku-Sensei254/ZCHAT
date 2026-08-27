@@ -59,8 +59,14 @@ defmodule Vibeflow.Drifts do
   Creates a new drift for the given user.
   """
   def create_drift(user, attrs) do
+    attrs =
+      attrs
+      |> Kernel.||(%{})
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
+      |> Map.put("user_id", user.id)
+
     %Drifts{}
-    |> Drifts.changeset(Map.put(attrs || %{}, :user_id, user.id))
+    |> Drifts.changeset(attrs)
     |> Repo.insert()
   end
 

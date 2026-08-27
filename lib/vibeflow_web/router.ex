@@ -72,10 +72,15 @@ defmodule VibeflowWeb.Router do
     # Drifts
     get "/drifts", DriftController, :index
     get "/drifts/:id", DriftController, :show
-    post "/drifts", DriftController, :create
     post "/drifts/:id/react", DriftController, :react
     delete "/drifts/:id/react", DriftController, :remove_reaction
     post "/drifts/:id/reply", DriftController, :reply
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, :api_auth]
+
+    post "/drifts", DriftController, :create
     delete "/drifts/:id", DriftController, :delete
     put "/drifts/:id", DriftController, :update
   end

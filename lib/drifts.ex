@@ -60,7 +60,7 @@ defmodule Vibeflow.Drifts do
   """
   def create_drift(user, attrs) do
     %Drifts{}
-    |> Drifts.changeset(Map.put(attrs, :user_id, user.id))
+    |> Drifts.changeset(Map.put(attrs || %{}, :user_id, user.id))
     |> Repo.insert()
   end
 

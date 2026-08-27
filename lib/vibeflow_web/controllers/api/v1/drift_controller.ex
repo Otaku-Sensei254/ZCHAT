@@ -3,8 +3,8 @@ defmodule VibeflowWeb.Api.V1.DriftController do
   alias Vibeflow.Drifts
 
   def index(conn, _params) do
-    user = conn.assigns.current_user
-    drifts = Drifts.get_feed_drifts(user)
+    user = conn.assigns[:current_user]
+    drifts = if user, do: Drifts.get_feed_drifts(user), else: []
     json(conn, %{data: %{drifts: Enum.map(drifts, &drift_json/1)}})
   end
 

@@ -126,6 +126,7 @@ defmodule VibeflowWeb.Router do
     post "/chat/bottles", ChatController, :throw_bottle
     put "/chat/conversations/:uuid/skin", ChatController, :update_skin
     post "/chat/conversations/:uuid/read", ChatController, :mark_read
+    post "/chat/conversations/:uuid/reveal-bottle", ChatController, :reveal_bottle
     get "/chat/unread-count", ChatController, :unread_count
 
     post "/waves", WaveController, :create

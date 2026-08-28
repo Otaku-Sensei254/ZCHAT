@@ -27,7 +27,7 @@ defmodule VibeflowWeb.Api.V1.ChatController do
             Enum.find(conversation.conversation_members || [], fn m -> m.user_id != user.id end)
 
           other_last_read = if other_member, do: other_member.last_read_at
-          json(conn, %{data: %{messages: Enum.map(messages, &message_json(&1, other_last_read))}})
+          json(conn, %{data: %{messages: Enum.map(messages, &message_json(&1, other_last_read, user.id))}})
         else
           conn |> put_status(:forbidden) |> json(%{error: "Not a member"})
         end
@@ -53,7 +53,7 @@ defmodule VibeflowWeb.Api.V1.ChatController do
             {:ok, message} ->
               conn
               |> put_status(:created)
-              |> json(%{data: %{message: message_json(message)}})
+              |> json(%{data: %{message: message_json(message, nil, user.id)}})
 
             {:error, changeset} ->
               conn
@@ -208,7 +208,7 @@ defmodule VibeflowWeb.Api.V1.ChatController do
       if message.user_id == user.id do
         case Vibeflow.Chat.update_message(message, %{content: content}) do
           {:ok, updated_msg} ->
-            json(conn, %{data: %{message: message_json(updated_msg)}})
+            json(conn, %{data: %{message: message_json(updated_msg, nil, user.id)}})
 
           {:error, _changeset} ->
             conn
@@ -231,6 +231,31 @@ defmodule VibeflowWeb.Api.V1.ChatController do
       conversation ->
         Vibeflow.Chat.mark_conversation_as_read(user.id, conversation.id)
         json(conn, %{data: %{message: "Marked as read"}})
+    end
+  end
+
+  def reveal_bottle(conn, %{"uuid" => uuid}) do
+    user = conn.assigns.current_user
+
+    case Vibeflow.Chat.get_conversation_by_uuid(uuid) do
+      nil ->
+        conn |> put_status(:not_found) |> json(%{error: "Conversation not found"})
+
+      conversation ->
+        if Vibeflow.Chat.member_of_conversation?(user, conversation.id) do
+          case Vibeflow.Chat.BottleService.find_unfound_bottle_in_conversation(conversation.id, user.id) do
+            {:ok, message} when message.user_id != user.id ->
+              Vibeflow.Chat.BottleService.reveal_bottle_sender(message.id)
+
+            _ ->
+              :ok
+          end
+
+          messages = Vibeflow.Chat.list_messages(conversation.id)
+          json(conn, %{data: %{messages: Enum.map(messages, &message_json(&1, nil, user.id))}})
+        else
+          conn |> put_status(:forbidden) |> json(%{error: "Not a member"})
+        end
     end
   end
 
@@ -305,8 +330,25 @@ defmodule VibeflowWeb.Api.V1.ChatController do
     }
   end
 
-  defp message_json(msg, other_last_read \\ nil) do
+  defp message_json(msg, other_last_read \\ nil, current_user_id \\ nil) do
     media = msg.media_files || []
+
+    is_bottle = msg.is_bottle
+    is_found = msg.is_found
+    is_sender = current_user_id && msg.user_id == current_user_id
+
+    user_data =
+      if is_bottle && !is_found && !is_sender do
+        nil
+      else
+        if(msg.user,
+          do: %{
+            id: msg.user.id,
+            username: msg.user.username,
+            avatar_url: msg.user.avatar_url
+          }
+        )
+      end
 
     is_read =
       if other_last_read && msg.inserted_at do
@@ -384,14 +426,7 @@ defmodule VibeflowWeb.Api.V1.ChatController do
       id: msg.id,
       content: msg.content,
       user_id: msg.user_id,
-      user:
-        if(msg.user,
-          do: %{
-            id: msg.user.id,
-            username: msg.user.username,
-            avatar_url: msg.user.avatar_url
-          }
-        ),
+      user: user_data,
       media_files: media,
       reply_to_id: msg.reply_to_id,
       reply_to: reply_to_data,
@@ -402,7 +437,9 @@ defmodule VibeflowWeb.Api.V1.ChatController do
       inserted_at: msg.inserted_at,
       updated_at: msg.updated_at,
       is_read: is_read,
-      conversation_uuid: Map.get(msg, :conversation_uuid)
+      conversation_uuid: Map.get(msg, :conversation_uuid),
+      is_bottle: is_bottle,
+      is_found: is_found
     }
   end
 

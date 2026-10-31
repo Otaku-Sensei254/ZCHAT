@@ -142,6 +142,27 @@ defmodule VibeflowWeb.Api.V1.AdminController do
     end
   end
 
+  def broadcast_email(conn, params) do
+    subject = params["subject"]
+    body = params["body"]
+    sender_name = params["sender_name"] || "VibeFlow Team"
+
+    if String.trim(subject || "") == "" or String.trim(body || "") == "" do
+      conn
+      |> put_status(:unprocessable_entity)
+      |> json(%{error: "Subject and body are required"})
+    else
+      case Accounts.broadcast_email(subject, body, sender_name) do
+        {:ok, sent_count, total_count} ->
+          json(conn, %{data: %{sent: sent_count, total: total_count}})
+        {:error, reason} ->
+          conn
+          |> put_status(:internal_server_error)
+          |> json(%{error: "Failed to send emails", details: inspect(reason)})
+      end
+    end
+  end
+
   def roles(conn, _params) do
     all_roles = Accounts.get_roles()
 

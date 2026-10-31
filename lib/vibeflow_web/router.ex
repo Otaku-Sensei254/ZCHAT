@@ -68,6 +68,21 @@ defmodule VibeflowWeb.Router do
     get "/waves/:username", WaveController, :show_user_waves
     get "/currents", CurrentController, :index
     get "/currents/:uuid", CurrentController, :show
+
+    # Drifts
+    get "/drifts", DriftController, :index
+    get "/drifts/:id", DriftController, :show
+    post "/drifts/:id/react", DriftController, :react
+    delete "/drifts/:id/react", DriftController, :remove_reaction
+    post "/drifts/:id/reply", DriftController, :reply
+  end
+
+  scope "/api/v1", VibeflowWeb.Api.V1 do
+    pipe_through [:api, :api_auth]
+
+    post "/drifts", DriftController, :create
+    delete "/drifts/:id", DriftController, :delete
+    put "/drifts/:id", DriftController, :update
   end
 
   scope "/api/v1", VibeflowWeb.Api.V1 do
@@ -111,6 +126,7 @@ defmodule VibeflowWeb.Router do
     post "/chat/bottles", ChatController, :throw_bottle
     put "/chat/conversations/:uuid/skin", ChatController, :update_skin
     post "/chat/conversations/:uuid/read", ChatController, :mark_read
+    post "/chat/conversations/:uuid/reveal-bottle", ChatController, :reveal_bottle
     get "/chat/unread-count", ChatController, :unread_count
 
     post "/waves", WaveController, :create
@@ -140,6 +156,7 @@ defmodule VibeflowWeb.Router do
     get "/admin/verifications", AdminController, :verifications
     post "/admin/verifications/:id/approve", AdminController, :approve_verification
     post "/admin/verifications/:id/reject", AdminController, :reject_verification
+    post "/admin/broadcast-email", AdminController, :broadcast_email
     get "/admin/roles", AdminController, :roles
     post "/admin/roles", AdminController, :create_role
     get "/admin/permissions", AdminController, :permissions
@@ -273,6 +290,7 @@ defmodule VibeflowWeb.Router do
         VibeflowWeb.UserActivityHook
       ] do
       live "/dashboard", DashboardLive, :index
+      live "/communications-hub", CommunicationsHubLive, :index
       live "/verification-requests", VerificationsLive, :index
       live "/users", ManagementLive, :index
       live "/users/:user_id/edit_roles", UserRolesLive, :edit

@@ -314,6 +314,7 @@ defmodule VibeflowWeb.Api.V1.UserController do
       is_verified: user.is_verified,
       username_style: user.username_style,
       active_message_skin: user.active_message_skin,
+      confirmed_at: user.confirmed_at,
       followers_count: followers_count,
       following_count: following_count,
       inserted_at: user.inserted_at,

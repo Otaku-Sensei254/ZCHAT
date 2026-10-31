@@ -157,4 +157,39 @@ If you didn't request this change, please ignore this email.
       """
     )
   end
+
+  @doc """
+  Deliver a broadcast email to a single user.
+  Used by the Communications Hub to send announcements to all users.
+  """
+  def deliver_broadcast_email(user, subject, body, sender_name \\ "VibeFlow Team") do
+    deliver(
+      user.email,
+      subject,
+      """
+Hi #{user.username || user.email},
+
+#{body}
+
+- The #{sender_name} Team
+      """,
+      """
+      <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">A Message from #{sender_name}</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <p>Hi #{user.username || user.email},</p>
+          <div style="margin: 20px 0; padding: 20px; background: #fff; border-radius: 8px; border-left: 4px solid #667eea;">
+            <p style="white-space: pre-wrap; margin: 0;">#{String.replace(body, "\n", "<br/>")}</p>
+          </div>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+          <p style="font-size: 12px; color: #999; text-align: center;">- The #{sender_name} Team</p>
+        </div>
+      </body>
+      </html>
+      """
+    )
+  end
 end

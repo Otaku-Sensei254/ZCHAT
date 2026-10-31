@@ -34,6 +34,8 @@ defmodule Vibeflow.Application do
       {Oban, Application.fetch_env!(:vibeflow, Oban)},
       # Track in-progress uploads for background upload flow
       Vibeflow.UploadTracker,
+      # Start TaskSupervisor for background jobs (e.g., email broadcasts)
+      {Task.Supervisor, name: Vibeflow.TaskSupervisor},
       # Start the Endpoint (http/https)
       VibeflowWeb.Endpoint
 
